@@ -219,7 +219,6 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 
 ### 4.3 Matriz de Rastreabilidade
 
-As exceções são identificadas pela ordem da tabela da secção 2.4.
 
 | **Elemento do Caso de Uso** | **Descrição abreviada** | **Requisito(s) de Sistema** |
 | --- | --- | --- |
