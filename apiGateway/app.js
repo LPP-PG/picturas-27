@@ -8,7 +8,7 @@ var projectsRouter = require("./routes/projects");
 var usersRouter = require("./routes/users");
 var subscriptionsRouter = require("./routes/subscriptions");
 var app = express();
-
+var videosRouter = require("./routes/videos");
 // Enable CORS for all routes
 app.use(cors());
 
@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/projects", projectsRouter);
 app.use("/users", usersRouter);
 app.use("/subscriptions", subscriptionsRouter);
-
+app.use("/videos", videosRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

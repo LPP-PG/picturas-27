@@ -4,7 +4,7 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const mongoose = require("mongoose");
-
+const videosRouter = require("./routes/videos");
 const { router: projectsRouter, process_msg } = require("./routes/projects");
 
 // Run Docker
@@ -30,7 +30,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-
+app.use("/videos", videosRouter);
 app.use("/", projectsRouter);
 
 // Start the message processing

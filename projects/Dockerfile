@@ -1,8 +1,15 @@
-from node
-workdir /app
+FROM node:22-bookworm
 
-copy . .
-run npm install
+WORKDIR /app
 
-expose 9001
-cmd ["npm", "start"]
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+RUN npm install
+
+EXPOSE 9001
+
+CMD ["npm", "start"]
