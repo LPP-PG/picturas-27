@@ -3,7 +3,17 @@ const { promisify } = require("node:util");
 
 const execFileAsync = promisify(execFile);
 
-async function readVideoMetadata(filePath) {
+function checkCancellation(signal) {
+  if (signal?.aborted) {
+    const error = new Error("Carregamento cancelado.");
+    error.name = "AbortError";
+    throw error;
+  }
+}
+
+async function readVideoMetadata(filePath, { signal } = {}) {
+  checkCancellation(signal);
+
   let metadata;
 
   try {
@@ -20,11 +30,20 @@ async function readVideoMetadata(filePath) {
       {
         timeout: 30000,
         maxBuffer: 2 * 1024 * 1024,
+        signal,
+        killSignal: "SIGKILL",
       },
     );
 
+    checkCancellation(signal);
     metadata = JSON.parse(stdout);
-  } catch {
+  } catch (cause) {
+    checkCancellation(signal);
+
+    if (cause.name === "AbortError") {
+      throw cause;
+    }
+
     const error = new Error(
       "Não foi possível ler o vídeo. Verifique se o ficheiro é válido.",
     );
@@ -32,25 +51,35 @@ async function readVideoMetadata(filePath) {
     throw error;
   }
 
-  const videoStream = metadata.streams?.find(
+  const streams = Array.isArray(metadata.streams)
+    ? metadata.streams
+    : [];
+
+  const videoStream = streams.find(
     (stream) =>
       stream.codec_type === "video" &&
       stream.disposition?.attached_pic !== 1,
   );
 
-  const duration = Number(
-    metadata.format?.duration ?? videoStream?.duration,
-  );
+  const formatDuration = Number(metadata.format?.duration);
+  const streamDuration = Number(videoStream?.duration);
 
-  const containerNames = (
-    metadata.format?.format_name || ""
+  const duration =
+    Number.isFinite(formatDuration) && formatDuration > 0
+      ? formatDuration
+      : streamDuration;
+
+  const containerNames = String(
+    metadata.format?.format_name || "",
   ).split(",");
 
   if (
     !videoStream ||
     !Number.isFinite(duration) ||
     duration <= 0 ||
-    !containerNames.some((name) => name === "mov" || name === "mp4")
+    !containerNames.some(
+      (name) => name === "mov" || name === "mp4",
+    )
   ) {
     const error = new Error(
       "O ficheiro deve conter um vídeo válido em formato MP4 ou MOV.",
@@ -61,7 +90,7 @@ async function readVideoMetadata(filePath) {
 
   return {
     duration_seconds: duration,
-    has_audio: metadata.streams.some(
+    has_audio: streams.some(
       (stream) => stream.codec_type === "audio",
     ),
     width: videoStream.width,

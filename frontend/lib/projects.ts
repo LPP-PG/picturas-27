@@ -23,17 +23,15 @@ export interface Project {
   user_id: string;
   name: string;
   version: number;
+  media_type?: "image" | "video";
+  video_ids?: string[];
 }
 
-export interface SingleProject {
-  _id: string;
-  user_id: string;
-  name: string;
+export interface SingleProject extends Project {
   tools: ProjectToolResponse[];
   imgs: ProjectImage[];
-  version: number;
-
 }
+
 export interface ProjectImage {
   _id: string;
   name: string;
@@ -180,6 +178,8 @@ export const fetchProjects = async (uid: string, token: string) => {
     user_id: uid,
     name: p.name,
     version: p.version, 
+    media_type: p.media_type ?? "image",
+    video_ids: p.video_ids ?? [],
   })) as Project[];
 };
 
@@ -210,6 +210,9 @@ export const fetchProject = async (
     imgs: response.data.imgs,
     tools: response.data.tools,
     version: response.data.version,
+    media_type: response.data.media_type ?? "image",
+    video_ids: response.data.video_ids ?? [],
+
   } as SingleProject;
 };
 
@@ -218,20 +221,36 @@ export const addProject = async ({
   token,
   name,
   images = [],
+  media_type = "image",
 }: {
   uid: string;
   token: string;
   name: string;
   images?: File[];
+  media_type?: "image" | "video";
 }) => {
+  if (media_type === "video" && images.length > 0) {
+    throw new Error(
+      "Um projeto de vídeo não pode conter imagens.",
+    );
+  }
+
   const response = await api.post<SingleProject>(
     `/projects/${uid}`,
-    { name },
-    { headers: { Authorization: `Bearer ${token}` } },
+    {
+      name,
+      media_type,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
   );
 
-  if (response.status !== 201 || !response.data)
-    throw new Error("Failed to create project");
+  if (response.status !== 201 || !response.data) {
+    throw new Error("Não foi possível criar o projeto.");
+  }
 
   const project = response.data;
 

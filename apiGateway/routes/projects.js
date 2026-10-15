@@ -354,15 +354,36 @@ router.get(
  * @body { "name": String }
  * @returns Created project's data
  */
-router.post("/:user", auth.checkToken, function (req, res, next) {
-  axios
-    .post(projectsURL + `${req.params.user}`, req.body, {
-      httpsAgent: httpsAgent,
-    })
-    .then((resp) => res.status(201).jsonp(resp.data))
-    .catch((err) => forwardAxiosError(res, err, "mensagem fallback"))
-});
+router.post("/:user", auth.checkToken, function (req, res) {
+  if (String(req.authUserId) !== String(req.params.user)) {
+    return res.status(403).json({
+      error: "Não pode criar projetos para outro utilizador.",
+    });
+  }
 
+  axios
+    .post(
+      projectsURL + `${req.params.user}`,
+      {
+        name: req.body.name,
+        media_type: req.body.media_type ?? "image",
+      },
+      {
+        httpsAgent,
+        headers: {
+          Authorization: req.headers.authorization,
+        },
+      },
+    )
+    .then((resp) => res.status(resp.status).json(resp.data))
+    .catch((err) =>
+      forwardAxiosError(
+        res,
+        err,
+        "Não foi possível criar o projeto.",
+      ),
+    );
+});
 /**
  * Preview an image
  * @body Empty

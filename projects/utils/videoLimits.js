@@ -1,11 +1,17 @@
 const VIDEO_LIMITS = {
   free: {
     maxDurationSeconds: 60,
-    maxSizeBytes: 100 * 1000 * 1000,
+    maxSizeBytes: 100_000_000,
+    maxProjectBytes: 500_000_000,
+    maxAccountBytes: 2_000_000_000,
+    maxConcurrentUploads: 1,
   },
   premium: {
-    maxDurationSeconds: 10 * 60,
-    maxSizeBytes: 1000 * 1000 * 1000,
+    maxDurationSeconds: 600,
+    maxSizeBytes: 1_000_000_000,
+    maxProjectBytes: 10_000_000_000,
+    maxAccountBytes: 50_000_000_000,
+    maxConcurrentUploads: 3,
   },
 };
 
@@ -20,7 +26,7 @@ function getVideoLimits(userType) {
     throw error;
   }
 
-  return limits;
+  return { ...limits };
 }
 
 function validateVideoLimits(userType, durationSeconds, sizeBytes) {
@@ -32,21 +38,29 @@ function validateVideoLimits(userType, durationSeconds, sizeBytes) {
     !Number.isSafeInteger(sizeBytes) ||
     sizeBytes <= 0
   ) {
-    const error = new Error("Os dados do vídeo são inválidos.");
+    const error = new Error(
+      "O vídeo deve ter duração e tamanho positivos.",
+    );
     error.status = 400;
     throw error;
   }
 
-  if (
-    durationSeconds > limits.maxDurationSeconds ||
-    sizeBytes > limits.maxSizeBytes
-  ) {
-    const message =
+  if (sizeBytes > limits.maxSizeBytes) {
+    const error = new Error(
       userType === "free"
-        ? "O vídeo excede os limites do perfil Registado: 60 segundos e 100 MB. O Premium permite até 10 minutos e 1 GB."
-        : "O vídeo excede os limites do perfil Premium: 10 minutos e 1 GB.";
+        ? "O vídeo excede o limite de 100 MB do perfil Registado."
+        : "O vídeo excede o limite de 1 GB do perfil Premium.",
+    );
+    error.status = 413;
+    throw error;
+  }
 
-    const error = new Error(message);
+  if (durationSeconds > limits.maxDurationSeconds) {
+    const error = new Error(
+      userType === "free"
+        ? "O vídeo excede o limite de 60 segundos do perfil Registado."
+        : "O vídeo excede o limite de 600 segundos do perfil Premium.",
+    );
     error.status = 400;
     throw error;
   }

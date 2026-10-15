@@ -6,7 +6,7 @@ const sharp = require("sharp");
 
 const multer = require("multer");
 const FormData = require("form-data");
-
+require("../utils/videoProjectDeletion");
 const fs = require("fs");
 const fs_extra = require("fs-extra");
 const path = require("path");
@@ -68,7 +68,14 @@ const httpsAgent = new https.Agent({
 const users_ms = "https://users:10001/";
 
 const enforcePresenceLimit = require("../middleware/enforcePresenceLimit");
+const {
+  isolateVideoProject,
+  rejectVideoShare,
+} = require("../middleware/videoProjectIsolation");
 
+// Tem de ficar antes das declarações router.get/post/put/delete.
+router.use("/share/:shareId", rejectVideoShare);
+router.use("/:user/:project", isolateVideoProject);
 const advanced_tools = [
   "cut_ai",
   "upgrade_ai",
@@ -648,6 +655,8 @@ router.get("/share/:shareId/project", requireAuth,async (req, res) => {
       _id: project._id,
       user_id: project.user_id,
       name: project.name,
+      media_type: project.media_type ?? "image",
+      video_ids: project.video_ids ?? [],
       tools: project.tools,
       imgs: [],
       permission: link.permission,
@@ -759,17 +768,32 @@ router.get("/:user", (req, res, next) => {
     .then((projects) => {
       const ans = [];
 
-      for (let p of projects) {
+      for (const project of projects) {
+        const mediaType = project.media_type ?? "image";
+        const videoIds = project.video_ids ?? [];
+
+        // Um projeto de vídeo só aparece após a associação
+        // do primeiro vídeo concluído.
+        if (mediaType === "video" && videoIds.length === 0) {
+          continue;
+        }
+
         ans.push({
-          _id: p._id,
-          name: p.name,
-          version: p.version
+          _id: project._id,
+          user_id: project.user_id,
+          name: project.name,
+          version: project.version,
+          media_type: mediaType,
+          video_ids: videoIds,
         });
       }
 
       res.status(200).jsonp(ans);
     })
-    .catch((_) => res.status(500).jsonp("Error acquiring user's projects"));
+    .catch((error) => {
+      console.error("Error acquiring user's projects:", error);
+      res.status(500).jsonp("Error acquiring user's projects");
+    });
 });
 
 // Get a specific user's project
@@ -812,10 +836,13 @@ router.get("/:user/:project", checkSharePermission, async (req, res, next) => {
     .then(async (project) => {
       const response = {
         _id: project._id,
+        user_id: project.user_id,
         name: project.name,
         tools: project.tools,
         imgs: [],
         version: project.version,
+        media_type: project.media_type ?? "image",
+        video_ids: project.video_ids ?? [],
       };
 
       for (let img of project.imgs) {
@@ -1000,17 +1027,54 @@ router.get("/:user/:project/advanced_tools", checkSharePermission, (req, res, ne
 });
 
 // Create new project
-router.post("/:user", (req, res, next) => {
-  const project = {
-    name: req.body.name,
-    user_id: req.params.user,
-    imgs: [],
-    tools: [],
-  };
+router.post("/:user", async (req, res) => {
+  const name =
+    typeof req.body.name === "string" ? req.body.name.trim() : "";
 
-  Project.create(project)
-    .then((project) => res.status(201).jsonp(project))
-    .catch((_) => res.status(502).jsonp(`Error creating new project`));
+  const mediaType = req.body.media_type ?? "image";
+
+  if (!name) {
+    return res.status(400).json({
+      error: "Introduza um nome para o projeto.",
+    });
+  }
+
+  if (!["image", "video"].includes(mediaType)) {
+    return res.status(400).json({
+      error: "O tipo de projeto deve ser image ou video.",
+    });
+  }
+
+  async function createProject() {
+    try {
+      const project = await Project.create({
+        name,
+        user_id: req.params.user,
+        media_type: mediaType,
+        video_ids: [],
+        imgs: [],
+        tools: [],
+      });
+
+      return res.status(201).json(project);
+    } catch (error) {
+      console.error("Erro ao criar projeto:", error.message);
+
+      return res.status(500).json({
+        error: "Não foi possível criar o projeto.",
+      });
+    }
+  }
+
+  if (mediaType === "video") {
+    const videoAuth = require("../middleware/videoAuth");
+
+    return videoAuth(req, res, () => {
+      void createProject();
+    });
+  }
+
+  return createProject();
 });
 
 // Preview an image
@@ -1748,15 +1812,77 @@ router.put(
 );
 
 // Delete a project
-router.delete( "/:user/:project", checkSharePermission, requireEditPermission, enforcePresenceLimit, requireProjectVersion, async (req, res) => {
+router.delete(
+  "/:user/:project",
+  checkSharePermission,
+  requireEditPermission,
+  enforcePresenceLimit,
+  requireProjectVersion,
+  async (req, res) => {
+    try {
+      const userId = req.params.user;
+      const projectId = req.params.project;
 
-    const ok = await Project.deleteIfVersion(req.params.user, req.params.project, req.expectedVersion);
-    if (!ok) {
-      const fresh = await Project.getOne(req.params.user, req.params.project);
-      return res.status(409).jsonp({ message: "Project version conflict", serverVersion: fresh?.version ?? null });
+      const project = await Project.getOne(userId, projectId);
+
+      if (!project) {
+        return res.status(404).jsonp("Project not found");
+      }
+
+      const isVideo = project.media_type === "video";
+
+      if (isVideo) {
+        const callerId = getCallerId(req);
+
+        if (
+          !callerId ||
+          String(callerId) !== String(project.user_id)
+        ) {
+          return res.status(403).jsonp({
+            error: "Apenas o proprietário pode eliminar o projeto de vídeo.",
+          });
+        }
+
+        const {
+          prepareVideoProjectDeletion,
+        } = require("../utils/videoProjectDeletion");
+
+        // Guardar a tarefa antes de eliminar o projeto.
+        await prepareVideoProjectDeletion(userId, projectId);
+      }
+
+      const ok = await Project.deleteIfVersion(
+        userId,
+        projectId,
+        req.expectedVersion,
+      );
+
+      if (!ok) {
+        const fresh = await Project.getOne(userId, projectId);
+
+        return res.status(409).jsonp({
+          message: "Project version conflict",
+          serverVersion: fresh?.version ?? null,
+        });
+      }
+
+      if (isVideo) {
+        const {
+          processVideoProjectDeletions,
+        } = require("../utils/videoProjectDeletion");
+
+        void processVideoProjectDeletions();
+      }
+
+      return res.sendStatus(204);
+    } catch (error) {
+      console.error("Error deleting project:", error);
+
+      return res.status(503).jsonp({
+        error: "Não foi possível eliminar o projeto.",
+      });
     }
-    return res.sendStatus(204);
-  }
+  },
 );
 
 

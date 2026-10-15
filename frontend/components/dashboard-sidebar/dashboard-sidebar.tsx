@@ -8,7 +8,7 @@ import {
   SidebarGroup,
   SidebarHeader,
 } from "../ui/sidebar";
-import { Plus, Sparkles, Video } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import NavUser from "./nav-user-sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "../ui/button";
@@ -47,20 +47,6 @@ export default function DashboardSidebar() {
             </Button>
           </NewProjectDialog>
 
-          {!isAnonymous && (
-            <Button
-              asChild
-              className="inline-flex"
-              variant={
-                path.startsWith("/dashboard/videos") ? "default" : "outline"
-              }
-            >
-              <Link href="/dashboard/videos">
-                <Video /> Vídeos
-              </Link>
-            </Button>
-          )}
-
           {(isFreePlan || isAnonymous) && (
             <Button
               className="inline-flex"
@@ -96,6 +82,7 @@ export default function DashboardSidebar() {
             <Button variant="outline" asChild className="flex-1">
               <Link href="/login">Sign in</Link>
             </Button>
+
             <Button asChild className="flex-1">
               <Link href="/register">Sign up</Link>
             </Button>

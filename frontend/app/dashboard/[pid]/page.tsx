@@ -45,8 +45,9 @@ import { useUpdateSession } from "@/lib/mutations/session";
 import { getErrorMessage } from "@/lib/error-messages";
 import { PresetsDialog } from "@/components/presets/presets-dialog";
 import { AiAssistantDialog } from "@/components/assistant/ai-assistant-dialog";
+import VideoProjectEditor from "@/components/project-page/video-project-editor";
 
-export default function Project({
+function ImageProject({
   params,
 }: {
   params: Promise<{ pid: string }>;
@@ -867,4 +868,65 @@ const handleCancel = () => {
       </Transition>
     </ProjectProvider>
   );
+}
+
+export default function Project({
+  params,
+}: {
+  params: Promise<{ pid: string }>;
+}) {
+  const { pid } = use(params);
+  const session = useSession();
+  const searchParams = useSearchParams();
+
+  const ownerId = searchParams.get("owner") ?? session.user._id;
+  const shareId = searchParams.get("share") ?? undefined;
+
+  const project = useGetProject(
+    session.user._id,
+    pid,
+    session.token,
+    ownerId,
+    shareId,
+  );
+
+  if (project.isPending) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  // O editor existente mantém o tratamento dos erros e das partilhas.
+  if (project.isError || !project.data) {
+    return <ImageProject params={params} />;
+  }
+
+  if (project.data.media_type === "video") {
+    if (
+      shareId ||
+      String(project.data.user_id) !== String(session.user._id)
+    ) {
+      return (
+        <div className="p-8">
+          <h1 className="text-xl font-semibold">
+            Acesso indisponível
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Os projetos de vídeo só podem ser abertos pelo proprietário.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <VideoProjectEditor
+        projectId={project.data._id}
+        projectName={project.data.name}
+      />
+    );
+  }
+
+  return <ImageProject params={params} />;
 }
