@@ -10,7 +10,7 @@ import {
 } from "../ui/sidebar";
 import { Plus, Sparkles } from "lucide-react";
 import NavUser from "./nav-user-sidebar";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Button } from "../ui/button";
 import NewProjectDialog from "./new-project-dialog";
 import ProjectList from "./project-list";
@@ -19,7 +19,6 @@ import OperationsCounter from "../operations-counter";
 
 export default function DashboardSidebar() {
   const path = usePathname();
-  const router = useRouter();
   const session = useSession();
   const isFreePlan = session.user.type === "free";
   const isAnonymous = session.user.type === "anonymous";
@@ -48,19 +47,19 @@ export default function DashboardSidebar() {
           </NewProjectDialog>
 
           {(isFreePlan || isAnonymous) && (
-            <Button
-              className="inline-flex"
-              variant="outline"
-              onClick={() =>
-                router.push(
-                  isFreePlan ? "/dashboard/account/upgrade" : "/register",
-                )
-              }
-            >
-              <Sparkles className="text-indigo-500" />
-              {isFreePlan ? "Upgrade to Premium" : "Unlock Features"}
-            </Button>
-          )}
+  <Button
+    asChild
+    className="inline-flex"
+    variant="outline"
+  >
+    <Link
+      href={isFreePlan ? "/dashboard/account/upgrade" : "/register"}
+    >
+      <Sparkles className="text-indigo-500" />
+      {isFreePlan ? "Upgrade to Premium" : "Unlock Features"}
+    </Link>
+  </Button>
+)}
         </SidebarGroup>
 
         <ProjectList />
