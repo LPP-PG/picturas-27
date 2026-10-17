@@ -7,7 +7,7 @@
 
 | **Campo** | **Valor** |
 | :-- | :-- |
-| **Grupo / Equipa** | (preencher) |
+| **Grupo / Equipa** | Grupo 5 PL1 |
 | **Autores** | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
 | **Data** | 2026-10-09 |
 | **Versão do documento** | v3.0 |
