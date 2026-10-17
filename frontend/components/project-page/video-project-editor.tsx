@@ -2,12 +2,18 @@
 
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   cancelVideoTrim,
+  deleteProjectVideo,
   fetchProjectVideos,
   fetchVideoTrim,
   startVideoTrim,
+  type ProjectVideo,
   type VideoTrimJob,
 } from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
@@ -15,13 +21,20 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ToastAction } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
+import NewProjectDialog from "@/components/dashboard-sidebar/new-project-dialog";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/axios";
+import { deleteProject, type Project } from "@/lib/projects";
 
 interface VideoProjectEditorProps {
   projectId: string;
   projectName: string;
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(
+  error: unknown,
+  fallback = "Could not load the project videos.",
+): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
 
@@ -29,7 +42,7 @@ function errorMessage(error: unknown): string {
     if (typeof data === "string") return data;
   }
 
-  return "Could not load the project videos.";
+  return error instanceof Error ? error.message : fallback;
 }
 
 function trimStateLabel(state: VideoTrimJob["state"]): string {
@@ -47,6 +60,8 @@ export default function VideoProjectEditor({
   projectName,
 }: VideoProjectEditorProps) {
   const session = useSession();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playbackFailed, setPlaybackFailed] = useState(false);
@@ -80,6 +95,96 @@ export default function VideoProjectEditor({
   const items = videos.data ?? [];
   const selected =
     items.find((video) => video._id === selectedId) ?? items[0];
+  const queryKey = [
+    "projectVideos",
+    session.user._id,
+    projectId,
+    session.token,
+  ];
+  const deletion = useMutation({
+    mutationFn: async (video: ProjectVideo) => {
+      const response = await api.get<Project[]>(
+        `/projects/${encodeURIComponent(session.user._id)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+          },
+        },
+      );
+      const project = response.data.find((item) => item._id === projectId);
+
+      if (!project) {
+        throw new Error("The project no longer exists.");
+      }
+
+      const videoIds = project.video_ids ?? [];
+      if (!videoIds.includes(video._id)) {
+        throw new Error(
+          "This video is no longer in the project. Refresh and try again.",
+        );
+      }
+
+      const deleteWholeProject = videoIds.length === 1;
+      const confirmed = window.confirm(
+        deleteWholeProject
+          ? `Delete "${video.name}" and this project?\n\n` +
+              "This is the last video in the project. The video, its thumbnail and the project will be permanently deleted."
+          : `Delete "${video.name}"?\n\n` +
+              "The video and its thumbnail will be permanently deleted.",
+      );
+
+      if (!confirmed) return "cancelled" as const;
+
+      if (deleteWholeProject) {
+        await deleteProject({
+          uid: session.user._id,
+          pid: projectId,
+          token: session.token,
+          projectVersion: project.version,
+        });
+        return "project" as const;
+      }
+
+      await deleteProjectVideo({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId: video._id,
+      });
+      return "video" as const;
+    },
+    onSuccess: async (result, deletedVideo) => {
+      if (result === "cancelled") return;
+
+      await queryClient.cancelQueries({ queryKey });
+      if (result === "project") {
+        queryClient.removeQueries({ queryKey });
+        router.replace("/dashboard");
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+        return;
+      }
+
+      queryClient.setQueryData<ProjectVideo[]>(
+        queryKey,
+        (current) =>
+          current?.filter((video) => video._id !== deletedVideo._id),
+      );
+      const index = items.findIndex(
+        (video) => video._id === deletedVideo._id,
+      );
+      const remaining = items.filter(
+        (video) => video._id !== deletedVideo._id,
+      );
+      setSelectedId(remaining[index]?._id ?? remaining[0]?._id ?? null);
+      await queryClient.invalidateQueries();
+    },
+  });
+
+  function confirmDeletion() {
+    if (!selected || deletion.isPending) return;
+    deletion.mutate(selected);
+  }
+
   const refetchVideos = videos.refetch;
   const startValue = Number(trimStart);
   const endValue = Number(trimEnd);
@@ -263,9 +368,25 @@ export default function VideoProjectEditor({
             Video project
           </p>
         </div>
+        <div className="ml-auto">
+          <NewProjectDialog
+            key={projectId}
+            existingProject={{ id: projectId, name: projectName }}
+          >
+            <Button disabled={deletion.isPending}>Add videos</Button>
+          </NewProjectDialog>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        {deletion.isError && (
+          <p role="alert" className="mb-4 text-sm text-red-500">
+            {errorMessage(
+              deletion.error,
+              "Could not delete the video. Please try again.",
+            )}
+          </p>
+        )}
         {videos.isPending ? (
           <p role="status">Loading videos…</p>
         ) : videos.isError ? (
@@ -301,18 +422,29 @@ export default function VideoProjectEditor({
                 Your browser does not support video playback.
               </video>
 
-              <div className="space-y-2 p-4">
-                <h2 className="break-all font-semibold">
-                  {selected.name}
-                </h2>
-
-                <p className="text-sm text-muted-foreground">
-                  {selected.format.toUpperCase()}
-                  {" · "}
-                  {selected.duration_seconds.toFixed(1)} s
-                  {" · "}
-                  {(selected.size_bytes / 1_000_000).toFixed(2)} MB
-                </p>
+              <div className="space-y-3 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="break-all font-semibold">
+                      {selected.name}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {selected.format.toUpperCase()}
+                      {" · "}
+                      {selected.duration_seconds.toFixed(1)} s
+                      {" · "}
+                      {(selected.size_bytes / 1_000_000).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={deletion.isPending}
+                    onClick={confirmDeletion}
+                  >
+                    {deletion.isPending ? "Deleting…" : "Delete video"}
+                  </Button>
+                </div>
 
                 {(!selected.video_url || playbackFailed) && (
                   <div role="alert" className="space-y-2">
@@ -324,7 +456,7 @@ export default function VideoProjectEditor({
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={videos.isFetching}
+                      disabled={videos.isFetching || deletion.isPending}
                       onClick={() => void videos.refetch()}
                     >
                       Refresh video
@@ -376,7 +508,7 @@ export default function VideoProjectEditor({
     </Button>
   </div>
 
-  {trimOpen && (
+    {trimOpen && (
     <form
       className="mt-4 space-y-3 border-t pt-4"
       onSubmit={(event) => {
@@ -456,9 +588,13 @@ export default function VideoProjectEditor({
                   <button
                     key={video._id}
                     type="button"
+                    disabled={deletion.isPending}
                     aria-pressed={selected._id === video._id}
-                    onClick={() => setSelectedId(video._id)}
-                    className={`overflow-hidden rounded-lg border text-left ${
+                    onClick={() => {
+                      setSelectedId(video._id);
+                      deletion.reset();
+                    }}
+                    className={`overflow-hidden rounded-lg border text-left disabled:opacity-60 ${
                       selected._id === video._id
                         ? "border-primary ring-2 ring-primary"
                         : "border-border"
@@ -469,7 +605,7 @@ export default function VideoProjectEditor({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={video.thumbnail_url}
-                          alt={`Miniatura de ${video.name}`}
+                          alt={`Thumbnail for ${video.name}`}
                           loading="lazy"
                           className="h-full w-full object-contain"
                         />

@@ -221,4 +221,10 @@ router.post(
   },
 );
 
+controlRoute(
+  "delete",
+  "/:user/:project/items/:video",
+  (req) => `/items/${encodeURIComponent(req.params.video)}`,
+);
+
 module.exports = router;

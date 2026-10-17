@@ -230,9 +230,8 @@ export async function uploadProjectVideo({
   onProgress,
 }: UploadProjectVideoRequest): Promise<UploadProjectVideoResponse> {
   if (!uploadId) {
-    throw new Error("O ficheiro ainda não tem uma reserva de espaço.");
+    throw new Error("This file does not have a storage reservation yet.");
   }
-
   const form = new FormData();
   form.append("video", file);
 
@@ -256,6 +255,26 @@ export async function uploadProjectVideo({
           );
         }
       },
+    },
+  );
+
+  return response.data;
+}
+
+export async function deleteProjectVideo({
+  uid,
+  pid,
+  token,
+  videoId,
+}: ProjectVideoRequest & { videoId: string }): Promise<{
+  message: string;
+  video_id: string;
+  project_version: number;
+}> {
+  const response = await api.delete(
+    `${projectVideosUrl(uid, pid)}/items/${encodeURIComponent(videoId)}`,
+    {
+      headers: authHeaders(token),
     },
   );
 

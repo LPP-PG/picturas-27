@@ -774,9 +774,11 @@ router.get("/:user", (req, res, next) => {
 
         // Um projeto de vídeo só aparece após a associação
         // do primeiro vídeo concluído.
-        if (mediaType === "video" && videoIds.length === 0) {
-          continue;
-        }
+       if (
+  mediaType === "video" &&
+  videoIds.length === 0 &&
+  !project.keep_empty_video_project
+) continue;
 
         ans.push({
           _id: project._id,

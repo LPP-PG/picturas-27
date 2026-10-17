@@ -21,6 +21,11 @@ const videoSchema = new mongoose.Schema(
       trim: true,
     },
 
+    content_sha256: {
+      type: String,
+      match: /^[a-f0-9]{64}$/,
+    },
+
     storage_key: {
       type: String,
       required: true,
@@ -72,5 +77,21 @@ const videoSchema = new mongoose.Schema(
 );
 
 videoSchema.index({ user_id: 1, project_id: 1 });
+
+videoSchema.index(
+  {
+    user_id: 1,
+    project_id: 1,
+    content_sha256: 1,
+  },
+  {
+    unique: true,
+    name: "unique_video_content_per_project",
+    partialFilterExpression: {
+      project_id: { $type: "objectId" },
+      content_sha256: { $type: "string" },
+    },
+  },
+);
 
 module.exports = mongoose.model("Video", videoSchema);
