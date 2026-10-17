@@ -33,12 +33,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handler = () => {
-      session.refetch();
+      const stored = localStorage.getItem("session");
+      if (stored) {
+        const parsed = JSON.parse(stored) as SessionData;
+        updateSession.mutate({
+          userId: parsed.user._id,
+          token: parsed.token,
+        });
+      } else {
+        void session.refetch();
+      }
     };
 
     window.addEventListener("session-updated", handler);
     return () => window.removeEventListener("session-updated", handler);
-  }, [session]);
+  }, [session, updateSession]);
 
   if (!session.data)
     return (

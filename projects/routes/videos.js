@@ -59,6 +59,12 @@ router.get("/:user/capacity", videoAuth, async (req, res) => {
 });
 
 router.use(
+  "/:user/:project/trim",
+  videoAuth,
+  videoProjectAuth,
+  require("./videoTrim"),
+);
+router.use(
   "/:user/:project",
   videoAuth,
   videoProjectAuth,
