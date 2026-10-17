@@ -1,29 +1,28 @@
-# Exercício 1 - Entrega
-
-### Casos de Uso · Fase 1: Suporte a Vídeo no PictuRAS
+# Exercícios 1 e 2 — Aplicação de filtros a vídeo
+### Casos de Uso e Especificação de Requisitos · Fase 1: Suporte a Vídeo no PictuRAS
 
 ## 0. Identificação
 
-| **Campo**               | **Valor**                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------ |
-| **Grupo / Equipa**      |                                                                                                  |
-| **Autores**             | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
-| **Data**                | 2026-10-07                                                                                       |
-| **Versão do documento** | v1.0                                                                                             |
-| **Unidade Curricular**  | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho                                |
+| **Campo** | **Valor** |
+| :-- | :-- |
+| **Grupo / Equipa** | Grupo 5 PL1 |
+| **Autores** | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
+| **Data** | 2026-10-17 |
+| **Versão do documento** | v2.0 |
+| **Unidade Curricular** | Requisitos e Arquiteturas de Software — MEI, Universidade do Minho |
 
 ---
 
 ## 1. Funcionalidade de vídeo escolhida
 
-|**Campo**|**Valor**|
-|---|---|
-|**Funcionalidade**|Aplicação de filtros a vídeo|
-|**Perfil(s) de utilizador abrangido(s)**|A equipa optou por deixar o perfil Anónimo de fora (ver Q7): o PictuRAS só lhe permite operações básicas sobre imagens pequenas e o processamento de vídeo exige uma conta com limites controlados. O perfil Registado pode aplicar filtros dentro da sua quota de 5 operações por dia. O perfil Premium utiliza a mesma funcionalidade sem limite diário de operações e com limites superiores de duração e tamanho do vídeo.|
+| **Campo** | **Valor** |
+| :-- | :-- |
+| **Funcionalidade** | Aplicação de filtros visuais a um vídeo selecionado num projeto de vídeo |
+| **Perfil(s) de utilizador abrangido(s)** | Registado e Premium. O Registado está sujeito à quota partilhada de cinco operações por dia; o Premium não tem esse limite diário. O Anónimo não cria projetos de vídeo, de acordo com UC-VID-004 (RN2). |
 
 **Justificação no contexto do MVP**
 
-A aplicação de filtros permite ao utilizador alterar de forma simples o aspeto visual de um vídeo. Esta funcionalidade permite também validar o processamento de todos os fotogramas de um vídeo, o acompanhamento de operações demoradas e a criação de um novo resultado sem alterar o ficheiro original.
+A aplicação de filtros permite transformar o aspeto de um vídeo diretamente no editor do projeto. Reutiliza a criação, o carregamento, a seleção e a visualização do UC-VID-004; valida o processamento dos fotogramas, o acompanhamento de tarefas demoradas e a criação de um novo resultado no mesmo projeto sem modificar o original. Para além dos três filtros iniciais, prevê-se um pequeno catálogo adicional de efeitos simples, com prioridade inferior no MVP.
 
 ---
 
@@ -31,237 +30,278 @@ A aplicação de filtros permite ao utilizador alterar de forma simples o aspeto
 
 ### 2.1 Cabeçalho
 
-|**Secção**|**Detalhes**|
-|---|---|
-|**ID do Caso de Uso**|UC-VID-002|
-|**Nome**|Aplicar um filtro a um vídeo|
-|**Versão**|v1.0|
-|**Autor**|Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto|
-|**Data**|2026-10-07|
-|**Objetivo**|Permitir ao utilizador aplicar um filtro visual a um vídeo existente na sua biblioteca e obter um novo vídeo com o efeito selecionado.|
-|**Âmbito**|Módulo de vídeo do PictuRAS: seleção e pré-visualização do filtro, processamento do vídeo em segundo plano, armazenamento do resultado e controlo da quota de operações.|
-|**Ator Principal**|Utilizador Registado. O Utilizador Premium utiliza o mesmo fluxo, com limites diferentes.|
-|**Stakeholders e Interesses**|**Utilizador:** quer alterar o aspeto visual do vídeo, visualizar o efeito antes de confirmar e manter o vídeo original inalterado.  <br>**Dono do sistema:** quer disponibilizar funcionalidades de edição de vídeo controlando a utilização dos recursos de processamento.  <br>**Equipa de desenvolvimento:** quer garantir que o filtro é aplicado de forma consistente e que o processamento não bloqueia o resto da aplicação.|
-|**Pré-condições**|O utilizador tem sessão iniciada como Registado ou Premium.  <br>O vídeo já se encontra na biblioteca e o carregamento terminou.|
-|**Trigger**|O utilizador seleciona um vídeo da biblioteca e escolhe a opção **Aplicar filtro**.|
+| **Secção** | **Detalhes** |
+| :-- | :-- |
+| **ID do Caso de Uso** | UC-VID-002 |
+| **Nome** | Aplicar um filtro a um vídeo de um projeto |
+| **Versão** | v2.0 |
+| **Autor** | Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto |
+| **Data** | 2026-10-17 |
+| **Objetivo** | Obter, no mesmo projeto, um novo vídeo com um filtro visual aplicado a todos os fotogramas, sem modificar o original. |
+| **Âmbito** | Ferramenta Filtros do editor de projetos de vídeo: seleção do efeito, pré-visualização, confirmação, processamento em segundo plano, reserva de armazenamento, criação do resultado e quota de operações. O carregamento, a listagem e o leitor dos vídeos são responsabilidade do UC-VID-004. |
+| **Ator Principal** | Utilizador Registado. O Premium segue o mesmo fluxo com os limites do seu perfil. |
+| **Stakeholders e Interesses** | **Utilizador:** quer ver o efeito antes de confirmar, acompanhar o pedido e conservar o original.<br>**Dono do sistema:** quer controlar quota e recursos de processamento/armazenamento.<br>**Equipa de desenvolvimento:** quer integrar uma ferramenta de vídeo no editor sem interromper as outras funcionalidades. |
+| **Pré-condições** | Existe sessão iniciada de uma conta Registada ou Premium. Existe um projeto de vídeo do utilizador e um vídeo selecionado que já foi recebido, validado, guardado com miniatura e associado ao projeto (UC-VID-004, RN9). |
+| **Trigger** | O utilizador seleciona um vídeo do projeto pela miniatura e escolhe **Filtros** na área **Video tools**. |
 
 ### 2.2 Fluxo Principal
 
-|**Passo**|**Ação do Ator**|**Resposta do Sistema**|
-|---|---|---|
-|1|O utilizador abre a biblioteca de vídeos|Apresenta a lista de vídeos do utilizador, com nome, duração e tamanho|
-|2|O utilizador seleciona um vídeo e escolhe **Aplicar filtro**|Verifica o formato, a duração e o tamanho do vídeo face aos limites do perfil e verifica a quota diária restante|
-|3||Apresenta os filtros disponíveis e uma área de pré-visualização|
-|4|O utilizador seleciona um filtro|Apresenta uma pré-visualização do efeito selecionado sobre o vídeo|
-|5|O utilizador confirma a aplicação do filtro|Verifica novamente os limites do perfil, a quota disponível e o número máximo de processamentos simultâneos|
-|6||Cria o pedido de processamento e apresenta o estado **Em fila**|
-|7||Inicia o processamento, passa o estado para **A processar** e apresenta o progresso em percentagem|
-|8|O utilizador acompanha o progresso e pode continuar a utilizar outros ecrãs do PictuRAS|Atualiza periodicamente o progresso|
-|9||Conclui o processamento e guarda o novo vídeo na biblioteca|
-|10||Passa o pedido para **Concluído**, contabiliza 1 operação na quota diária quando aplicável e notifica o utilizador|
-|11|O utilizador abre o vídeo resultante|Apresenta o novo vídeo com o filtro aplicado. O vídeo original mantém-se inalterado|
+| **Passo** | **Ação do Ator** | **Resposta do Sistema** |
+| :-- | :-- | :-- |
+| 1 | No projeto de vídeo, seleciona uma miniatura e escolhe **Filtros**. | Verifica a disponibilidade da operação e a quota de edição; utiliza o vídeo já selecionado no projeto (UC-VID-004, RN14). |
+| 2 | — | Apresenta os filtros essenciais **Preto e branco**, **Sépia** e **Vintage** e uma área de pré-visualização. Os efeitos adicionais **Inversão de cores**, **Contraste elevado** e **Desfoque suave** são disponibilizados quando suportados na implementação (RN11). |
+| 3 | Seleciona um filtro. | Mostra num fotograma de amostra do vídeo o efeito selecionado, sem alterar o ficheiro nem criar um pedido de processamento; informa que se trata de uma pré-visualização (RN15). |
+| 4 | Confirma em **Aplicar filtro**. | Revalida quota, propriedade do vídeo, disponibilidade do serviço, limite global de pedidos de processamento e espaço disponível no projeto e na conta; reserva espaço estimado para o resultado. |
+| 5 | — | Cria o pedido no estado **A aguardar**. |
+| 6 | — | Inicia o processamento, altera o estado para **A processar** e mostra progresso em percentagem. |
+| 7 | Acompanha o pedido e pode utilizar outras páginas ou projetos. | Mantém o processamento em segundo plano e atualiza o progresso e o estado. |
+| 8 | — | Aplica o filtro a todos os fotogramas; preserva e mantém sincronizada a faixa de áudio principal, **quando existe**. Em vídeos sem áudio, gera normalmente um resultado sem áudio. Gera a miniatura, guarda o novo vídeo no **mesmo projeto** e converte a reserva em espaço ocupado. |
+| 9 | — | Altera o pedido para **Concluído**, contabiliza uma operação na quota diária quando aplicável e notifica o utilizador na aplicação. |
+| 10 | Seleciona a miniatura do resultado. | Apresenta o vídeo filtrado no leitor do projeto; o original permanece inalterado. |
 
 ### 2.3 Fluxos Alternativos
 
-|**Fluxo**|**Descrição**|
-|---|---|
-|**FA1 – Alterar o filtro selecionado**|No passo 4, o utilizador seleciona outro filtro antes de confirmar. O sistema atualiza a pré-visualização com o novo filtro e mantém o pedido por iniciar|
-|**FA2 – Cancelar o processamento**|Enquanto o pedido está **Em fila** ou **A processar**, o utilizador seleciona **Cancelar**. O sistema interrompe o processamento, elimina qualquer resultado parcial, passa o pedido para **Cancelado** e não contabiliza a operação|
-|**FA3 – Utilizador abandona o ecrã**|Depois de iniciar o pedido, o utilizador navega para outro ecrã ou fecha o separador. O processamento continua em segundo plano enquanto a sessão se mantiver ativa e o estado continua disponível quando o utilizador regressar|
-|**FA4 – Limite de processamentos simultâneos**|No passo 5, o utilizador já atingiu o número máximo de processamentos simultâneos permitido pelo seu perfil. O sistema não cria o novo pedido, informa o utilizador e permite consultar os pedidos em curso|
-|**FA5 – Utilizador termina a sessão**|O utilizador termina a sessão enquanto o pedido está **Em fila** ou **A processar**. O sistema cancela o pedido, interrompe o processamento, elimina qualquer resultado parcial e não contabiliza a operação|
-|**FA6 – Sair sem confirmar**|Nos passos 3 a 4, o utilizador fecha o ecrã de aplicação de filtros sem confirmar. O sistema não cria qualquer pedido e a quota não é afetada|
+| **Fluxo** | **Descrição** |
+| :-- | :-- |
+| FA1 – Alterar o filtro | Antes de confirmar (passo 3), o utilizador escolhe outro filtro; a pré-visualização é atualizada e nenhum pedido é criado até à confirmação. |
+| FA2 – Cancelar o processamento | Com o pedido **A aguardar** ou **A processar**, o utilizador seleciona **Cancelar**. O sistema interrompe o trabalho, quando iniciado, passa para **Cancelado**, elimina resultados parciais, liberta a reserva e não cobra a operação. |
+| FA3 – Abandonar o ecrã | Após criar o pedido, o utilizador muda de página/projeto ou fecha o separador. O processamento continua; ao regressar, o utilizador consulta o estado. Este comportamento é diferente do upload, que pode ser interrompido ao abandonar o ecrã (UC-VID-004, FA4). |
+| FA4 – Limite global de processamento | Na confirmação (passo 4), já está atingido o limite de pedidos de processamento de vídeo da conta, contando Recorte, Filtros e Legendas. O pedido não é criado; o sistema informa o utilizador e permite consultar os pedidos em curso. |
+| FA5 – Terminar sessão | Se o utilizador fizer logout explícito com pedidos ativos, o sistema cancela-os, elimina os dados parciais, liberta reservas e não contabiliza operações. |
+| FA6 – Sair antes de confirmar | Antes do passo 4, o utilizador fecha o painel de filtros; não é criado pedido nem reservada quota ou armazenamento. |
+| FA7 – Vídeo sem faixa de áudio | No passo 8, o vídeo selecionado não tem faixa de áudio; o sistema aplica o filtro visual normalmente e grava o resultado também sem áudio, sem considerar esta condição uma falha. |
 
 ### 2.4 Exceções
 
-|**Condição**|**Comportamento do Sistema**|
-|---|---|
-|O formato do vídeo não é suportado para aplicação de filtros (passo 2)|Apresenta **"Este formato de vídeo não é suportado para aplicação de filtros"**, indica os formatos aceites e não abre o ecrã de aplicação de filtros|
-|A duração ou o tamanho do vídeo excedem o limite do perfil (passo 2)|Apresenta os limites do perfil atual e, no caso do utilizador Registado, informa que o perfil Premium permite limites superiores; não abre o ecrã de aplicação de filtros|
-|A quota diária de operações está esgotada (passos 2 e 5)|Apresenta **"Atingiu o limite diário de operações"**, indica quando a quota é reposta e não cria o pedido|
-|Não é possível gerar a pré-visualização do filtro (passo 4)|Apresenta **"Não foi possível pré-visualizar o filtro"**, permite tentar novamente ou escolher outro filtro e não cria o pedido|
-|O processamento falha a meio (passos 7 e 8)|Passa o estado para **Falhou**, elimina qualquer resultado parcial, apresenta uma mensagem de erro, não contabiliza a operação e mantém o vídeo original inalterado|
-|O serviço de processamento está indisponível ou a fila está cheia (passo 6)|Apresenta uma mensagem indicando que o serviço está temporariamente indisponível, não cria o pedido e não contabiliza a operação|
-|Não existe espaço de armazenamento suficiente para guardar o resultado (passo 9)|Passa o estado para **Falhou**, elimina qualquer resultado parcial, informa o utilizador e não contabiliza a operação|
+| **Condição** | **Comportamento do Sistema** |
+| :-- | :-- |
+| E1 – Quota diária esgotada (passos 1 ou 4) | Apresenta «Atingiu o limite diário de operações», indica a reposição e não cria pedido. |
+| E2 – Pré-visualização indisponível (passo 3) | Apresenta «Não foi possível pré-visualizar o filtro» e permite repetir ou escolher outro filtro. Não cria um pedido nem consome quota só por falhar a pré-visualização; o processamento continua dependente de confirmação explícita. |
+| E3 – Espaço insuficiente no projeto ou na conta (passo 4) | Apresenta «Espaço de armazenamento insuficiente» e indica qual o limite atingido; não reserva espaço nem cria pedido. |
+| E4 – Erro a meio do processamento (passos 6–8) | Passa a **Falhou**, descarta resultados parciais, liberta a reserva, informa a falha, não contabiliza a operação e mantém o original intacto. |
+| E5 – Serviço indisponível ou fila cheia (passo 4) | Informa que o serviço está temporariamente indisponível; não cria pedido nem reserva espaço. |
+| E6 – O resultado excede a reserva e não cabe no espaço livre (passo 8) | Passa a **Falhou**, elimina o resultado incompleto, liberta a reserva, informa o limite atingido e não contabiliza a operação. |
+| E7 – Vídeo indisponível, projeto inexistente ou acesso não autorizado | Não permite aplicar filtros a ficheiros ainda em carregamento nem a vídeos/projetos de outro utilizador; informa a indisponibilidade ou recusa o acesso. O carregamento e respetivos limites continuam sujeitos ao UC-VID-004. |
 
 ### 2.5 Pós-condições
 
-|**Tipo**|**Resultado**|
-|---|---|
-|**Garantia de Sucesso**|Existe na biblioteca um novo vídeo com o filtro selecionado aplicado; o vídeo original mantém-se inalterado; o pedido encontra-se no estado **Concluído** e foi contabilizada 1 operação na quota diária, quando aplicável|
-|**Garantia Mínima**|O vídeo original mantém-se inalterado; não existe qualquer resultado parcial na biblioteca; o pedido fica no estado **Falhou** ou **Cancelado**, ou não chega a ser criado; a quota diária não é consumida; o utilizador vê uma mensagem com a causa|
+| **Tipo** | **Resultado** |
+| :-- | :-- |
+| Garantia de Sucesso | O mesmo projeto contém um **novo vídeo** com o filtro escolhido aplicado e miniatura gerada; o áudio principal é preservado e sincronizado **se existir**. O original está intacto; o pedido está **Concluído**, o espaço efetivo é contabilizado no projeto/conta e é cobrada uma operação quando aplicável. |
+| Garantia Mínima | O original e os vídeos anteriormente concluídos permanecem inalterados; não há resultado parcial acessível no projeto. Se o pedido falhou ou foi cancelado, reservas são libertadas e a quota não é consumida; é apresentada a causa quando aplicável. |
 
 ### 2.6 Regras de Negócio e Restrições
 
-|**ID**|**Regra**|
-|---|---|
-|**RN1**|Os formatos de vídeo aceites para aplicação de filtros são MP4 e MOV|
-|**RN2**|O perfil Registado pode processar vídeos com duração ≤ 60 s e tamanho ≤ 100 MB; o Premium, vídeos com duração ≤ 10 min e tamanho ≤ 1 GB. O perfil Anónimo não tem acesso às funcionalidades de vídeo|
-|**RN3**|A aplicação de um filtro conta como 1 operação na quota diária. A operação só é contabilizada quando o pedido termina em **Concluído**|
-|**RN4**|A aplicação do filtro nunca altera o vídeo original. O resultado é guardado como um novo vídeo na biblioteca, com o nome `<nome original>_<nome do filtro>` (se esse nome já existir, acrescenta-se um sufixo numérico)|
-|**RN5**|O filtro selecionado é aplicado a todos os fotogramas do vídeo|
-|**RN6**|O pedido pode assumir os estados **Em fila**, **A processar**, **Concluído**, **Falhou** e **Cancelado**|
-|**RN7**|Apenas pedidos nos estados **Em fila** ou **A processar** podem ser cancelados|
-|**RN8**|O perfil Registado pode ter no máximo 1 processamento de vídeo em fila ou a processar; o Premium pode ter no máximo 3|
-|**RN9**|Um vídeo ainda em carregamento não pode ser processado|
-|**RN10**|O vídeo original e o vídeo resultante apenas podem ser acedidos pelo respetivo proprietário e estão sujeitos às regras de privacidade e armazenamento do PictuRAS|
-|**RN11**|No MVP estão disponíveis os filtros Preto e branco, Sépia e Vintage, cada um sem parâmetros configuráveis|
+| **ID** | **Regra** |
+| :-- | :-- |
+| RN1 | Os vídeos de entrada pertencem a projetos de vídeo e cumprem os formatos MP4/MOV e limites de duração/tamanho verificados no upload (UC-VID-004, RN3 e RN4). Filtros não constitui um novo carregamento. |
+| RN2 | Só os perfis Registado e Premium podem usar a ferramenta, em projetos próprios (UC-VID-004, RN2). |
+| RN3 | Aplicar um filtro consome **1 operação** na quota diária partilhada com imagens, apenas se o pedido chegar a **Concluído**. Registado: 5/dia; Premium: sem limite diário. Para Registado, a disponibilidade dessa operação é reservada ao aceitar o pedido (sem consumo definitivo), libertada na falha/cancelamento e convertida em consumo na conclusão, para impedir ultrapassar o limite com pedidos concorrentes. A validação da quota nas operações de imagem e vídeo considera operações concluídas e reservas ativas da conta. Criar/carregar/visualizar vídeos e pré-visualizar filtros não consome operações (UC-VID-004, RN12). |
+| RN4 | O filtro não altera o original. O resultado é um **novo vídeo no mesmo projeto**, com nome derivado de `<nome original>_<nome do filtro>` e sufixo numérico se necessário. O resultado só fica disponível para edição após estar integralmente guardado, com miniatura e associado ao projeto (UC-VID-004, RN8–RN9). |
+| RN5 | Em cada pedido é aplicado **um único filtro a todos os fotogramas**. Apenas a componente visual é transformada. Se existir faixa de áudio principal, o conteúdo sonoro e a sincronização são mantidos; se não existir, o resultado mantém-se sem áudio e a operação é válida. |
+| RN6 | Estados dos pedidos: **A aguardar**, **A processar**, **Concluído**, **Falhou** e **Cancelado**. Só os dois primeiros estados admitem cancelamento. |
+| RN7 | O limite de processamentos ativos é global à conta e partilhado entre Recorte, Filtros e Legendas: Registado, **1**; Premium, **3**. É independente dos carregamentos simultâneos definidos em UC-VID-004, RN10. |
+| RN8 | A aplicação do filtro é assíncrona; apresenta estado e progresso e pode continuar enquanto o utilizador navega noutras páginas. O logout explícito cancela pedidos ativos (FA5). |
+| RN9 | Apenas vídeos já recebidos, validados, guardados com miniatura e associados ao projeto podem ser editados (UC-VID-004, RN9). |
+| RN10 | Apenas o proprietário pode consultar/cancelar pedidos e aceder aos originais/resultados. O projeto de vídeo, as miniaturas e os vídeos seguem as regras de acesso do UC-VID-004, RN2. |
+| RN11 | O catálogo contém três filtros **essenciais** («Deve ter»): **Preto e branco**, **Sépia** e **Vintage**, e três filtros **adicionais** («Deveria ter»): **Inversão de cores**, **Contraste elevado** e **Desfoque suave**. Cada filtro utiliza os parâmetros fixos de RN14, sem controlo de intensidade; a interface apresenta apenas os efeitos disponibilizados nesta versão da aplicação. Um pedido aplica um único filtro (RN5). |
+| RN12 | Originais e resultados contam para os limites de armazenamento do projeto e da conta do UC-VID-004 (RN5–RN7): Registado, 500 MB/projeto e 2 GB/conta; Premium, 10 GB/projeto e 50 GB/conta. Antes de aceitar o pedido reserva-se uma **estimativa** de espaço (A11); na conclusão, a reserva converte-se na ocupação real, e na falha ou cancelamento é libertada. Se o ficheiro ultrapassar a reserva, verifica-se novamente o espaço livre antes de concluir (E6). O tratamento do espaço das miniaturas segue UC-VID-004, Q1. |
+| RN13 | Enquanto houver um pedido de filtros **A aguardar** ou **A processar**, a eliminação do vídeo original ou do projeto que o contém é impedida, para evitar quebrar o processamento. |
+| RN14 | **Especificação dos presets:** operações sobre valores RGB normalizados no intervalo [0, 1], com corte final a esse intervalo quando necessário, conforme a tabela seguinte. A implementação pode usar diferentes ferramentas de processamento desde que reproduza um efeito visual equivalente. |
+| RN15 | A pré-visualização representa o filtro escolhido num **fotograma de amostra** do vídeo do projeto, sem criar um novo vídeo nem consumir uma operação da quota. Pode ter resolução reduzida; o resultado final usa o vídeo completo. Deve ser visualmente coerente com o efeito aplicado (A4), embora diferenças de compressão sejam admissíveis. |
+| RN16 | O resultado é disponibilizado em **MP4**, com vídeo **H.264** e, quando existe faixa de áudio principal, áudio **AAC**. Mantém a duração, a resolução e a taxa de fotogramas da entrada sempre que forem compatíveis com a codificação de saída; o vídeo resultante deve reproduzir-se nos navegadores de referência do projeto. |
+
+**Catálogo de filtros e presets (RN11 e RN14)**
+
+Para definir os efeitos sem depender já de um programa específico, considere os componentes de cor R, G e B no intervalo [0, 1], a luminância aproximada `Y = 0,2126 R + 0,7152 G + 0,0722 B` e a função `corte(x) = min(1, max(0, x))`. Nas operações numéricas os canais são tratados de forma independente, exceto quando é usada Y.
+
+| **Filtro** | **Transformação definida** | **Prioridade** |
+| :-- | :-- | :-- |
+| **Preto e branco** | Para cada fotograma: `R' = G' = B' = Y` (saturação nula). | Deve ter |
+| **Sépia** | Transformação cromática fixa: `R' = corte(0,393R + 0,769G + 0,189B)`; `G' = corte(0,349R + 0,686G + 0,168B)`; `B' = corte(0,272R + 0,534G + 0,131B)`. | Deve ter |
+| **Vintage** | *Preset* fixo: (1) reduzir saturação a **70%**, com `C1 = Y + 0,70(C − Y)`; (2) aplicar contraste **0,90** em torno de 0,5, com `C2 = 0,5 + 0,90(C1 − 0,5)`; (3) aquecer as cores com ganhos `R × 1,05`, `G × 1,00`, `B × 0,92`; (4) aplicar `corte` a cada canal. | Deve ter |
+| **Inversão de cores** | Para cada canal de cada fotograma: `C' = 1 − C`. | Deveria ter |
+| **Contraste elevado** | Para cada canal: `C' = corte(0,5 + 1,30(C − 0,5))` (contraste fixo de **1,30**). | Deveria ter |
+| **Desfoque suave** | Aplicar desfoque gaussiano com `σ = 1,5 píxeis` aos fotogramas na resolução de saída; não afeta o áudio. | Deveria ter |
+
+**Critério para testes dos efeitos:** devem ser usados vídeos com cores e contornos conhecidos, observando-se a transformação nos fotogramas do resultado. A codificação de vídeo pode introduzir diferenças de compressão; não se exige igualdade exata de cada píxel. Os filtros são transformações clássicas de imagem/vídeo e não exigem modelos de IA.
+
+**Pré-visualização (RN15):** o utilizador observa um fotograma de amostra com o efeito selecionado. Pode trocar de filtro e atualizar a amostra sem iniciar o pedido; a aplicação efetiva abrange todos os fotogramas. A pré-visualização não consome quota, não reserva espaço e não altera o vídeo original.
+
+**Reserva de espaço (RN12, A11):** antes de iniciar a operação, a reserva é calculada como `ceil(1,5 × tamanho do vídeo de entrada em bytes)` e descontada do espaço disponível no projeto e na conta. Na conclusão é substituída pelo tamanho real; se o resultado exceder a reserva, a diferença tem de caber no espaço disponível. Em caso contrário aplica-se E6. Na falha ou no cancelamento, a reserva é libertada.
 
 ### 2.7 Assunções
 
-|**ID**|**Assunção**|
-|---|---|
-|**A1**|O vídeo encontra-se integralmente armazenado e acessível ao serviço de processamento no momento do pedido|
-|**A2**|Cada pedido aplica um único filtro ao vídeo|
-|**A3**|A aplicação do filtro altera apenas a componente visual do vídeo e mantém o áudio original|
-|**A4**|A pré-visualização pode utilizar uma versão de menor resolução ou apenas parte do vídeo para reduzir o tempo necessário para apresentar o efeito|
-|**A5**|A resolução e a taxa de fotogramas originais são mantidas sempre que possível|
-|**A6**|A notificação de conclusão é apresentada apenas dentro da aplicação|
-|**A7**|O vídeo resultante é contabilizado no espaço de armazenamento do utilizador|
-|**A8**|Os filtros do catálogo (RN11) são implementados, sempre que possível, reutilizando as ferramentas de imagem já existentes no PictuRAS, aplicadas a cada fotograma|
-|**A9**|Os vídeos ficam numa biblioteca de vídeos do utilizador, nova e independente dos projetos do PictuRAS; no MVP, os vídeos não são adicionados a projetos de imagens|
-|**A10**|A quota diária de 5 operações do perfil Registado é partilhada entre as operações sobre imagens e as operações sobre vídeos|
+| **ID** | **Assunção** |
+| :-- | :-- |
+| A1 | O vídeo está acessível ao processamento e já terminou o carregamento, conforme UC-VID-004, RN9. |
+| A2 | Um pedido aplica um único filtro ao vídeo completo; não se combinam efeitos nem se escolhe um intervalo temporal nesta versão. |
+| A3 | Se o vídeo tiver faixa de áudio principal, esta mantém o conteúdo e a sincronização. Na ausência de áudio, o processamento de filtros prossegue normalmente sem gerar uma faixa sonora artificial (FA7). |
+| A4 | A pré-visualização usa um fotograma de amostra do vídeo selecionado, potencialmente com resolução reduzida. O efeito deve corresponder visualmente ao preset do resultado, tolerando diferenças de compressão; não garante igualdade de píxel a píxel. |
+| A5 | O resultado utiliza MP4/H.264 e AAC quando existir áudio, conforme RN16. Mantém-se a duração e, quando tecnicamente compatível, a resolução e a taxa de fotogramas originais; o contentor MOV de entrada não precisa de ser conservado. |
+| A6 | A notificação de conclusão é feita apenas na aplicação. |
+| A7 | O resultado conta para o armazenamento do projeto e da conta, de acordo com UC-VID-004, RN7. |
+| A8 | Pode usar-se uma ferramenta de processamento de vídeo existente, por exemplo FFmpeg, em vez de reutilizar diretamente ferramentas de imagem fotograma a fotograma; esta é uma **opção técnica**, não um requisito funcional. |
+| A9 | Os vídeos pertencem a projetos de vídeo. **Não existe biblioteca independente**; o resultado dos Filtros regressa ao projeto de origem (UC-VID-004, A6). |
+| A10 | A quota de cinco operações diárias do perfil Registado é partilhada entre operações de imagem e de vídeo. |
+| A11 | Para o MVP, a estimativa de reserva do resultado é `ceil(1,5 × tamanho do vídeo de entrada em bytes)`. Não representa o tamanho final garantido; quando este ultrapassa a reserva, o sistema verifica o espaço livre remanescente e aplica E6 se for insuficiente. |
+| A12 | O limite global de pedidos de processamento de vídeo é partilhado pelas ferramentas Recorte, Filtros e Legendas, independentemente dos carregamentos simultâneos. |
+| A13 | Os vídeos filtrados permanecem no projeto até serem eliminados pelo utilizador, sem expiração automática no MVP. |
+| A14 | Os efeitos Inversão de cores, Contraste elevado e Desfoque suave são funcionalidades adicionais («Deveria ter»), podendo ser desenvolvidas depois dos três efeitos essenciais; o editor só apresenta os filtros disponíveis. |
+| A15 | Cada filtro corresponde ao *preset* fixo e reproduzível definido em RN14. A compressão com perdas pode criar pequenas diferenças entre os fotogramas produzidos e os fotogramas de referência, sem alterar a natureza do efeito. |
 
 ### 2.8 Questões em Aberto
 
-|**ID**|**Questão**|
-|---|---|
-|**Q1**|Que filtros, além do catálogo inicial (RN11), devem ser suportados? Devem os filtros personalizados e os presets já existentes no PictuRAS poder ser aplicados a vídeos?|
-|**Q2**|Deve ser possível combinar vários filtros no mesmo pedido?|
-|**Q3**|Deve o utilizador poder controlar a intensidade do filtro?|
-|**Q4**|Deve ser possível aplicar o filtro apenas a uma parte temporal do vídeo?|
-|**Q5**|Deve ser possível aplicar o mesmo filtro a vários vídeos em lote?|
-|**Q6**|A pré-visualização deve abranger todo o vídeo ou apenas uma amostra?|
-|**Q7**|O perfil Anónimo deve poder aceder a esta funcionalidade, com limites mais apertados?|
-|**Q8**|Deve a operação ser reservada na quota no momento da confirmação? Com a regra atual, a operação só é contabilizada no fim: um utilizador Registado pode iniciar o pedido com 4 operações gastas, fazer uma operação sobre uma imagem enquanto o vídeo é processado e terminar o dia com 6 operações|
-|**Q9**|Como se relacionam os vídeos com os projetos existentes do PictuRAS? Deve ser possível adicionar vídeos a um projeto, ao lado das imagens, e usá-los no encadeamento de ferramentas?|
+As questões seguintes dizem respeito a eventuais evoluções posteriores e não condicionam o âmbito definido para o MVP.
+
+| **ID** | **Questão para evolução futura** |
+| :-- | :-- |
+| Q1 | Acrescentar outros efeitos para além dos seis filtros do catálogo? |
+| Q2 | Permitir combinar vários filtros num único pedido? |
+| Q3 | Disponibilizar ajuste de intensidade e parâmetros dos efeitos? |
+| Q4 | Permitir aplicar filtros apenas a um intervalo temporal do vídeo? |
+| Q5 | Suportar processamento em lote de vários vídeos? |
+| Q6 | Substituir a pré-visualização por fotograma por uma amostra animada? |
+| Q13 | Disponibilizar encadeamento automático de várias ferramentas de vídeo? |
 
 ---
 
 ## 3. Utilização de agentes de IA
 
-|**Ferramenta / skill**|**Tarefa apoiada**|**Validação realizada pela equipa**|
-|---|---|---|
-|ChatGPT (OpenAI)|Discussão e exploração das minúcias e possibilidades associadas à funcionalidade de aplicação de filtros a vídeo, nomeadamente comportamentos, limitações e situações excecionais|A IA foi utilizada apenas como apoio à discussão das funcionalidades. Todas as decisões sobre o caso de uso, regras, fluxos e comportamentos foram tomadas pela equipa, que também foi responsável pela redação do documento|
-|Claude (claude.ai)|Revisão do caso de uso face ao template v2, aos exemplos de referência e ao documento de requisitos 2025/26: deteção de inconsistências entre fluxos, exceções e pré-condições e de lacunas de alinhamento com o sistema existente|Cada sugestão foi analisada pela equipa antes de ser incorporada. Foram acrescentados o catálogo de filtros (RN11), a exceção de falha da pré-visualização, o fluxo FA6, as assunções A8 a A10 e as questões Q7 a Q9|
+| **Ferramenta / skill** | **Tarefa apoiada** | **Validação realizada pela equipa** |
+| :-- | :-- | :-- |
+| ChatGPT (OpenAI) | Discussão das funcionalidades e dos comportamentos de aplicação de filtros a vídeo, apoio à redação do caso de uso e da ERS, organização dos fluxos alternativos e exceções e especificação de filtros e critérios de aceitação. | Revisão documental da coerência entre fluxo, regras de negócio, requisitos e matriz de rastreabilidade, distinguindo funcionalidades essenciais das adicionais. |
+| Claude (claude.ai) | Revisão da versão inicial do caso de uso e identificação de inconsistências em fluxos, exceções e pré-condições. | As sugestões aproveitadas na versão inicial foram registadas no histórico do documento. |
 
-## 4. Esboço de requisitos derivados
+---
 
-### 4.1 Requisitos de Sistema
+## 4. Especificação de Requisitos do Sistema (ERS)
 
-| **ID** | **Requisito** | **Tipo** | **Prioridade** | **Novo/Alt** | **Origem** | **Como verificar** |
-| --- | --- | --- | --- | --- | --- | --- |
-| REQ-VID-FILT-001 | O sistema deve apresentar os vídeos da biblioteca do utilizador com nome, duração e tamanho. | F | Deve ter | NOVO | Passo 1 / A9 | Dado um utilizador com vídeos, quando abre a biblioteca, então cada vídeo apresenta nome, duração e tamanho. |
-| REQ-VID-FILT-002 | O sistema deve permitir ao utilizador selecionar um vídeo da sua biblioteca para solicitar a aplicação de um filtro. | F | Deve ter | NOVO | Trigger / Passo 2 | Dado um vídeo da biblioteca, quando o utilizador o seleciona, então pode escolher Aplicar filtro. |
-| REQ-VID-FILT-003 | O sistema deve restringir a aplicação de filtros a vídeo a utilizadores com sessão iniciada como Registado ou Premium. | NF — Segurança / acesso | Deve ter | ALT | Pré-condições / RN2 | Dado um utilizador sem sessão iniciada, quando tenta aplicar um filtro, então o acesso é recusado. |
-| REQ-VID-FILT-004 | O sistema deve impedir a aplicação de filtros enquanto o carregamento do vídeo não estiver concluído. | F | Deve ter | NOVO | Pré-condições / RN9 | Dado um vídeo em carregamento, quando se tenta aplicar um filtro, então a operação é impedida. |
-| REQ-VID-FILT-005 | O sistema deve rejeitar vídeos em formatos diferentes de MP4 ou MOV, apresentando a mensagem "Este formato de vídeo não é suportado para aplicação de filtros" e os formatos aceites. | F | Deve ter | NOVO | Passo 2 / Exceção 1 / RN1 | Dado um vídeo noutro formato, quando o utilizador escolhe Aplicar filtro, então aparece a mensagem com os formatos aceites e o ecrã de aplicação não abre. |
-| REQ-VID-FILT-006 | O sistema deve limitar a duração dos vídeos de entrada do perfil Registado a 60 s. | NF — Capacidade / limites | Deve ter | ALT | RN2 | Dado um Registado, quando seleciona vídeos com 60 s e 61 s, então o primeiro passa a validação de duração e o segundo é rejeitado. |
-| REQ-VID-FILT-007 | O sistema deve limitar o tamanho dos vídeos de entrada do perfil Registado a 100 MB. | NF — Capacidade / limites | Deve ter | ALT | RN2 | Dado um Registado, quando seleciona vídeos com 100 MB e 101 MB, então o primeiro passa a validação de tamanho e o segundo é rejeitado. |
-| REQ-VID-FILT-008 | O sistema deve limitar a duração dos vídeos de entrada do perfil Premium a 10 min. | NF — Capacidade / limites | Deve ter | ALT | RN2 | Dado um Premium, quando seleciona vídeos com 10 min e 10 min e 1 s, então o primeiro passa a validação de duração e o segundo é rejeitado. |
-| REQ-VID-FILT-009 | O sistema deve limitar o tamanho dos vídeos de entrada do perfil Premium a 1 GB. | NF — Capacidade / limites | Deve ter | ALT | RN2 | Dado um Premium, quando seleciona um vídeo com 1 GB e outro acima desse tamanho, então apenas o primeiro passa a validação de tamanho. |
-| REQ-VID-FILT-010 | O sistema deve apresentar os limites do perfil quando rejeitar um vídeo por excesso de duração ou tamanho, referindo os limites superiores do Premium no caso do Registado. | F | Deveria ter | NOVO | Exceção 2 | Dado um vídeo acima dos limites, quando é rejeitado, então a mensagem apresenta os limites aplicáveis e, para um Registado, refere o Premium. |
-| REQ-VID-FILT-011 | O sistema deve impedir novos pedidos quando a quota diária aplicável estiver esgotada, apresentando a mensagem "Atingiu o limite diário de operações" e indicando quando será reposta. | F | Deve ter | ALT | Passos 2 e 5 / Exceção 3 / A10 | Dado um Registado com cinco operações contabilizadas entre imagens e vídeos, quando tenta iniciar ou confirmar a aplicação de um filtro, então nenhum pedido é criado e a mensagem indica a reposição. |
-| REQ-VID-FILT-012 | O sistema deve disponibilizar os filtros Preto e branco, Sépia e Vintage, sem parâmetros configuráveis. | F | Deve ter | NOVO | Passo 3 / RN11 | Dado o ecrã de aplicação de filtros, quando o utilizador consulta o catálogo, então encontra os três filtros indicados sem opções de configuração de parâmetros. |
-| REQ-VID-FILT-013 | O sistema deve permitir selecionar um único filtro por pedido. | F | Deve ter | NOVO | Passo 4 / A2 | Dado o catálogo, quando o utilizador seleciona um filtro, então o pedido fica associado apenas a esse filtro. |
-| REQ-VID-FILT-014 | O sistema deve apresentar uma pré-visualização do filtro atualmente selecionado. | F | Deve ter | NOVO | Passos 3 e 4 / FA1 | Dado um filtro selecionado, quando o utilizador escolhe outro antes de confirmar, então a pré-visualização passa a representar o novo filtro. |
-| REQ-VID-FILT-015 | O sistema deve permitir repetir a pré-visualização ou escolher outro filtro quando esta falhar, apresentando a mensagem "Não foi possível pré-visualizar o filtro". | F | Deve ter | NOVO | Exceção 4 | Dado uma falha da pré-visualização, quando é detetada, então aparece a mensagem e ficam disponíveis as opções de tentar novamente ou selecionar outro filtro. |
-| REQ-VID-FILT-016 | O sistema deve criar um pedido apenas após confirmação explícita do utilizador. | F | Deve ter | NOVO | Passo 5 / FA1 / FA6 / Exceção 4 | Dado um utilizador que apenas consulta filtros, altera a seleção, encontra uma falha de pré-visualização ou sai sem confirmar, quando abandona o ecrã, então nenhum pedido foi criado. |
-| REQ-VID-FILT-017 | O sistema deve voltar a validar os limites do perfil, a quota disponível e o número de processamentos simultâneos na confirmação do pedido. | F | Deve ter | ALT | Passo 5 / FA4 / Exceção 3 | Dado uma condição que deixou de ser satisfeita após abrir o ecrã, quando o utilizador confirma, então o pedido é rejeitado. |
-| REQ-VID-FILT-018 | O sistema deve limitar a 1 o número de processamentos de vídeo Em fila ou A processar por utilizador Registado. | NF — Capacidade / limites | Deve ter | ALT | RN8 / FA4 | Dado um Registado com um processamento ativo, quando confirma outro, então o novo pedido é rejeitado. |
-| REQ-VID-FILT-019 | O sistema deve limitar a 3 o número de processamentos de vídeo Em fila ou A processar por utilizador Premium. | NF — Capacidade / limites | Deve ter | ALT | RN8 / FA4 | Dado um Premium com três processamentos ativos, quando confirma outro, então o novo pedido é rejeitado. |
-| REQ-VID-FILT-020 | O sistema deve informar o utilizador quando o limite de processamentos simultâneos impedir a criação do pedido. | F | Deve ter | NOVO | FA4 | Dado o limite atingido, quando o utilizador confirma outro pedido, então recebe uma mensagem com a causa da rejeição. |
-| REQ-VID-FILT-021 | O sistema deve permitir consultar os pedidos de aplicação de filtros e o estado atual de cada pedido. | F | Deve ter | NOVO | FA3 / FA4 / RN6 | Dado um utilizador com pedidos, quando os consulta ou regressa à aplicação, então vê o estado atual de cada pedido. |
-| REQ-VID-FILT-022 | O sistema deve criar os pedidos aceites no estado Em fila. | F | Deve ter | NOVO | Passo 6 / RN6 | Dado uma confirmação válida e aceite pelo serviço, quando o pedido é criado, então o seu estado inicial é Em fila. |
-| REQ-VID-FILT-023 | O sistema deve recusar a criação de pedidos quando o serviço estiver indisponível ou a fila estiver cheia, informando da indisponibilidade temporária. | F | Deve ter | NOVO | Exceção 6 | Dado uma das condições de indisponibilidade, quando o utilizador confirma, então nenhum pedido é criado e aparece uma mensagem de indisponibilidade. |
-| REQ-VID-FILT-024 | O sistema deve passar o pedido para A processar quando iniciar o processamento. | F | Deve ter | NOVO | Passo 7 / RN6 | Dado um pedido Em fila, quando o processamento começa, então o estado passa para A processar. |
-| REQ-VID-FILT-025 | O sistema deve apresentar a percentagem de progresso atualizada durante o processamento. | F | Deve ter | NOVO | Passos 7 e 8 | Dado um pedido A processar, quando o utilizador acompanha o processamento, então vê uma percentagem entre 0 % e 100 % que acompanha o avanço do pedido. |
-| REQ-VID-FILT-026 | O sistema deve manter o processamento em segundo plano quando o utilizador navega para outro ecrã ou fecha o separador, enquanto a sessão se mantiver ativa. | F | Deve ter | NOVO | Passo 8 / FA3 | Dado um pedido ativo, quando o utilizador abandona o ecrã sem terminar a sessão, então o processamento continua. |
-| REQ-VID-FILT-027 | O sistema deve aplicar o filtro selecionado a todos os fotogramas do vídeo. | F | Deve ter | NOVO | RN5 | Dado um vídeo de teste com fotogramas conhecidos, quando o processamento conclui, então todos os fotogramas do resultado apresentam a transformação do filtro selecionado. |
-| REQ-VID-FILT-028 | O sistema deve preservar o áudio original no vídeo resultante da aplicação do filtro. | NF — Fiabilidade / integridade | Deve ter | NOVO | A3 | Dado um vídeo com áudio, quando o processamento conclui, então o resultado conserva o conteúdo sonoro e a sua posição temporal relativamente ao vídeo. |
-| REQ-VID-FILT-029 | O sistema deve guardar o resultado como um novo vídeo na biblioteca do utilizador. | F | Deve ter | NOVO | Passo 9 / RN4 / Pós-condição de sucesso | Dado um pedido concluído, quando o utilizador abre a biblioteca, então encontra um novo vídeo distinto do original. |
-| REQ-VID-FILT-030 | O sistema deve atribuir ao resultado o nome <nome original>_<nome do filtro>, acrescentando um sufixo numérico quando esse nome já existir. | F | Deve ter | NOVO | RN4 | Dado um resultado sem colisão de nome, quando é guardado, então recebe o nome definido; existindo esse nome, recebe um sufixo numérico que o distingue. |
-| REQ-VID-FILT-031 | O sistema deve contabilizar o espaço ocupado pelo vídeo resultante no armazenamento utilizado pelo proprietário. | F | Deve ter | ALT | A7 | Dado um resultado guardado, quando se consulta o armazenamento utilizado, então o espaço ocupado por esse resultado está incluído no total. |
-| REQ-VID-FILT-032 | O sistema deve passar o pedido para Concluído após guardar o resultado com sucesso. | F | Deve ter | NOVO | Passos 9 e 10 / RN6 | Dado um resultado guardado com sucesso, quando a operação termina, então o estado do pedido passa para Concluído. |
-| REQ-VID-FILT-033 | O sistema deve contabilizar exatamente 1 operação na quota diária aplicável apenas quando o pedido terminar em Concluído. | F | Deve ter | ALT | Passo 10 / RN3 / A10 / Pós-condições | Dado pedidos concluídos, falhados, cancelados e não criados, quando se verifica a quota, então apenas cada pedido concluído acrescenta uma operação. |
-| REQ-VID-FILT-034 | O sistema deve apresentar uma notificação interna quando o pedido terminar em Concluído. | F | Deveria ter | NOVO | Passo 10 / A6 | Dado um pedido concluído, quando o utilizador consulta a aplicação, então a notificação de conclusão está disponível. |
-| REQ-VID-FILT-035 | O sistema deve permitir ao utilizador abrir o vídeo resultante com o filtro aplicado. | F | Deve ter | NOVO | Passo 11 | Dado um resultado disponível na biblioteca, quando o utilizador o abre, então o sistema apresenta o vídeo com o filtro selecionado aplicado. |
-| REQ-VID-FILT-036 | O sistema deve aceitar o cancelamento pelo utilizador apenas nos estados Em fila ou A processar, passando o pedido para Cancelado. | F | Deve ter | NOVO | FA2 / RN6 / RN7 | Dado pedidos nos cinco estados, quando se tenta cancelar, então apenas Em fila e A processar aceitam a ação e passam para Cancelado. |
-| REQ-VID-FILT-037 | O sistema deve interromper o processamento de um pedido quando este é cancelado. | F | Deve ter | NOVO | FA2 / FA5 | Dado um pedido A processar, quando é cancelado, então o processamento desse pedido termina. |
-| REQ-VID-FILT-038 | O sistema deve cancelar os pedidos ativos de aplicação de filtros quando o utilizador termina explicitamente a sessão. | F | Deve ter | ALT | FA5 | Dado pedidos Em fila ou A processar, quando o utilizador faz logout, então esses pedidos são cancelados. |
-| REQ-VID-FILT-039 | O sistema deve passar o pedido para Falhou quando ocorrer uma falha de processamento ou faltar espaço para guardar o resultado, informando o utilizador da causa. | F | Deve ter | NOVO | Exceções 5 e 7 | Dado uma falha de processamento ou falta de espaço, quando a condição é detetada, então o pedido passa para Falhou e aparece uma mensagem com a causa. |
-| REQ-VID-FILT-040 | O sistema deve eliminar os resultados parciais de pedidos que terminem em Falhou ou Cancelado. | F | Deve ter | NOVO | FA2 / FA5 / Exceções 5 e 7 / Pós-condição mínima | Dado um pedido com resultados parciais, quando falha ou é cancelado, então esses resultados são eliminados e não ficam na biblioteca. |
-| REQ-VID-FILT-041 | O sistema deve manter o ficheiro de vídeo original inalterado durante e após a aplicação do filtro. | NF — Fiabilidade / integridade | Deve ter | NOVO | Passo 11 / RN4 / Pós-condições | Dado um vídeo original, quando o pedido conclui, falha ou é cancelado, então o resumo criptográfico do ficheiro permanece igual ao inicial. |
-| REQ-VID-FILT-042 | O sistema deve restringir o acesso ao vídeo original e ao resultado ao respetivo proprietário. | NF — Segurança / acesso | Deve ter | ALT | RN10 | Dado vídeos de um utilizador, quando outro utilizador tenta aceder-lhes, incluindo por pedido direto ao serviço, então o acesso é recusado. |
+**Caso de Uso:** UC-VID-002 — Aplicar um filtro a um vídeo de um projeto  
+**Versão do dossiê:** v2.0  
+**Baseline do Exercício 1:** `filtros.md` v1.0 (IDs `REQ-VID-FILT-001` a `REQ-VID-FILT-042`). São preservados os IDs cuja intenção não mudou; os retirados não são reutilizados. Novos IDs `043`–`053` documentam aspetos complementares. Os efeitos adicionais correspondem a `050`–`052`.
+
+### 4.1 Requisitos da ERS
+
+#### 4.1.1 Requisitos Funcionais
+
+| **ID** | **Requisito** | **Prioridade** | **Evolução** | **Novo/Alt** | **Origem (UC / RN / decisão)** | **Justificação** | **Critério de aceitação / verificação** |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| REQ-VID-FILT-002 | O sistema deve permitir selecionar a ferramenta Filtros para o vídeo selecionado num projeto de vídeo. | Deve ter | Refinado | NOVO | Passo 1, Trigger; UC-VID-004 RN14 | Reutiliza a seleção existente. | Dado um projeto com vídeo selecionado, quando se escolhe Filtros, então o pedido refere-se a esse vídeo. |
+| REQ-VID-FILT-003 | O sistema deve disponibilizar a ferramenta apenas a contas Registadas e Premium proprietárias do projeto. | Deve ter | Refinado | ALT | Pré-condições, RN2, RN10 | Aplicar as permissões de vídeo. | Dada uma conta anónima ou não proprietária, quando tenta aceder à ferramenta, então a operação é recusada. |
+| REQ-VID-FILT-004 | O sistema deve impedir filtros em vídeos ainda não disponíveis para edição. | Deve ter | Refinado | NOVO | Pré-condições, RN9; UC-VID-004 RN9 | Evita processar ficheiros incompletos. | Dado um vídeo em carregamento, quando se tenta filtrar, então o pedido não é criado. |
+| REQ-VID-FILT-011 | O sistema deve rejeitar pedidos quando a quota partilhada de edição estiver esgotada, indicando a reposição. | Deve ter | Refinado | ALT | Passos 1 e 4, E1, RN3 | Respeita a quota diária. | Dado Registado com cinco operações concluídas no dia, quando tenta filtrar, então recebe aviso e nenhum pedido é criado. |
+| REQ-VID-FILT-012 | O sistema deve disponibilizar os filtros essenciais Preto e branco, Sépia e Vintage, sem parâmetros de intensidade, aplicando os *presets* fixos especificados em RN14. | Deve ter | Refinado | NOVO | Passo 2, RN11, RN14 | Define um catálogo mínimo e efeitos consistentes. | Num vídeo com cores de referência, o painel apresenta os três efeitos essenciais; cada um pode ser pré-visualizado e aplicado e os fotogramas produzidos correspondem aos presets definidos em RN14, tolerando diferenças normais de codificação. |
+| REQ-VID-FILT-050 | O sistema deve permitir aplicar o filtro adicional **Inversão de cores**, invertendo os componentes RGB conforme RN14. | Deveria ter | Novo | NOVO | Passo 2, RN11, RN14, A14 | Efeito adicional simples e objetivamente verificável. | Dado um vídeo com barras de cor, quando se aplica Inversão de cores, então as cores passam a aproximar-se de `C′ = 1 − C`, dentro das tolerâncias de codificação, e o áudio mantém-se quando existe. |
+| REQ-VID-FILT-051 | O sistema deve permitir aplicar o filtro adicional **Contraste elevado**, com a transformação fixa definida em RN14. | Deveria ter | Refinado | NOVO | Passo 2, RN11, RN14, A14, A15 | Efeito opcional com alteração de contraste verificável. | Dado um fotograma com tons em torno do cinzento médio, quando se aplica Contraste elevado, então a saída corresponde ao ganho 1,30 definido em RN14, admitindo diferenças normais de codificação. |
+| REQ-VID-FILT-052 | O sistema deve permitir aplicar o filtro adicional **Desfoque suave**, com o desfoque gaussiano fixo definido em RN14. | Deveria ter | Refinado | NOVO | Passo 2, RN11, RN14, A14, A15 | Efeito espacial opcional verificável. | Dado um fotograma com contornos, quando se aplica Desfoque suave, então o resultado apresenta desfoque com σ = 1,5 píxeis em RN14, sem alterar a duração ou o áudio. |
+| REQ-VID-FILT-013 | O sistema deve permitir selecionar um único filtro por pedido. | Deve ter | Mantido | NOVO | Passo 3, RN5 | Evita ambiguidade. | Ao escolher outro filtro antes da confirmação, só o último fica selecionado. |
+| REQ-VID-FILT-014 | O sistema deve apresentar, num fotograma de amostra do vídeo selecionado, uma pré-visualização representativa do filtro atualmente escolhido, sem iniciar processamento definitivo nem consumir quota. | Deve ter | Refinado | NOVO | Passos 2–3, FA1, RN15, A4 | Permite escolher sem custo e sem criar ficheiros persistentes. | Dado um vídeo de teste, ao alternar entre Sépia e Preto e branco, a amostra mostra o efeito selecionado; não existe pedido, nova ocupação de armazenamento ou consumo de quota. |
+| REQ-VID-FILT-015 | O sistema deve permitir tentar novamente a pré-visualização ou escolher outro filtro quando esta falhar. | Deveria ter | Refinado | NOVO | E2 | Recuperação sem criar pedido. | Dada falha de pré-visualização, aparece mensagem e opções de recuperar; não há processamento iniciado. |
+| REQ-VID-FILT-016 | O sistema deve criar o pedido apenas após confirmação explícita. | Deve ter | Mantido | NOVO | Passo 4, FA1, FA6 | Previne operações indesejadas. | Abrir o painel e sair sem confirmar não cria pedido. |
+| REQ-VID-FILT-017 | O sistema deve revalidar quota, limites de processamento global, acesso e disponibilidade de armazenamento ao confirmar. | Deve ter | Refinado | ALT | Passo 4, E1, E3, E7, RN7, RN12 | As condições podem mudar durante a seleção. | Dado um limite atingido entre abrir e confirmar, nenhum pedido é criado. |
+| REQ-VID-FILT-018 | O sistema deve impedir outro processamento de vídeo quando um Registado já tiver um pedido **A aguardar** ou **A processar**, independentemente da ferramenta. | Deve ter | Refinado | NOVO | FA4, RN7 | Protege a capacidade por conta. | Com um pedido ativo de Recorte, não aceita simultaneamente um de Filtros na mesma conta Registada. |
+| REQ-VID-FILT-019 | O sistema deve impedir um novo processamento quando um Premium já tiver três pedidos de vídeo ativos, independentemente da ferramenta. | Deveria ter | Refinado | NOVO | FA4, RN7 | Limite diferenciado por perfil. | Com três pedidos ativos, a confirmação de Filtros é rejeitada. |
+| REQ-VID-FILT-020 | O sistema deve informar quando o limite de simultaneidade impede um pedido. | Deve ter | Mantido | NOVO | FA4 | Explica a rejeição. | Ao ultrapassar o limite, mostra a causa e permite consultar pedidos em curso. |
+| REQ-VID-FILT-021 | O sistema deve permitir consultar o estado dos pedidos de filtros, incluindo após abandonar o ecrã. | Deve ter | Refinado | NOVO | Passo 7, FA3, RN6 | Permite acompanhar processamento demorado. | Ao regressar ao projeto, o utilizador vê o estado do pedido. |
+| REQ-VID-FILT-022 | O sistema deve criar um pedido aceite no estado **A aguardar**. | Deve ter | Refinado | NOVO | Passo 5, RN6 | Consistência entre ferramentas. | Após confirmar com sucesso, o estado inicial é A aguardar. |
+| REQ-VID-FILT-023 | O sistema deve recusar a criação de pedidos com o serviço indisponível ou a fila cheia. | Deve ter | Mantido | NOVO | E5 | Não cria trabalhos inexequíveis. | Ao simular indisponibilidade, apresenta erro e não cria pedido. |
+| REQ-VID-FILT-024 | O sistema deve passar o pedido para **A processar** quando iniciar o processamento. | Deve ter | Mantido | NOVO | Passo 6, RN6 | Estado verificável. | Quando o processamento começa, o pedido muda de A aguardar para A processar. |
+| REQ-VID-FILT-027 | O sistema deve aplicar o filtro escolhido a todos os fotogramas do vídeo. | Deve ter | Mantido | NOVO | Passo 8, RN5 | Função central da ferramenta. | Num vídeo de amostra com mudanças visuais, todos os segmentos do resultado mostram o efeito. |
+| REQ-VID-FILT-028 | O sistema deve preservar o conteúdo e a sincronização da faixa de áudio principal **quando exista**, produzindo um vídeo sem áudio quando a entrada não contiver essa faixa. | Deve ter | Refinado | NOVO | Passo 8, FA7, RN5, A3 | O efeito visual não deve exigir som nem alterá-lo. | Dado um vídeo com fala e outro sem áudio, quando o filtro conclui, então o primeiro mantém o som sincronizado e o segundo gera resultado reproduzível sem áudio. |
+| REQ-VID-FILT-029 | O sistema deve guardar o resultado como **novo vídeo no mesmo projeto** do original. | Deve ter | Refinado | NOVO | Passo 8, RN4, A9 | Evita biblioteca separada. | Após Concluído, o resultado aparece no projeto original e o vídeo fonte continua disponível. |
+| REQ-VID-FILT-030 | O sistema deve atribuir ao resultado um nome derivado do original e do filtro, com sufixo em caso de colisão. | Deve ter | Refinado | NOVO | RN4 | Distingue resultados. | Duas aplicações do mesmo filtro geram nomes diferentes. |
+| REQ-VID-FILT-031 | O sistema deve incluir o tamanho real do resultado na ocupação do projeto **e da conta**. | Deve ter | Refinado | ALT | Passo 8, RN12; UC-VID-004 RN7 | Respeita o armazenamento partilhado. | O espaço livre do projeto e da conta diminui pelo tamanho do resultado concluído. |
+| REQ-VID-FILT-032 | O sistema deve passar para **Concluído** só depois de guardar o resultado e a miniatura no projeto. | Deve ter | Refinado | NOVO | Passos 8–9, RN4, RN6 | Evita anunciar resultados incompletos. | Não se observa Concluído antes de o resultado poder ser aberto. |
+| REQ-VID-FILT-033 | O sistema deve reservar a disponibilidade de uma operação diária ao aceitar o pedido de um Registado, considerando as operações concluídas e as reservas ativas da conta, contabilizando-a definitivamente apenas quando o processamento conclui com sucesso e libertando a reserva se falhar ou for cancelado. | Deve ter | Refinado | ALT | Passos 4 e 9, RN3, E1, pós-condições | Impede ultrapassar a quota diária por pedidos de vídeo concorrentes. | Com quatro operações consumidas, aceitar um filtro reserva a quinta vaga; um segundo pedido não é aceite enquanto a vaga estiver ocupada. Se o primeiro falhar, a vaga fica novamente disponível; se concluir, o total passa a cinco. |
+| REQ-VID-FILT-034 | O sistema deve notificar a conclusão na aplicação. | Deveria ter | Mantido | NOVO | Passo 9, A6 | Comunica resultado. | A conclusão é comunicada no projeto ou lista de pedidos. |
+| REQ-VID-FILT-035 | O sistema deve permitir selecionar o resultado pela miniatura e reproduzi-lo no leitor do projeto. | Deve ter | Refinado | NOVO | Passo 10, RN4 | Reutiliza o editor existente. | Ao clicar na miniatura do resultado, o leitor apresenta o vídeo filtrado. |
+| REQ-VID-FILT-036 | O sistema deve aceitar cancelamento apenas em **A aguardar** e **A processar**, passando para **Cancelado**. | Deve ter | Refinado | NOVO | FA2, RN6 | Protege estados finais. | Só pedidos nesses estados têm cancelamento disponível. |
+| REQ-VID-FILT-037 | O sistema deve interromper o trabalho de processamento quando o utilizador cancela um pedido ativo. | Deve ter | Mantido | NOVO | FA2 | Evita consumo desnecessário de recursos. | Cancelar um pedido A processar interrompe a execução do efeito. |
+| REQ-VID-FILT-038 | O sistema deve cancelar pedidos ativos quando ocorre logout explícito do proprietário. | Deveria ter | Refinado | ALT | FA5 | Coerência com o comportamento de cancelamento definido para tarefas de vídeo. | Após logout, os pedidos ativos ficam Cancelados. |
+| REQ-VID-FILT-039 | O sistema deve passar um pedido para **Falhou** e informar o utilizador se o processamento falhar ou faltar espaço para guardar o resultado. | Deve ter | Mantido | NOVO | E4, E6 | Comunica falha. | Forçando erro ou falta de espaço, o pedido passa a Falhou e mostra a causa. |
+| REQ-VID-FILT-043 | O sistema deve reservar, no projeto e na conta, espaço estimado para o resultado antes de aceitar um pedido e recusá-lo quando o espaço disponível for inferior à estimativa, libertando a reserva em caso de falha ou cancelamento. | Deve ter | Refinado | NOVO | Passo 4, E3, E6, RN12, A11; UC-VID-004 RN7 | Evita pedidos sem espaço, reutilizando a gestão do projeto. | Com vídeo de 10 MB e reserva de 15 MB definida em A11, se o espaço disponível for 14 MB o pedido é recusado; se for 15 MB, cria uma reserva de 15 MB. Ao cancelar a reserva é libertada; após conclusão é substituída pela ocupação real. |
+| REQ-VID-FILT-044 | O sistema deve impedir eliminar o vídeo original ou o projeto enquanto houver um pedido de filtros ativo associado. | Deveria ter | Novo | NOVO | RN13 | Evita apagar a entrada do processamento. | Com um pedido A aguardar, Delete video é recusado até ao cancelamento/conclusão. |
+| REQ-VID-FILT-045 | O sistema deve gerar uma miniatura do resultado e disponibilizá-lo apenas após estar inteiramente guardado e associado ao projeto. | Deve ter | Novo | NOVO | Passo 8, RN4; UC-VID-004 RN8–RN9 | Coerência com o upload. | Depois de concluído aparece uma nova miniatura, que permite selecionar e reproduzir o resultado. |
+| REQ-VID-FILT-053 | O sistema deve guardar o vídeo resultante em MP4 com vídeo H.264 e, quando existe áudio na entrada, áudio AAC, mantendo a duração e, quando compatível, a resolução e a taxa de fotogramas. | Deve ter | Novo | NOVO | Passos 8 e 10, RN16, A5 | Define uma saída reproduzível e independente do contentor de entrada. | Dado um MP4 e um MOV com áudio, cada resultado tem contentor MP4, vídeo H.264 e áudio AAC; um vídeo sem áudio origina MP4 sem áudio. A duração mantém-se, admitindo diferença inferior à duração de um fotograma. |
+
+
+#### 4.1.2 Requisitos Não Funcionais e de Qualidade
+
+| **ID** | **Requisito** | **Característica ISO/IEC 25010** | **Alvo MVP** | **Alvo produção** | **Evolução** | **Origem (UC / DQ)** | **Critério de aceitação / verificação** |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| REQ-VID-FILT-025 | O sistema deve atualizar a percentagem de progresso do processamento em intervalos máximos definidos. | Usabilidade | ≤ 5 s entre atualizações | ≤ 2 s | Refinado | Passos 6–7, RN8; DQ-001 | Durante um pedido em processamento, verificar se a percentagem é atualizada dentro do intervalo definido. |
+| REQ-VID-FILT-026 | O processamento deve ser assíncrono e continuar quando o utilizador sai do ecrã sem terminar sessão. | Eficiência de Desempenho / Usabilidade | Obrigatório | Obrigatório | Refinado | Passos 6–7, FA3, RN8 | Iniciar pedido, navegar para outra página e regressar; pedido continua. |
+| REQ-VID-FILT-040 | Um pedido Falhou ou Cancelado não deve deixar resultados parciais acessíveis nem reservas pendentes. | Fiabilidade | Obrigatório, sem retoma automática | Obrigatório, com recuperação de falhas transitórias | Refinado | FA2, FA5, E4, E6, RN12; DQ-002 | Cancelar/falhar durante a aplicação; verificar limpeza e recuperação de espaço. |
+| REQ-VID-FILT-041 | O ficheiro de vídeo original deve manter-se inalterado após uma operação Concluída, Falhada ou Cancelada. | Fiabilidade | Obrigatório | Obrigatório | Mantido | Passo 10, RN4, pós-condições | Comparar hashes SHA-256 do original antes e depois de cada cenário. |
+| REQ-VID-FILT-042 | Apenas o proprietário pode consultar ou cancelar pedidos de filtros e obter resultados. | Segurança | Obrigatório | Obrigatório | Refinado | RN10 | Tentar aceder/cancelar pedido de outro utilizador por API: acesso recusado. |
+| REQ-VID-FILT-046 | O pedido aceite deve apresentar o estado A aguardar em menos de 3 segundos após confirmação. | Eficiência de Desempenho | < 3 s | < 1 s | Novo | Passo 5; DQ-004 | Medir 10 confirmações para vídeos curtos e no limite do perfil. |
+| REQ-VID-FILT-047 | A aplicação de filtros deve produzir um resultado reproduzível no mesmo navegador em que se reproduz o original. | Compatibilidade | Navegadores utilizados nos testes do grupo | Conjunto de navegadores oficialmente suportados | Novo | Passo 10, A5; DQ-005 | Aplicar um filtro a originais MP4 e MOV reproduzíveis e abrir os resultados MP4/H.264 no mesmo navegador. |
+| REQ-VID-FILT-048 | Adicionar outra ferramenta de vídeo não deve exigir alterações ao código específico da transformação dos filtros. | Manutenibilidade | Objetivo de arquitetura | Obrigatório | Novo | DQ-006 | Adicionar um ponto de integração de teste sem editar a transformação dos filtros. |
+| REQ-VID-FILT-049 | O processamento de filtros deve poder ser executado com o ambiente do projeto, sem instalação manual de software externo no computador do utilizador. | Portabilidade | Serviço empacotado e arranque documentado | Verificado em dois ambientes distintos | Novo | DQ-006 | Reconstruir o ambiente e processar vídeo sem instalar FFmpeg manualmente no Windows. |
+
+#### 4.1.3 Verificação da completude e dos limites do âmbito
+
+| **Tópico a verificar** | **Aplicável?** | **Decisão / justificação** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- | :-- |
+| Formato, codec, duração e dimensão | Sim (partilhado) | MP4/MOV e limites são verificados por UC-VID-004, RN3–RN4; Filtros exige resultado reproduzível, sem impor novo upload. O resultado é MP4/H.264 (áudio AAC quando existe), segundo RN16. | REQ-VID-FILT-004, REQ-VID-FILT-047, REQ-VID-FILT-053; UC-VID-004 |
+| Estado, progresso, cancelamento e resultado | Sim | Pedidos A aguardar/A processar/Concluído/Falhou/Cancelado, progresso, cancelamento e resultado no mesmo projeto. Pré-visualização não inicia pedido nem consome quota. | REQ-VID-FILT-021, REQ-VID-FILT-022, REQ-VID-FILT-023, REQ-VID-FILT-024, REQ-VID-FILT-025, REQ-VID-FILT-026, REQ-VID-FILT-029, REQ-VID-FILT-032, REQ-VID-FILT-035, REQ-VID-FILT-036, REQ-VID-FILT-037, REQ-VID-FILT-038, REQ-VID-FILT-045, REQ-VID-FILT-046 |
+| Falhas durante o processamento | Sim | Falhou, notificação, limpeza de resultados parciais e libertação de reserva, sem retoma automática no MVP. | REQ-VID-FILT-023, REQ-VID-FILT-039, REQ-VID-FILT-040 |
+| Persistência e expiração | Sim (persistência); não (expiração automática) | Resultados ficam no projeto até o proprietário os eliminar. Espaço do projeto/conta é reservado e contabilizado. | REQ-VID-FILT-029, REQ-VID-FILT-031, REQ-VID-FILT-040, REQ-VID-FILT-043, REQ-VID-FILT-044, REQ-VID-FILT-045; A13 |
+| Perfis e quota de operações | Sim | Registado/Premium, 5 operações partilhadas por dia no Registado, 1 operação apenas após Concluído, limites globais de processamento definidos em RN7. | REQ-VID-FILT-003, REQ-VID-FILT-011, REQ-VID-FILT-017, REQ-VID-FILT-018, REQ-VID-FILT-019, REQ-VID-FILT-020, REQ-VID-FILT-033 |
+| Encadeamento e processamento em lote | Não, no MVP | Um filtro por pedido individual, sobre um vídeo selecionado; sem processamento em lote nem encadeamento automático, mesmo quando são disponibilizados filtros adicionais. Aplicar outro filtro depois do primeiro é um **novo pedido**, sujeito novamente às regras de quota e armazenamento. | RN5, A2, Q5, Q13 |
 
 ### 4.2 Impacto no sistema existente
 
-| **Elemento existente afetado** | **Impacto (Manter / Estender / Alterar)** | **Descrição do impacto** | **Requisitos relacionados** |
-| --- | --- | --- | --- |
-| Perfis e permissões de utilização | Estender | Aplicar os perfis Registado e Premium à aplicação de filtros a vídeo, excluindo o Anónimo e introduzindo limites de duração, tamanho e simultaneidade. | REQ-VID-FILT-003, 006 a 009, 017 a 019 |
-| Quota diária de operações | Estender | Incluir os pedidos de filtros na quota partilhada entre imagens e vídeos, mantendo cinco operações diárias para o Registado e ausência de limite diário para o Premium. Cada pedido concluído conta como uma operação, independentemente do número de fotogramas. A reserva de quota permanece em aberto em Q8. | REQ-VID-FILT-011, 017, 033 |
-| Catálogo e ferramentas de filtros de imagem | Estender | Disponibilizar Preto e branco, Sépia e Vintage para vídeos, aplicando o filtro a todos os fotogramas. A8 propõe reutilizar ferramentas existentes, mas não impõe uma implementação técnica. | REQ-VID-FILT-012, 013, 027 |
-| Interface de seleção e pré-visualização | Estender | Permitir selecionar e alterar um filtro antes da confirmação, visualizar o efeito e recuperar de falhas de pré-visualização. | REQ-VID-FILT-002, 012 a 016 |
-| Processamento de operações e gestão de pedidos | Estender | Suportar pedidos de filtros a vídeo em segundo plano, com estados, progresso, consulta, cancelamento e tratamento de falhas. | REQ-VID-FILT-017 a 027, 032, 036 a 040 |
-| Gestão da sessão | Estender | Associar o logout explícito ao cancelamento dos pedidos ativos, mantendo o processamento quando o utilizador apenas abandona o ecrã. | REQ-VID-FILT-026, 037, 038 |
-| Biblioteca e gestão de ficheiros | Estender | Disponibilizar a biblioteca independente de vídeos prevista em A9, guardar novos resultados com nomes distinguíveis e preservar o original. | REQ-VID-FILT-001, 029, 030, 035, 041 |
-| Armazenamento do utilizador | Estender | Contabilizar o resultado no espaço utilizado e tratar a falta de espaço sem deixar resultados parciais. | REQ-VID-FILT-031, 039, 040 |
-| Notificações internas | Estender | Apresentar notificações de conclusão dos pedidos de filtros dentro da aplicação. | REQ-VID-FILT-034 |
-| Controlo de acesso e privacidade | Estender | Aplicar o acesso exclusivo do proprietário aos vídeos originais e aos resultados. | REQ-VID-FILT-003, 042 |
-| Projetos, encadeamento de ferramentas e processamento em lote | Manter | Nesta versão, os vídeos permanecem numa biblioteca independente dos projetos de imagens. A combinação de filtros, o processamento em lote e a integração com projetos continuam em aberto. | A2, A9, Q2, Q5 e Q9; sem requisitos de integração nesta versão |
+| **Elemento existente afetado** | **Impacto (Manter / Estender / Alterar)** | **Descrição do impacto** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- | :-- |
+| Projetos de vídeo e editor | Estender | Ativar **Filtros** no editor, aplicar o efeito ao vídeo selecionado e pré-visualizar um fotograma, sem criar biblioteca paralela; resultado e miniatura no mesmo projeto. | REQ-VID-FILT-002, REQ-VID-FILT-014, REQ-VID-FILT-029, REQ-VID-FILT-035, REQ-VID-FILT-045 |
+| Perfis e permissões | Estender | Só Registado e Premium têm ferramenta Filtros e acedem aos próprios pedidos/resultados; video-base já controlado por UC-VID-004. | REQ-VID-FILT-003, REQ-VID-FILT-042 |
+| Quota diária de operações | Estender | Filtros conta uma operação apenas no sucesso, partilhada com imagens; carregamento não consome quota. | REQ-VID-FILT-011, REQ-VID-FILT-033 |
+| Gestão de pedidos de processamento | Estender | Novo tipo de pedido assíncrono; estados, progresso, simultaneidade global com Recorte e Legendas, cancelamento. | REQ-VID-FILT-017, REQ-VID-FILT-018, REQ-VID-FILT-019, REQ-VID-FILT-020, REQ-VID-FILT-021, REQ-VID-FILT-022, REQ-VID-FILT-023, REQ-VID-FILT-024, REQ-VID-FILT-025, REQ-VID-FILT-026, REQ-VID-FILT-036, REQ-VID-FILT-037, REQ-VID-FILT-038, REQ-VID-FILT-039, REQ-VID-FILT-040 |
+| Armazenamento e miniaturas | Estender | Reserva espaço no projeto e conta; resultado conta para limites definidos em UC-VID-004 e gera miniatura. | REQ-VID-FILT-031, REQ-VID-FILT-040, REQ-VID-FILT-043, REQ-VID-FILT-045 |
+| Ferramentas de imagem / serviços existentes | Estender | A nova ferramenta de vídeo poderá reutilizar tecnologia existente, sem obrigar a modificar as ferramentas de imagem. Os três efeitos essenciais e os três adicionais partilham um mecanismo de transformação baseado nos presets RN14. | REQ-VID-FILT-012, REQ-VID-FILT-027, REQ-VID-FILT-048, REQ-VID-FILT-049, REQ-VID-FILT-050 a REQ-VID-FILT-052 |
+| Projetos de imagens, lote e encadeamento | Manter | Projetos de imagens continuam isolados; sem lote nem encadeamento automático de filtros neste âmbito. | RN1, RN5; UC-VID-004 RN1, RN14 |
 
-### 4.3 Matriz de Rastreabilidade
+### 4.3 Matriz de Rastreabilidade Atualizada
+
+| **Elemento de origem** | **Descrição abreviada** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- |
+| Pré-condições / RN2 / RN9 / RN10 | Acesso e vídeo pronto | REQ-VID-FILT-003, REQ-VID-FILT-004, REQ-VID-FILT-042 |
+| Trigger / Passo 1 | Seleção de vídeo do projeto e botão Filtros | REQ-VID-FILT-002, REQ-VID-FILT-011 |
+| Passos 2–3 / FA1 / RN11 / RN14 / RN15 / A14–A15 | Catálogo e parâmetros de presets; seleção e pré-visualização sem quota | REQ-VID-FILT-012, REQ-VID-FILT-013, REQ-VID-FILT-014, REQ-VID-FILT-050, REQ-VID-FILT-051, REQ-VID-FILT-052 |
+| E2 | Pré-visualização falhada | REQ-VID-FILT-015 |
+| Passo 4 / FA6 | Confirmação e revalidação | REQ-VID-FILT-016, REQ-VID-FILT-017, REQ-VID-FILT-043 |
+| Passos 5–7 / FA3 | Pedido, estado, processamento e progresso | REQ-VID-FILT-021, REQ-VID-FILT-022, REQ-VID-FILT-024, REQ-VID-FILT-025, REQ-VID-FILT-026, REQ-VID-FILT-046 |
+| FA4 / RN7 | Simultaneidade entre ferramentas | REQ-VID-FILT-018, REQ-VID-FILT-019, REQ-VID-FILT-020 |
+| E5 | Serviço indisponível | REQ-VID-FILT-023 |
+| Passo 8 / FA7 / RN4 / RN5 | Aplicar filtro, com ou sem áudio; guardar resultado e miniatura no projeto | REQ-VID-FILT-027, REQ-VID-FILT-028, REQ-VID-FILT-029, REQ-VID-FILT-030, REQ-VID-FILT-031, REQ-VID-FILT-045, REQ-VID-FILT-047, REQ-VID-FILT-053 |
+| Passo 9 / RN3 | Conclusão, notificação, quota | REQ-VID-FILT-032, REQ-VID-FILT-033, REQ-VID-FILT-034 |
+| Passo 10 / Pós-condições | Reprodução, original intacto | REQ-VID-FILT-035, REQ-VID-FILT-041 |
+| FA2 / RN6 | Cancelamento manual | REQ-VID-FILT-036, REQ-VID-FILT-037, REQ-VID-FILT-040 |
+| FA5 | Cancelamento no logout | REQ-VID-FILT-038, REQ-VID-FILT-040 |
+| E1 | Quota esgotada | REQ-VID-FILT-011, REQ-VID-FILT-017 |
+| E3 / E6 / RN12 | Espaço insuficiente e limpeza | REQ-VID-FILT-039, REQ-VID-FILT-040, REQ-VID-FILT-043 |
+| E4 | Falha durante processamento | REQ-VID-FILT-039, REQ-VID-FILT-040, REQ-VID-FILT-041 |
+| E7 | Vídeo indisponível ou acesso indevido | REQ-VID-FILT-003, REQ-VID-FILT-004, REQ-VID-FILT-042 |
+| RN13 | Bloqueio de eliminação durante pedido ativo | REQ-VID-FILT-044 |
+| DQ-001 | Frequência de atualização do progresso | REQ-VID-FILT-025 |
+| DQ-002 | Sem retoma automática; limpeza segura | REQ-VID-FILT-040 |
+| DQ-003 | Persistência do resultado até eliminação | REQ-VID-FILT-029, REQ-VID-FILT-035 |
+| DQ-004 | Tempo de confirmação do pedido | REQ-VID-FILT-046 |
+| DQ-005 | Áudio e compatibilidade do resultado | REQ-VID-FILT-028, REQ-VID-FILT-047 |
+| DQ-006 | Isolamento da ferramenta e implantação | REQ-VID-FILT-048, REQ-VID-FILT-049 |
+| RN11 / RN14 | Catálogo de efeitos e parâmetros fixos | REQ-VID-FILT-012, REQ-VID-FILT-050, REQ-VID-FILT-051, REQ-VID-FILT-052 |
+
+**Decisões de qualidade introduzidas nesta versão**
+
+| **ID** | **Decisão de qualidade** | **Justificação** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- | :-- |
+| DQ-001 | Atualização do progresso a cada ≤ 5 s no MVP e ≤ 2 s em produção. | Tornar verificável a atualização do estado e do progresso sem exigir atualização contínua. | REQ-VID-FILT-025 |
+| DQ-002 | MVP sem retoma automática após erro, mas com estado Falhou e sem dados parciais; produção com recuperação transitória. | Escopo realista para a Fase 1. | REQ-VID-FILT-040 |
+| DQ-003 | Resultados persistem até eliminação pelo utilizador, sem expiração automática no MVP. | Reutilizar a gestão de projetos e permitir edição posterior. | REQ-VID-FILT-029, REQ-VID-FILT-035 |
+| DQ-004 | Confirmar pedido em menos de 3 s no MVP e menos de 1 s em produção. | Separar aceitação de pedido do processamento demorado. | REQ-VID-FILT-046 |
+| DQ-005 | Preservar áudio e reproduzir o resultado nos navegadores de referência. | Evitar resultados visualmente corretos mas inutilizáveis. | REQ-VID-FILT-028, REQ-VID-FILT-047 |
+| DQ-006 | Isolar a transformação de filtros da infraestrutura e empacotar dependências. | Adicionar ferramentas sem reescrever filtros; repetibilidade de implantação. | REQ-VID-FILT-048, REQ-VID-FILT-049 |
 
 
-| **Elemento do Caso de Uso** | **Descrição abreviada** | **Requisito(s) de Sistema** |
-| --- | --- | --- |
-| Pré-condições | Sessão iniciada e carregamento concluído | REQ-VID-FILT-003, 004 |
-| Trigger | Selecionar vídeo e escolher Aplicar filtro | REQ-VID-FILT-002 |
-| Passo 1 | Apresentar biblioteca de vídeos | REQ-VID-FILT-001 |
-| Passo 2 | Selecionar vídeo e validar formato, limites e quota | REQ-VID-FILT-002, 005 a 011 |
-| Passo 3 | Apresentar filtros e área de pré-visualização | REQ-VID-FILT-012, 014 |
-| Passo 4 | Selecionar filtro e visualizar efeito | REQ-VID-FILT-013, 014 |
-| Passo 5 | Confirmar e voltar a validar condições | REQ-VID-FILT-016, 017 |
-| Passo 6 | Criar pedido Em fila | REQ-VID-FILT-022 |
-| Passo 7 | Iniciar processamento e apresentar percentagem | REQ-VID-FILT-024, 025 |
-| Passo 8 | Acompanhar progresso e utilizar outros ecrãs | REQ-VID-FILT-025, 026 |
-| Passo 9 | Guardar novo vídeo | REQ-VID-FILT-029 |
-| Passo 10 | Concluir, contabilizar e notificar | REQ-VID-FILT-032, 033, 034 |
-| Passo 11 | Abrir resultado e preservar original | REQ-VID-FILT-035, 041 |
-| FA1 | Alterar filtro antes da confirmação | REQ-VID-FILT-013, 014, 016 |
-| FA2 | Cancelar processamento | REQ-VID-FILT-033, 036, 037, 040 |
-| FA3 | Abandonar ecrã ou fechar separador | REQ-VID-FILT-021, 026 |
-| FA4 | Limite de processamentos simultâneos | REQ-VID-FILT-017, 018, 019, 020, 021 |
-| FA5 | Terminar explicitamente a sessão | REQ-VID-FILT-033, 037, 038, 040 |
-| FA6 | Sair sem confirmar | REQ-VID-FILT-016, 033 |
-| Exceção 1 | Formato não suportado | REQ-VID-FILT-005 |
-| Exceção 2 | Duração ou tamanho acima dos limites | REQ-VID-FILT-006 a 010 |
-| Exceção 3 | Quota esgotada | REQ-VID-FILT-011, 017 |
-| Exceção 4 | Falha de pré-visualização | REQ-VID-FILT-015, 016 |
-| Exceção 5 | Falha durante o processamento | REQ-VID-FILT-033, 039, 040, 041 |
-| Exceção 6 | Serviço indisponível ou fila cheia | REQ-VID-FILT-023, 033 |
-| Exceção 7 | Espaço insuficiente | REQ-VID-FILT-033, 039, 040 |
-| Pós-condição de sucesso | Novo vídeo com filtro, original intacto, pedido concluído e operação contabilizada | REQ-VID-FILT-027, 029, 032, 033, 035, 041 |
-| Pós-condição mínima | Sem resultados parciais, original preservado e quota inalterada | REQ-VID-FILT-016, 023, 033, 036 a 041 |
-| RN1 | Formatos MP4 e MOV | REQ-VID-FILT-005 |
-| RN2 | Perfis e limites dos vídeos | REQ-VID-FILT-003, 006, 007, 008, 009 |
-| RN3 | Uma operação apenas na conclusão | REQ-VID-FILT-033 |
-| RN4 | Novo vídeo, nome do resultado e original inalterado | REQ-VID-FILT-029, 030, 041 |
-| RN5 | Filtro aplicado a todos os fotogramas | REQ-VID-FILT-027 |
-| RN6 | Estados dos pedidos | REQ-VID-FILT-021, 022, 024, 032, 036, 039 |
-| RN7 | Cancelamento apenas de pedidos ativos | REQ-VID-FILT-036 |
-| RN8 | Limites de processamentos simultâneos | REQ-VID-FILT-017, 018, 019 |
-| RN9 | Vídeo em carregamento não pode ser processado | REQ-VID-FILT-004 |
-| RN10 | Acesso exclusivo do proprietário | REQ-VID-FILT-042 |
-| RN11 | Catálogo inicial sem parâmetros | REQ-VID-FILT-012 |
-| A1 | Vídeo armazenado e acessível ao serviço | Pressuposto do ambiente; não origina requisito autónomo. |
-| A2 | Um filtro por pedido | REQ-VID-FILT-013 |
-| A3 | Preservação do áudio original | REQ-VID-FILT-028 |
-| A4 | Pré-visualização reduzida ou parcial permitida | REQ-VID-FILT-014; não se exige pré-visualização integral nem resolução original. |
-| A5 | Resolução e taxa de fotogramas mantidas sempre que possível | Pendente de clarificação: faltam condições concretas para derivar um requisito verificável. |
-| A6 | Notificação apenas interna | REQ-VID-FILT-034 |
-| A7 | Resultado contabilizado no armazenamento | REQ-VID-FILT-031 |
-| A8 | Possível reutilização de ferramentas de imagem | Orientação de implementação; não origina um requisito de sistema autónomo. |
-| A9 | Biblioteca independente dos projetos | REQ-VID-FILT-001 |
-| A10 | Quota partilhada entre imagens e vídeos | REQ-VID-FILT-011, 033 |
-| Q1–Q9 | Questões em aberto | Não originam requisitos adicionais enquanto não forem decididas e incorporadas no caso de uso. |
