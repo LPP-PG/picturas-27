@@ -3,6 +3,7 @@
 import DashboardSidebar from "@/components/dashboard-sidebar/dashboard-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import { VideoTrimProvider } from "@/providers/video-trim-provider";
 
 export default function RootLayout({
   children,
@@ -12,18 +13,20 @@ export default function RootLayout({
   const path = usePathname();
   return (
     <SidebarProvider defaultOpen>
-      <div className="flex min-h-screen w-screen">
-        <DashboardSidebar />
-        <main className="w-full h-screen max-w-full overflow-hidden relative">
-          {path === "/dashboard" && (
-            <SidebarTrigger
-              variant="outline"
-              className="h-9 w-10 absolute top-4 left-4 lg:hidden"
-            />
-          )}
-          {children}
-        </main>
-      </div>
+      <VideoTrimProvider>
+        <div className="flex min-h-screen w-screen">
+          <DashboardSidebar />
+          <main className="w-full h-screen max-w-full overflow-hidden relative">
+            {path === "/dashboard" && (
+              <SidebarTrigger
+                variant="outline"
+                className="h-9 w-10 absolute top-4 left-4 lg:hidden"
+              />
+            )}
+            {children}
+          </main>
+        </div>
+      </VideoTrimProvider>
     </SidebarProvider>
   );
 }

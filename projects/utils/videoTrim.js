@@ -85,7 +85,9 @@ function runFfmpeg(
       progressOutput += chunk.toString();
       const lines = progressOutput.split(/\r?\n/);
       progressOutput = lines.pop() || "";
-      const outTime = lines.find((line) => line.startsWith("out_time_ms="));
+      const outTime = lines
+        .filter((line) => line.startsWith("out_time_ms="))
+        .pop();
       if (outTime && Date.now() - lastUpdate >= 1000) {
         const milliseconds = Number(outTime.split("=")[1]) / 1000;
         onProgress(Math.min(100, Math.max(0, (milliseconds / duration) * 100)));

@@ -8,23 +8,23 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import {
-  cancelVideoTrim,
   deleteProjectVideo,
   fetchProjectVideos,
-  fetchVideoTrim,
   startVideoTrim,
   type ProjectVideo,
-  type VideoTrimJob,
 } from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/hooks/use-toast";
 import NewProjectDialog from "@/components/dashboard-sidebar/new-project-dialog";
-import { useRouter } from "next/navigation";
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { api } from "@/lib/axios";
 import { deleteProject, type Project } from "@/lib/projects";
+import { useVideoTrim } from "@/providers/video-trim-provider";
 
 interface VideoProjectEditorProps {
   projectId: string;
@@ -45,33 +45,23 @@ function errorMessage(
   return error instanceof Error ? error.message : fallback;
 }
 
-function trimStateLabel(state: VideoTrimJob["state"]): string {
-  return {
-    queued: "Queued",
-    processing: "Processing",
-    completed: "Completed",
-    failed: "Failed",
-    cancelled: "Cancelled",
-  }[state];
-}
-
 export default function VideoProjectEditor({
   projectId,
   projectName,
 }: VideoProjectEditorProps) {
   const session = useSession();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const router = useRouter();
-  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const { registerTrim } = useVideoTrim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playbackFailed, setPlaybackFailed] = useState(false);
   const [trimOpen, setTrimOpen] = useState(false);
   const [trimStart, setTrimStart] = useState("0");
   const [trimEnd, setTrimEnd] = useState("");
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
-  const [trimJob, setTrimJob] = useState<VideoTrimJob | null>(null);
-  const notifiedTrimId = useRef<string | null>(null);
-  const activeTrimToast = useRef<ReturnType<typeof toast> | null>(null);
+  const manualSelectionRef = useRef<string | null>(null);
 
   const videos = useQuery({
     queryKey: [
@@ -93,8 +83,11 @@ export default function VideoProjectEditor({
   });
 
   const items = videos.data ?? [];
+  const requestedVideoId = searchParams.get("video");
+  const preferredVideoId =
+    manualSelectionRef.current ?? requestedVideoId ?? selectedId;
   const selected =
-    items.find((video) => video._id === selectedId) ?? items[0];
+    items.find((video) => video._id === preferredVideoId) ?? items[0];
   const queryKey = [
     "projectVideos",
     session.user._id,
@@ -185,7 +178,33 @@ export default function VideoProjectEditor({
     deletion.mutate(selected);
   }
 
-  const refetchVideos = videos.refetch;
+  function clearVideoQueryParameter() {
+    if (!searchParams.has("video")) return;
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("video");
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  }
+
+  useEffect(() => {
+    if (
+      requestedVideoId &&
+      !manualSelectionRef.current &&
+      items.some((video) => video._id === requestedVideoId) &&
+      selectedId !== requestedVideoId
+    ) {
+      setSelectedId(requestedVideoId);
+    }
+    if (
+      manualSelectionRef.current &&
+      !searchParams.has("video")
+    ) {
+      manualSelectionRef.current = null;
+    }
+  }, [items, requestedVideoId, searchParams, selectedId]);
+
   const startValue = Number(trimStart);
   const endValue = Number(trimEnd);
   const validTrimInterval =
@@ -210,42 +229,6 @@ export default function VideoProjectEditor({
             ? "The full interval would not create a different video."
             : "";
 
-  const trimStatus = useQuery({
-    queryKey: ["videoTrim", session.user._id, projectId, trimJob?._id],
-    queryFn: ({ signal }) =>
-      fetchVideoTrim({
-        uid: session.user._id,
-        pid: projectId,
-        token: session.token,
-        trimId: trimJob!._id,
-        signal,
-      }),
-    enabled: Boolean(trimJob?._id) &&
-      (trimJob?.state === "queued" || trimJob?.state === "processing"),
-    refetchInterval: 1000,
-  });
-
-  const cancelTrim = useMutation({
-    mutationFn: () =>
-      cancelVideoTrim({
-        uid: session.user._id,
-        pid: projectId,
-        token: session.token,
-        trimId: trimJob!._id,
-      }),
-    onSuccess: (job) => {
-      notifiedTrimId.current = job._id;
-      activeTrimToast.current?.dismiss();
-      activeTrimToast.current = null;
-      toast({
-        title: "Video trim cancelled",
-        description: "The video trim request was cancelled.",
-        duration: 6000,
-      });
-      setTrimJob(null);
-    },
-  });
-
   const startTrim = useMutation({
     mutationFn: () =>
       startVideoTrim({
@@ -257,97 +240,10 @@ export default function VideoProjectEditor({
         endSeconds: Number(trimEnd),
         outputFormat: trimFormat,
       }),
-    onSuccess: (job) => {
-      setTrimJob(job);
-      activeTrimToast.current?.dismiss();
-      activeTrimToast.current = toast({
-        title: "Video trim queued",
-        description: "The video trim is running in the background.",
-        duration: 1000000,
-        action: (
-          <ToastAction
-            altText="Cancel video trim"
-            onClick={() => cancelTrim.mutate()}
-          >
-            Cancel
-          </ToastAction>
-        ),
-      });
-    },
+      onSuccess: (job) => {
+        registerTrim(projectId, job);
+      },
   });
-
-  useEffect(() => {
-    const job = trimStatus.data;
-    if (job) setTrimJob(job);
-    if (
-      job &&
-      ["queued", "processing"].includes(job.state) &&
-      activeTrimToast.current
-    ) {
-      activeTrimToast.current.update({
-        title: job.state === "queued" ? "Video trim queued" : "Trimming video",
-        description: `${trimStateLabel(job.state)} (${job.progress}%)`,
-        duration: 1000000,
-        action: (
-          <ToastAction
-            altText="Cancel video trim"
-            onClick={() => cancelTrim.mutate()}
-          >
-            Cancel
-          </ToastAction>
-        ),
-      });
-    }
-    if (
-      job &&
-      ["completed", "failed", "cancelled"].includes(job.state) &&
-      notifiedTrimId.current !== job._id
-    ) {
-      notifiedTrimId.current = job._id;
-      activeTrimToast.current?.dismiss();
-      activeTrimToast.current = null;
-      if (job.state === "completed") {
-        const notification = toast({
-          title: "Video trim completed",
-          description: "The trimmed video is now available in the project.",
-        });
-        notification.update({
-          title: "Video trim completed",
-          description: "The trimmed video is now available in the project.",
-          duration: 6000,
-          action: (
-            <ToastAction
-              altText="Open trimmed video"
-              onClick={() => {
-                void refetchVideos().then(() =>
-                  setSelectedId(job.result_video_id),
-                );
-              }}
-            >
-              Open video
-            </ToastAction>
-          ),
-        });
-        void refetchVideos();
-        window.dispatchEvent(new Event("session-updated"));
-      } else {
-        const notification = toast({
-          title:
-            job.state === "failed"
-              ? "Video trim failed"
-              : "Video trim cancelled",
-          description:
-            job.error ||
-            (job.state === "failed"
-              ? "The video could not be trimmed."
-              : "The video trim request was cancelled."),
-          variant: job.state === "failed" ? "destructive" : "default",
-        });
-        notification.update({ duration: 6000 });
-      }
-      setTrimJob(null);
-    }
-  }, [cancelTrim, trimStatus.data, refetchVideos, toast]);
 
   useEffect(() => {
     setPlaybackFailed(false);
@@ -481,7 +377,6 @@ export default function VideoProjectEditor({
       type="button"
       variant="outline"
       className="w-full justify-start"
-      disabled={Boolean(trimJob && ["queued", "processing"].includes(trimJob.state))}
       onClick={() => {
         setTrimEnd(String(Math.max(1, Math.floor(selected.duration_seconds))));
         setTrimFormat(selected.format);
@@ -591,12 +486,14 @@ export default function VideoProjectEditor({
                     disabled={deletion.isPending}
                     aria-pressed={selected._id === video._id}
                     onClick={() => {
+                      manualSelectionRef.current = video._id;
                       setSelectedId(video._id);
+                      clearVideoQueryParameter();
                       deletion.reset();
                     }}
-                    className={`overflow-hidden rounded-lg border text-left disabled:opacity-60 ${
+                    className={`overflow-hidden rounded-lg border-2 text-left disabled:opacity-60 ${
                       selected._id === video._id
-                        ? "border-primary ring-2 ring-primary"
+                        ? "border-primary"
                         : "border-border"
                     }`}
                   >
