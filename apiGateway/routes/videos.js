@@ -140,6 +140,21 @@ controlRoute(
 );
 controlRoute(
   "post",
+  "/:user/:project/trim",
+  () => "/trim",
+);
+controlRoute(
+  "get",
+  "/:user/:project/trim/:trimId",
+  (req) => `/trim/${encodeURIComponent(req.params.trimId)}`,
+);
+controlRoute(
+  "delete",
+  "/:user/:project/trim/:trimId",
+  (req) => `/trim/${encodeURIComponent(req.params.trimId)}`,
+);
+controlRoute(
+  "post",
   "/:user/:project/uploads/:upload/start",
   (req) =>
     `/uploads/${encodeURIComponent(req.params.upload)}/start`,

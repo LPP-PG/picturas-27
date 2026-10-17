@@ -52,6 +52,26 @@ export interface VideoCapacity {
   project_available_bytes: number;
 }
 
+export type VideoTrimState =
+  | "queued"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface VideoTrimJob {
+  _id: string;
+  source_video_id: string;
+  result_video_id: string;
+  start_seconds: number;
+  end_seconds: number;
+  output_format: "mp4" | "mov";
+  state: VideoTrimState;
+  progress: number;
+  cancel_requested: boolean;
+  error: string;
+}
+
 interface AccountRequest {
   uid: string;
   token: string;
@@ -211,7 +231,7 @@ export async function uploadProjectVideo({
 }: UploadProjectVideoRequest): Promise<UploadProjectVideoResponse> {
   if (!uploadId) {
     throw new Error("This file does not have a storage reservation yet.");
-}
+  }
   const form = new FormData();
   form.append("video", file);
 
@@ -258,5 +278,59 @@ export async function deleteProjectVideo({
     },
   );
 
+  return response.data;
+}
+
+export async function startVideoTrim({
+  uid,
+  pid,
+  token,
+  videoId,
+  startSeconds,
+  endSeconds,
+  outputFormat,
+}: ProjectVideoRequest & {
+  videoId: string;
+  startSeconds: number;
+  endSeconds: number;
+  outputFormat: "mp4" | "mov";
+}): Promise<VideoTrimJob> {
+  const response = await api.post<VideoTrimJob>(
+    `${projectVideosUrl(uid, pid)}/trim`,
+    {
+      video_id: videoId,
+      start_seconds: startSeconds,
+      end_seconds: endSeconds,
+      output_format: outputFormat,
+    },
+    { headers: authHeaders(token) },
+  );
+  return response.data;
+}
+
+export async function fetchVideoTrim({
+  uid,
+  pid,
+  token,
+  trimId,
+  signal,
+}: ProjectVideoRequest & { trimId: string; signal?: AbortSignal }): Promise<VideoTrimJob> {
+  const response = await api.get<VideoTrimJob>(
+    `${projectVideosUrl(uid, pid)}/trim/${encodeURIComponent(trimId)}`,
+    { headers: authHeaders(token), signal },
+  );
+  return response.data;
+}
+
+export async function cancelVideoTrim({
+  uid,
+  pid,
+  token,
+  trimId,
+}: ProjectVideoRequest & { trimId: string }): Promise<VideoTrimJob> {
+  const response = await api.delete<VideoTrimJob>(
+    `${projectVideosUrl(uid, pid)}/trim/${encodeURIComponent(trimId)}`,
+    { headers: authHeaders(token) },
+  );
   return response.data;
 }

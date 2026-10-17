@@ -95,6 +95,9 @@ async function readVideoMetadata(filePath, { signal } = {}) {
     ),
     width: videoStream.width,
     height: videoStream.height,
+    video_bitrate: Number.isFinite(Number(videoStream.bit_rate))
+      ? Number(videoStream.bit_rate)
+      : Number(metadata.format?.bit_rate) || null,
   };
 }
 
