@@ -2,18 +2,30 @@
 
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchProjectVideos } from "@/lib/videos";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  deleteProjectVideo,
+  fetchProjectVideos,
+  type ProjectVideo,
+} from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import NewProjectDialog from "@/components/dashboard-sidebar/new-project-dialog";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/axios";
+import { deleteProject, type Project } from "@/lib/projects";
 
 interface VideoProjectEditorProps {
   projectId: string;
   projectName: string;
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
 
@@ -21,7 +33,7 @@ function errorMessage(error: unknown): string {
     if (typeof data === "string") return data;
   }
 
-  return "Não foi possível carregar os vídeos do projeto.";
+  return error instanceof Error ? error.message : fallback;
 }
 
 export default function VideoProjectEditor({
@@ -29,16 +41,20 @@ export default function VideoProjectEditor({
   projectName,
 }: VideoProjectEditorProps) {
   const session = useSession();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playbackFailed, setPlaybackFailed] = useState(false);
 
+  const queryKey = [
+    "projectVideos",
+    session.user._id,
+    projectId,
+    session.token,
+  ];
+
   const videos = useQuery({
-    queryKey: [
-      "projectVideos",
-      session.user._id,
-      projectId,
-      session.token,
-    ],
+    queryKey,
     queryFn: ({ signal }) =>
       fetchProjectVideos({
         uid: session.user._id,
@@ -46,7 +62,6 @@ export default function VideoProjectEditor({
         token: session.token,
         signal,
       }),
-    // Renovar periodicamente os endereços temporários dos ficheiros.
     staleTime: 5 * 60 * 1000,
     refetchInterval: 30 * 60 * 1000,
   });
@@ -55,9 +70,115 @@ export default function VideoProjectEditor({
   const selected =
     items.find((video) => video._id === selectedId) ?? items[0];
 
+    const deletion = useMutation({
+    mutationFn: async (video: ProjectVideo) => {
+      const response = await api.get<Project[]>(
+        `/projects/${encodeURIComponent(session.user._id)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+          },
+        },
+      );
+
+      const project = response.data.find(
+        (item) => item._id === projectId,
+      );
+
+      if (!project) {
+        throw new Error("The project no longer exists.");
+      }
+
+      const videoIds = project.video_ids ?? [];
+
+      if (!videoIds.includes(video._id)) {
+        throw new Error(
+          "This video is no longer in the project. Refresh and try again.",
+        );
+      }
+
+      const deleteWholeProject = videoIds.length === 1;
+
+      const confirmed = window.confirm(
+        deleteWholeProject
+          ? `Delete "${video.name}" and this project?\n\n` +
+              "This is the last video in the project. " +
+              "The video, its thumbnail and the project will be permanently deleted."
+          : `Delete "${video.name}"?\n\n` +
+              "The video and its thumbnail will be permanently deleted.",
+      );
+
+      if (!confirmed) return "cancelled";
+
+      if (deleteWholeProject) {
+        await deleteProject({
+          uid: session.user._id,
+          pid: projectId,
+          token: session.token,
+          projectVersion: project.version,
+        });
+
+        return "project";
+      }
+
+      await deleteProjectVideo({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId: video._id,
+      });
+
+      return "video";
+    },
+
+    onSuccess: async (result, deletedVideo) => {
+      if (result === "cancelled") return;
+
+      await queryClient.cancelQueries({ queryKey });
+
+      if (result === "project") {
+        queryClient.removeQueries({ queryKey });
+        router.replace("/dashboard");
+
+        await queryClient.invalidateQueries({
+          queryKey: ["projects"],
+        });
+
+        return;
+      }
+
+      queryClient.setQueryData<ProjectVideo[]>(
+        queryKey,
+        (current) =>
+          current?.filter(
+            (video) => video._id !== deletedVideo._id,
+          ),
+      );
+
+      const index = items.findIndex(
+        (video) => video._id === deletedVideo._id,
+      );
+
+      const remaining = items.filter(
+        (video) => video._id !== deletedVideo._id,
+      );
+
+      setSelectedId(
+        remaining[index]?._id ?? remaining[0]?._id ?? null,
+      );
+
+      await queryClient.invalidateQueries();
+    },
+  });
+
   useEffect(() => {
     setPlaybackFailed(false);
   }, [selected?._id, selected?.video_url]);
+
+  function confirmDeletion() {
+    if (!selected || deletion.isPending) return;
+    deletion.mutate(selected);
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -66,34 +187,61 @@ export default function VideoProjectEditor({
           variant="outline"
           className="h-9 w-10 lg:hidden"
         />
+
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold">
             {projectName}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Projeto de vídeo
+                        Video project
           </p>
+        </div>
+
+        <div className="ml-auto">
+          <NewProjectDialog
+            key={projectId}
+            existingProject={{
+              id: projectId,
+              name: projectName,
+            }}
+          >
+            <Button disabled={deletion.isPending}>
+              Add videos
+            </Button>
+          </NewProjectDialog>
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        {deletion.isError && (
+          <p role="alert" className="mb-4 text-sm text-red-500">
+            {errorMessage(
+              deletion.error,
+              "Could not delete the video. Please try again.",
+            )}
+          </p>
+        )}
+
         {videos.isPending ? (
-          <p role="status">A carregar os vídeos…</p>
+          <p role="status">Loading videos…</p>
         ) : videos.isError ? (
           <div role="alert" className="space-y-3">
             <p className="text-red-500">
-              {errorMessage(videos.error)}
+              {errorMessage(
+                videos.error,
+                "Could not load the project videos.",
+              )}
             </p>
             <Button
               variant="outline"
               onClick={() => void videos.refetch()}
             >
-              Tentar novamente
+              Try again
             </Button>
           </div>
         ) : !selected ? (
           <p className="text-muted-foreground">
-            Este projeto ainda não tem vídeos concluídos.
+            This project has no completed videos.
           </p>
         ) : (
           <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
@@ -105,41 +253,54 @@ export default function VideoProjectEditor({
                 controls
                 playsInline
                 preload="none"
-                aria-label={`Reproduzir ${selected.name}`}
+                aria-label={`Play ${selected.name}`}
                 className="aspect-video max-h-[60vh] w-full bg-black object-contain"
                 onError={() => setPlaybackFailed(true)}
               >
-                O seu navegador não suporta reprodução de vídeo.
+                Your browser does not support video playback.
               </video>
 
-              <div className="space-y-2 p-4">
-                <h2 className="break-all font-semibold">
-                  {selected.name}
-                </h2>
+              <div className="space-y-3 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="break-all font-semibold">
+                      {selected.name}
+                    </h2>
 
-                <p className="text-sm text-muted-foreground">
-                  {selected.format.toUpperCase()}
-                  {" · "}
-                  {selected.duration_seconds.toFixed(1)} s
-                  {" · "}
-                  {(selected.size_bytes / 1_000_000).toFixed(2)} MB
-                </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {selected.format.toUpperCase()}
+                      {" · "}
+                      {selected.duration_seconds.toFixed(1)} s
+                      {" · "}
+                      {(selected.size_bytes / 1_000_000).toFixed(2)} MB
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={deletion.isPending}
+                    onClick={confirmDeletion}
+                  >
+                    {deletion.isPending ? "Deleting…" : "Delete video"}
+                  </Button>
+                </div>
 
                 {(!selected.video_url || playbackFailed) && (
                   <div role="alert" className="space-y-2">
                     <p className="text-sm text-red-500">
-                      Não foi possível reproduzir o vídeo. Atualize os
-                      endereços e tente novamente. O codec também pode
-                      não ser suportado pelo navegador.
+                      Could not play this video. Refresh the video and
+                      try again. Its codec may not be supported by
+                      your browser.
                     </p>
 
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={videos.isFetching}
+                      disabled={videos.isFetching || deletion.isPending}
                       onClick={() => void videos.refetch()}
                     >
-                      Atualizar vídeo
+                      Refresh video
                     </Button>
                   </div>
                 )}
@@ -147,50 +308,47 @@ export default function VideoProjectEditor({
             </section>
 
             <aside
-  aria-label="Ferramentas de vídeo"
-  className="self-start rounded-lg border p-4 lg:sticky lg:top-4 lg:col-start-1 lg:row-start-1 lg:row-span-2"
->
-  <h2 className="font-semibold">Ferramentas de vídeo</h2>
+              aria-label="Video tools"
+              className="self-start rounded-lg border p-4 lg:sticky lg:top-4 lg:col-start-1 lg:row-start-1 lg:row-span-2"
+            >
+              <h2 className="font-semibold">Video tools</h2>
 
-  <p className="mt-2 break-all text-xs text-muted-foreground">
-    Vídeo selecionado: {selected.name}
-  </p>
+              <p className="mt-2 break-all text-xs text-muted-foreground">
+                Selected video: {selected.name}
+              </p>
 
-  <div className="mt-4 flex flex-col gap-3">
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full justify-start"
-      disabled
-    >
-      Recortar
-    </Button>
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full justify-start"
-      disabled
-    >
-      Filtros
-    </Button>
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full justify-start"
-      disabled
-    >
-      Legendas
-    </Button>
-  </div>
+              <div className="mt-4 flex flex-col gap-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  disabled
+                >
+                  Trim
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  disabled
+                >
+                  Filters
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  disabled
+                >
+                  Subtitles
+                </Button>
+              </div>
 
-  <p className="mt-3 text-xs text-muted-foreground">
-    Funcionalidades em implementação.
-  </p>
-</aside>
+              <p className="mt-3 text-xs text-muted-foreground">
+                These tools are under development.
+              </p>
+            </aside>
 
             <section className="min-w-0 lg:col-start-2 lg:row-start-2">
               <h2 className="mb-3 font-semibold">
-                Vídeos do projeto ({items.length})
+                Project videos ({items.length})
               </h2>
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -198,9 +356,13 @@ export default function VideoProjectEditor({
                   <button
                     key={video._id}
                     type="button"
+                    disabled={deletion.isPending}
                     aria-pressed={selected._id === video._id}
-                    onClick={() => setSelectedId(video._id)}
-                    className={`overflow-hidden rounded-lg border text-left ${
+                    onClick={() => {
+                      setSelectedId(video._id);
+                      deletion.reset();
+                    }}
+                    className={`overflow-hidden rounded-lg border text-left disabled:opacity-60 ${
                       selected._id === video._id
                         ? "border-primary ring-2 ring-primary"
                         : "border-border"
@@ -211,13 +373,13 @@ export default function VideoProjectEditor({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={video.thumbnail_url}
-                          alt={`Miniatura de ${video.name}`}
+                          alt={`Thumbnail for ${video.name}`}
                           loading="lazy"
                           className="h-full w-full object-contain"
                         />
                       ) : (
                         <span className="text-xs text-muted-foreground">
-                          Sem miniatura
+                          No thumbnail
                         </span>
                       )}
                     </div>

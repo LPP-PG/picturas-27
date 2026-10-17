@@ -45,13 +45,13 @@ interface SelectedVideo {
 }
 
 const labels: Record<VideoUploadState, string> = {
-  waiting: "A aguardar",
-  uploading: "A carregar",
-  validating: "A validar",
-  thumbnail: "A preparar miniatura",
-  completed: "Concluído",
-  failed: "Falhou",
-  cancelled: "Cancelado",
+  waiting: "Waiting",
+  uploading: "Uploading",
+  validating: "Validating",
+  thumbnail: "Preparing thumbnail",
+  completed: "Completed",
+  failed: "Failed",
+  cancelled: "Cancelled",
 };
 
 const terminalStates = new Set<VideoUploadState>([
@@ -69,7 +69,7 @@ function getMessage(error: unknown): string {
 
   return error instanceof Error
     ? error.message
-    : "Não foi possível concluir a operação.";
+    : "Could not complete the operation.";
 }
 
 function formatBytes(bytes: number): string {
@@ -121,10 +121,15 @@ export default function NewProjectDialog({
   files = [],
   setFiles,
   children,
+  existingProject,
 }: {
   files?: File[];
   setFiles?: (files: File[]) => void;
   children: React.ReactNode;
+  existingProject?: {
+    id: string;
+    name: string;
+  };
 }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -132,8 +137,10 @@ export default function NewProjectDialog({
   const session = useSession();
 
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [name, setName] = useState(existingProject?.name ?? "");
+const [mediaType, setMediaType] = useState<"image" | "video">(
+  existingProject ? "video" : "image",
+);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [videos, setVideos] = useState<SelectedVideo[]>([]);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
@@ -147,7 +154,9 @@ export default function NewProjectDialog({
   const [leaving, setLeaving] = useState(false);
 
   const videosRef = useRef<SelectedVideo[]>([]);
-  const projectIdRef = useRef<string | null>(null);
+  const projectIdRef = useRef<string | null>(
+  existingProject?.id ?? null,
+);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const controllersRef = useRef(new Map<string, AbortController>());
   const cancelledRef = useRef(new Set<string>());
@@ -178,12 +187,21 @@ export default function NewProjectDialog({
     );
   }
 
-  async function refreshProjects() {
+async function refreshProjects() {
+  await qc.invalidateQueries({
+    queryKey: ["projects", session.user._id, session.token],
+    refetchType: "all",
+  });
+
+  const pid = projectIdRef.current;
+
+  if (pid) {
     await qc.invalidateQueries({
-      queryKey: ["projects", session.user._id, session.token],
+      queryKey: ["projectVideos", session.user._id, pid],
       refetchType: "all",
     });
   }
+}
 
   async function refreshCapacity() {
     try {
@@ -347,15 +365,15 @@ export default function NewProjectDialog({
   }, [open, mediaType, session.user._id, session.token]);
 
   function resetForm() {
-    setName("");
-    setMediaType("image");
+    setName(existingProject?.name ?? "");
+    setMediaType(existingProject ? "video" : "image");
     setImageFiles([]);
     replaceVideos([]);
     setPreviewFile(null);
     setPreviewError("");
     setError("");
     setCapacity(null);
-    projectIdRef.current = null;
+    projectIdRef.current = existingProject?.id ?? null;
     cancelledRef.current.clear();
     stopAllRef.current = false;
     setFiles?.([]);
@@ -390,11 +408,11 @@ export default function NewProjectDialog({
       let reason = "";
 
       if (!/\.(mp4|mov)$/i.test(file.name)) {
-        reason = "Só são aceites vídeos MP4 ou MOV.";
+        reason = "Only MP4 or MOV videos are accepted.";
       } else if (file.size <= 0) {
-        reason = "O ficheiro está vazio.";
+        reason = "The file is empty.";
       } else if (file.size > maxSize) {
-        reason = `O ficheiro excede ${premium ? "1 GB" : "100 MB"}.`;
+        reason = `The file exceeds ${premium ? "1 GB" : "100 MB"}.`;
       }
 
       return {
@@ -436,7 +454,7 @@ export default function NewProjectDialog({
               ? {
                   eligible: false,
                   state: "failed" as const,
-                  error: `O vídeo excede ${maxDuration} segundos.`,
+                  error: `The video exceeds ${maxDuration} seconds.`,
                 }
               : {}),
           });
@@ -476,7 +494,7 @@ export default function NewProjectDialog({
     } catch (err) {
       controllersRef.current.get(id)?.abort();
       updateVideo(id, {
-        error: `Cancelamento por confirmar: ${getMessage(err)}`,
+        error: `Cancellation not confirmed: ${getMessage(err)}`,
       });
       throw err;
     }
@@ -541,7 +559,7 @@ export default function NewProjectDialog({
       action?.();
     } catch (err) {
       setError(
-        `Não foi possível confirmar o cancelamento. ${getMessage(err)}`,
+        `Could not confirm cancellation. ${getMessage(err)}`,
       );
     } finally {
       setLeaving(false);
@@ -574,7 +592,7 @@ export default function NewProjectDialog({
           current.cleanup_pending
         ) {
           setError(
-            "A tentativa anterior ainda está a terminar ou a limpar dados. Aguarde.",
+            "The previous attempt is still finishing or cleaning up. Please wait.",
           );
           return;
         }
@@ -654,7 +672,7 @@ export default function NewProjectDialog({
             ) {
               updateVideo(item.id, {
                 state: "waiting",
-                error: "À espera de uma vaga de carregamento na conta.",
+                error: "Waiting for an available upload slot on your account.",
               });
               await wait(1500);
               continue;
@@ -719,8 +737,8 @@ export default function NewProjectDialog({
             state: "failed",
             cleanupPending: true,
             error:
-              "Não foi possível confirmar o resultado. " +
-              "Aguarde a recuperação antes de tentar novamente.",
+              "Could not confirm the result. " +
+              "Please wait for recovery before trying again.",
           });
         }
       } finally {
@@ -774,7 +792,7 @@ export default function NewProjectDialog({
         await refreshProjects();
         setOpen(false);
         resetForm();
-        toast({ title: "Projeto criado com sucesso" });
+        toast({ title: "Project created successfully" });
         router.push(`/dashboard/${project._id}`);
       } catch (err) {
         setError(getMessage(err));
@@ -803,8 +821,8 @@ export default function NewProjectDialog({
     if (
       rejected.length > 0 &&
       !window.confirm(
-        `${rejected.length} ficheiro(s) não são elegíveis. ` +
-          `Enviar apenas os ${pending.length} elegíveis?`,
+        `${rejected.length} file(s) are not eligible. ` +
+          `Upload only the ${pending.length} eligible files?`,
       )
     ) {
       return;
@@ -821,8 +839,8 @@ export default function NewProjectDialog({
       await refreshProjects();
 
       toast({
-        title: "Carregamentos terminados",
-        description: "Consulte o resultado de cada ficheiro.",
+        title: "Uploads finished",
+        description: "Check the result for each file.",
       });
     } catch (err) {
       setError(getMessage(err));
@@ -868,7 +886,9 @@ export default function NewProjectDialog({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>
+  {existingProject ? "Add videos" : "Create New Project"}
+</DialogTitle>
           </DialogHeader>
 
           <Label htmlFor="project-name">Project Name</Label>
@@ -887,7 +907,7 @@ export default function NewProjectDialog({
               disabled={busy || projectIdRef.current !== null}
               onClick={() => setMediaType("image")}
             >
-              Imagens
+              Images
             </Button>
 
             <Button
@@ -898,14 +918,13 @@ export default function NewProjectDialog({
               }
               onClick={() => setMediaType("video")}
             >
-              Vídeos
+              Videos
             </Button>
           </div>
 
           {!allowedVideo && (
             <p className="text-sm text-muted-foreground">
-              Inicie sessão numa conta Registada ou Premium para criar
-              projetos de vídeo.
+              Sign in with a Free or Premium account to create video projects.
             </p>
           )}
 
@@ -918,31 +937,31 @@ export default function NewProjectDialog({
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 {premium
-                  ? "MP4 ou MOV: até 600 segundos e 1 GB por vídeo. Até 3 carregamentos simultâneos por conta."
-                  : "MP4 ou MOV: até 60 segundos e 100 MB por vídeo. Um carregamento simultâneo por conta."}
-                {" "}O carregamento não consome operações diárias.
+                  ? "MP4 or MOV: up to 600 seconds and 1 GB per video. Up to 3 simultaneous uploads per account."
+                  : "MP4 or MOV: up to 60 seconds and 100 MB per video. One simultaneous upload per account."}
+                {" "}Uploading does not use daily operations.
               </p>
 
               {capacity ? (
                 <div className="rounded-md border p-3 text-sm">
                   <p>
-                    Projeto: {formatBytes(capacity.project_available_bytes)}
-                    {" disponíveis de "}
+                    Project: {formatBytes(capacity.project_available_bytes)}
+                    {" available out of "}
                     {formatBytes(capacity.limits.maxProjectBytes)}.
                   </p>
                   <p>
-                    Conta: {formatBytes(capacity.account_available_bytes)}
-                    {" disponíveis de "}
+                    Account: {formatBytes(capacity.account_available_bytes)}
+                    {" available out of "}
                     {formatBytes(capacity.limits.maxAccountBytes)}.
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    O espaço disponível considera as reservas.
-                    As miniaturas de vídeo não descontam da quota.
+                    Available storage includes reservations.
+                    Video thumbnails do not count towards your quota.
                   </p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {capacityError || "A consultar espaço disponível…"}
+                  {capacityError || "Checking available storage…"}
                 </p>
               )}
 
@@ -952,7 +971,7 @@ export default function NewProjectDialog({
                   variant="outline"
                   onClick={() => void refreshCapacity()}
                 >
-                  Atualizar espaço
+                  Refresh storage
                 </Button>
               )}
 
@@ -967,7 +986,7 @@ export default function NewProjectDialog({
                 }}
               >
                 <p className="mb-2 text-sm">
-                  Arraste vídeos para aqui ou selecione ficheiros.
+                  Drag videos here or select files.
                 </p>
                 <Input
                   ref={fileInputRef}
@@ -975,7 +994,7 @@ export default function NewProjectDialog({
                   accept=".mp4,.mov"
                   multiple
                   disabled={busy}
-                  aria-label="Selecionar vídeos"
+                  aria-label="Select videos"
                   onChange={(event) => {
                     void selectVideos(event.target.files);
                   }}
@@ -985,7 +1004,7 @@ export default function NewProjectDialog({
               {previewUrl && (
                 <div>
                   <p className="mb-2 text-sm font-medium">
-                    Pré-visualização: {previewFile?.name}
+                    Preview: {previewFile?.name}
                   </p>
                   <video
                     key={previewUrl}
@@ -996,8 +1015,8 @@ export default function NewProjectDialog({
                     className="aspect-video w-full rounded-md bg-black"
                     onError={() => {
                       setPreviewError(
-                        "O navegador não conseguiu pré-visualizar este vídeo. " +
-                          "Pode continuar o envio; o servidor validará o ficheiro.",
+                        "Your browser could not preview this video. " +
+                          "You can still upload it; the server will validate the file.",
                       );
                     }}
                   />
@@ -1019,10 +1038,10 @@ export default function NewProjectDialog({
                       {formatBytes(item.file.size)}
                       {" · "}
                       {item.checking
-                        ? "A identificar duração"
+                        ? "Checking duration"
                         : item.duration !== null
                           ? `${item.duration.toFixed(2)} s`
-                          : "Duração indisponível no navegador"}
+                          : "Duration unavailable in this browser"}
                       {" · "}
                       {labels[item.state]}
                     </p>
@@ -1034,12 +1053,12 @@ export default function NewProjectDialog({
                             value={item.progress}
                             max={100}
                             className="w-full"
-                            aria-label={`Carregamento de ${item.file.name}`}
+                            aria-label={`Upload of ${item.file.name}`}
                           />
                           <p className="text-xs text-muted-foreground">
-                            {item.progress}% enviados
+                            {item.progress}% uploaded
                             {item.progress === 100
-                              ? " — aguarde a conclusão no servidor"
+                              ? " — waiting for the server to finish"
                               : ""}
                           </p>
                         </div>
@@ -1053,7 +1072,7 @@ export default function NewProjectDialog({
 
                     {item.cleanupPending && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        A confirmar a limpeza da tentativa anterior.
+                        Confirming cleanup of the previous attempt.
                       </p>
                     )}
 
@@ -1065,7 +1084,7 @@ export default function NewProjectDialog({
                           variant="outline"
                           onClick={() => setPreviewFile(item.file)}
                         >
-                          Pré-visualizar
+                          Preview
                         </Button>
                       )}
 
@@ -1080,7 +1099,7 @@ export default function NewProjectDialog({
                             });
                           }}
                         >
-                          Cancelar
+                          Cancel
                         </Button>
                       )}
 
@@ -1095,7 +1114,7 @@ export default function NewProjectDialog({
                             disabled={item.cleanupPending}
                             onClick={() => void retryItem(item.id)}
                           >
-                            Tentar novamente
+                            Try again
                           </Button>
                         )}
 
@@ -1118,7 +1137,7 @@ export default function NewProjectDialog({
                               }
                             }}
                           >
-                            Remover
+                            Remove
                           </Button>
                         )}
                     </div>
@@ -1128,8 +1147,8 @@ export default function NewProjectDialog({
 
               {insufficientSpace && (
                 <p role="alert" className="text-sm text-red-500">
-                  A seleção excede o espaço disponível.
-                  Remova ficheiros antes de continuar.
+                  The selection exceeds available storage.
+                  Remove files before continuing.
                 </p>
               )}
             </div>
@@ -1152,7 +1171,7 @@ export default function NewProjectDialog({
                   });
                 }}
               >
-                Cancelar pendentes
+                Cancel pending uploads
               </Button>
             )}
 
@@ -1168,7 +1187,7 @@ export default function NewProjectDialog({
                   router.push(`/dashboard/${pid}`);
                 }}
               >
-                Abrir projeto
+                Open project
               </Button>
             )}
 
@@ -1193,10 +1212,10 @@ export default function NewProjectDialog({
                 <LoaderCircle className="mr-2 size-4 animate-spin" />
               )}
               {busy
-                ? "A carregar…"
+                ? "Uploading…"
                 : projectIdRef.current
-                  ? "Carregar vídeos selecionados"
-                  : "Criar projeto"}
+                  ? "Upload selected videos"
+                  : "Create project"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1210,12 +1229,12 @@ export default function NewProjectDialog({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sair durante o carregamento?</DialogTitle>
+            <DialogTitle>Leave during upload?</DialogTitle>
           </DialogHeader>
 
           <p className="text-sm">
-            Sair cancela os carregamentos pendentes.
-            Os vídeos já concluídos ficam guardados.
+            Leaving cancels pending uploads.
+            Completed videos will be kept.
           </p>
 
           {error && (
@@ -1234,14 +1253,14 @@ export default function NewProjectDialog({
                 setLeaveOpen(false);
               }}
             >
-              Ficar
+              Stay
             </Button>
             <Button
               type="button"
               disabled={leaving}
               onClick={() => void leaveAndCancel()}
             >
-              {leaving ? "A cancelar…" : "Sair e cancelar"}
+              {leaving ? "Cancelling…" : "Leave and cancel"}
             </Button>
           </DialogFooter>
         </DialogContent>

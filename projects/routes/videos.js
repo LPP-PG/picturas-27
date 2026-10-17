@@ -31,6 +31,10 @@ const running = new Map();
 const INACTIVITY_MS = 5 * 60 * 1000;
 const PROCESSING_MS = 5 * 60 * 1000;
 
+const {
+  ensureUniqueVideoContent,
+} = require("../utils/videoDuplicate");
+
 router.get("/:user/capacity", videoAuth, async (req, res) => {
   try {
     const {
@@ -57,6 +61,13 @@ router.get("/:user/capacity", videoAuth, async (req, res) => {
     });
   }
 });
+
+router.use(
+  "/:user/:project",
+  videoAuth,
+  videoProjectAuth,
+  require("./videoDeletion"),
+);
 
 router.use(
   "/:user/:project",
@@ -441,6 +452,15 @@ router.post(
           },
         },
       );
+      const contentHash = await ensureUniqueVideoContent({
+        userId: upload.user_id,
+        projectId: upload.project_id,
+        filePath: file.path,
+        sizeBytes: file.size,
+        signal,
+      });
+
+      checkCancellation(signal);
 
       const metadata = await readVideoMetadata(
         file.path,
@@ -552,6 +572,7 @@ router.post(
         user_id: upload.user_id,
         project_id: upload.project_id,
         name: path.basename(upload.name),
+        content_sha256: contentHash,
         storage_key: `${videoId}/src/${videoId}${extension}`,
         thumbnail_key: `${videoId}/preview/${videoId}.jpg`,
         thumbnail_time_seconds: thumbnail.timeSeconds,
@@ -592,7 +613,21 @@ router.post(
           project_version: project.version,
         });
       }
-    } catch (error) {
+        } catch (error) {
+      if (
+        error.code === 11000 &&
+        (
+          error.keyPattern?.content_sha256 ||
+          String(error.message).includes(
+            "unique_video_content_per_project",
+          )
+        )
+      ) {
+        error.status = 409;
+        error.message =
+          "This video already exists in this project.";
+      }
+
       console.error("Erro ao carregar vídeo:", error.message);
 
       if (upload) {

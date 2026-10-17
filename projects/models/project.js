@@ -26,6 +26,11 @@ const projectSchema = new mongoose.Schema({
     default: "image",
   },
 
+  keep_empty_video_project: {
+    type: Boolean,
+    default: false,
+  },
+
   video_ids: {
     type: [
       {
