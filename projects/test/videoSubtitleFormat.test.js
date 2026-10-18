@@ -22,6 +22,13 @@ test("normalizeSegments clamps, drops and trims (RN6)", () => {
   ]);
 });
 
+test("normalizeSegments clamps negative start to 0", () => {
+  assert.deepEqual(
+    f.normalizeSegments([{ start: -1, end: 2, text: "x" }], 10),
+    [{ start: 0, end: 2, text: "x" }],
+  );
+});
+
 test("toWebVtt escapes and formats timestamps", () => {
   const vtt = f.toWebVtt([{ start: 61.5, end: 3725.25, text: "a --> b <i> & c" }]);
   assert.equal(

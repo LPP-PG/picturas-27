@@ -9,7 +9,7 @@ function isValidLanguage(value) {
 function normalizeSegments(raw, durationSeconds) {
   return raw
     .map((segment) => ({
-      start: segment.start,
+      start: Math.max(0, segment.start),
       end: Math.min(segment.end, durationSeconds),
       text: String(segment.text ?? "").replace(/\s+/g, " ").trim(),
     }))
