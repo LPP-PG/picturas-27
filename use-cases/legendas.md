@@ -9,7 +9,7 @@
 | **Grupo / Equipa**      |                                                                                                  |
 | **Autores**             | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
 | **Data**                | 2026-10-18                                                                                       |
-| **Versão do documento** | v1.1                                                                                             |
+| **Versão do documento** | v1.2                                                                                             |
 | **Unidade Curricular**  | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho                                |
 
 ---
@@ -35,7 +35,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |---|---|
 |**ID do Caso de Uso**|UC-VID-003|
 |**Nome**|Gerar legendas automáticas para um vídeo de um projeto|
-|**Versão**|v1.1|
+|**Versão**|v1.2|
 |**Autor**|Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto|
 |**Data**|2026-10-18|
 |**Objetivo**|Permitir ao utilizador gerar automaticamente legendas sincronizadas com o conteúdo falado de um vídeo de um projeto de vídeo.|
@@ -112,6 +112,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**RN13**|Os pedidos de legendas, a faixa de áudio processada e as legendas geradas apenas podem ser acedidos pelo proprietário do vídeo. O acesso aos vídeos, miniaturas e projetos é regulado pelo UC-VID-004 (RN2) e fica sujeito às regras de privacidade e armazenamento do PictuRAS|
 |**RN14**|Cada vídeo tem no máximo um conjunto de legendas. Uma nova geração só substitui as legendas existentes quando termina em **Concluído**; se falhar ou for cancelada, as legendas anteriores mantêm-se|
 |**RN15**|Enquanto existir um pedido de legendas **A aguardar** ou **A processar**, o vídeo, ou o projeto que o contém, não pode ser eliminado; para o eliminar, o utilizador deve primeiro cancelar o pedido em curso (tal como no UC-VID-001, RN5)|
+|**RN16**|Quando é aplicado um filtro (UC-VID-002) a um vídeo com legendas, o novo vídeo resultante recebe uma cópia das legendas do original, no mesmo idioma, porque o filtro não altera a duração nem os instantes do vídeo. A cópia é independente das legendas do original e conta para o espaço do projeto e da conta. Se a cópia falhar, o resultado do filtro é guardado sem legendas e o pedido de filtro não falha por isso|
 
 ### 2.7 Assunções
 
@@ -145,7 +146,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**Q9**|Deve existir uma funcionalidade separada para traduzir automaticamente as legendas?|
 |**Q11**|No sistema existente, as funcionalidades com IA são uma vantagem do perfil Premium. A geração de legendas, que usa reconhecimento de fala, deve estar disponível para o perfil Registado ou apenas para o Premium?|
 |**Q12**|A restrição R5 do sistema existente limita as operações com IA a 60 s de tempo de resposta médio. Como se aplica a vídeos Premium com até 10 min, cuja transcrição pode demorar mais?|
-|**Q15**|Quando um vídeo com legendas é recortado (UC-VID-001), o novo vídeo deve herdar as legendas do intervalo, com os instantes ajustados, ou fica sem legendas (UC-VID-001, Q6)?|
+|**Q15**|Quando um vídeo com legendas é recortado (UC-VID-001), o novo vídeo deve herdar as legendas do intervalo, com os instantes ajustados, ou fica sem legendas (UC-VID-001, Q6)? No caso dos Filtros a questão está decidida na RN16|
 |**Q16**|Deve ser reservado espaço para as legendas na confirmação, como no recorte (UC-VID-001, A7), ou basta verificar o espaço na confirmação e ao guardar (A12)? Relacionado com UC-VID-004, Q1|
 
 <!--
@@ -207,6 +208,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | REQ-VID-LEG-041 | O sistema deve recusar o pedido quando o espaço livre no projeto ou na conta não chegar para guardar as legendas, apresentando a mensagem "Espaço de armazenamento insuficiente" e indicando o limite atingido. | F | Deve ter | NOVO | Passo 5 / Exceção 6 / A12 | Dado um projeto ou uma conta sem espaço livre, quando o utilizador confirma a geração, então o pedido não é criado e a mensagem indica o limite atingido (projeto ou conta). |
 | REQ-VID-LEG-042 | O sistema deve impedir a eliminação do vídeo, ou do projeto que o contém, enquanto existir um pedido de legendas associado nos estados A aguardar ou A processar. | F | Deve ter | NOVO | RN15 | Dado um vídeo com um pedido A aguardar ou A processar, quando o utilizador tenta eliminar o vídeo ou o projeto, então o sistema impede a eliminação. |
 | REQ-VID-LEG-043 | O sistema deve contabilizar as legendas guardadas no espaço ocupado do projeto e da conta. | F | Deve ter | ALT | Passo 10 / RN8 / A12; UC-VID-004: RN7 | Dado um pedido concluído, quando se consulta o espaço ocupado do projeto e da conta, então ambos incluem o espaço das legendas. |
+| REQ-VID-LEG-044 | O sistema deve copiar as legendas de um vídeo para o novo vídeo criado quando lhe é aplicado um filtro, mantendo o idioma e os instantes. | F | Deveria ter | NOVO | RN16; UC-VID-002 | Dado um vídeo com legendas, quando um filtro termina em Concluído, então o novo vídeo tem legendas com o mesmo texto, idioma e instantes; o original mantém as suas; se o original não tinha legendas, o resultado também não tem. |
 
 <!--
 **IDs retirados na v1.1** (nunca serão reutilizados):
@@ -227,7 +229,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Controlo de acesso e privacidade | Estender | Aplicar o acesso exclusivo do proprietário aos pedidos, ao áudio processado e às legendas; o acesso aos vídeos e aos projetos segue o UC-VID-004. | REQ-VID-LEG-040 |
 | Editor do projeto de vídeo | Estender | A ferramenta Legendas passa a fazer parte do catálogo de ferramentas do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), com escolha do idioma, acompanhamento dos pedidos e reprodução com legendas. | REQ-VID-LEG-002, 011, 012, 013, 017, 021, 038 |
 | Notificações internas | Estender | Apresentar notificações de conclusão dos pedidos de legendas dentro da aplicação. | REQ-VID-LEG-037 |
-| Projetos de vídeo e gestão de vídeos | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo. O encadeamento de ferramentas e o processamento em lote ficam fora do MVP (UC-VID-004, RN14). | REQ-VID-LEG-030, 042 |
+| Projetos de vídeo e gestão de vídeos | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo. O encadeamento de ferramentas e o processamento em lote ficam fora do MVP (UC-VID-004, RN14). O resultado de um filtro recebe uma cópia das legendas do original (RN16). | REQ-VID-LEG-030, 042, 044 |
 | Restrição de desempenho das operações com IA | Manter | Não é introduzido um novo limite de processamento. A aplicação de R5 aos vídeos permanece em aberto em Q12. | Sem requisito derivado de Q12 |
 
 ### 4.3 Matriz de Rastreabilidade
@@ -280,6 +282,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | RN13 | Acesso exclusivo do proprietário | REQ-VID-LEG-040 |
 | RN14 | Um conjunto de legendas e substituição apenas na conclusão | REQ-VID-LEG-011, 031 |
 | RN15 | Vídeo e projeto não elimináveis com pedido ativo | REQ-VID-LEG-042 |
+| RN16 | Resultado de um filtro recebe cópia das legendas | REQ-VID-LEG-044 |
 | A1 | Vídeo armazenado e acessível | Pressuposto do ambiente; não origina um requisito autónomo. |
 | A2 | Áudio extraível e processável | REQ-VID-LEG-023; pressuposto de viabilidade. |
 | A3 | Um único idioma por vídeo | Delimitação do âmbito; não exige suporte a vários idiomas. |
