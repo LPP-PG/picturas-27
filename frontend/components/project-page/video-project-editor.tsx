@@ -263,6 +263,8 @@ export default function VideoProjectEditor({
         ["videoSubtitles", session.user._id, projectId, job.video_id],
         job,
       );
+      // A operação fica reservada: atualizar o contador
+      window.dispatchEvent(new Event("session-updated"));
     },
 
     onError: (_error, { videoId }) => {
@@ -333,9 +335,15 @@ export default function VideoProjectEditor({
       return;
     }
 
+    // Só tratar pedidos que foram vistos ativos neste ecrã
+    if (!activeSubtitleIdsRef.current.has(subtitleJob._id)) return;
+
+    // Pedido terminado: a operação foi consumida ou devolvida
+    activeSubtitleIdsRef.current.delete(subtitleJob._id);
+    window.dispatchEvent(new Event("session-updated"));
+
     if (
       subtitleJob.state === "completed" &&
-      activeSubtitleIdsRef.current.has(subtitleJob._id) &&
       !notifiedSubtitleIdsRef.current.has(subtitleJob._id)
     ) {
       notifiedSubtitleIdsRef.current.add(subtitleJob._id);
