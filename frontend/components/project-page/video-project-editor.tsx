@@ -46,6 +46,13 @@ interface VideoProjectEditorProps {
 
 const NO_AUDIO_MESSAGE = "No audio track was found in this video.";
 
+const SUBTITLE_LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  pt: "Portuguese",
+  es: "Spanish",
+  fr: "French",
+};
+
 const REPLACE_SUBTITLES_MESSAGE =
   "This video already has subtitles. They will be replaced only if the new generation completes. Continue?";
 
@@ -93,6 +100,7 @@ export default function VideoProjectEditor({
   const [subtitleLanguage, setSubtitleLanguage] =
     useState<SubtitleLanguage>("auto");
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
+  const subtitleTrackRef = useRef<HTMLTrackElement | null>(null);
   const [trimStart, setTrimStart] = useState("0");
   const [trimEnd, setTrimEnd] = useState("");
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
@@ -315,6 +323,8 @@ export default function VideoProjectEditor({
     },
   });
 
+  const { reset: resetCancelSubtitles } = cancelSubtitles;
+
   useEffect(() => {
     if (!subtitleJob) return;
 
@@ -399,9 +409,25 @@ export default function VideoProjectEditor({
     return () => URL.revokeObjectURL(url);
   }, [vttData]);
 
+  // Alguns navegadores ignoram "default" numa pista adicionada dinamicamente
+  useEffect(() => {
+    const element = subtitleTrackRef.current;
+    if (!element || !subtitleUrl) return;
+
+    const showTrack = () => {
+      element.track.mode = "showing";
+    };
+
+    showTrack();
+    element.addEventListener("load", showTrack);
+
+    return () => element.removeEventListener("load", showTrack);
+  }, [subtitleUrl, subtitleTrackLanguage, selected?._id, selected?.video_url]);
+
   useEffect(() => {
     resetStartSubtitles();
-  }, [selected?._id, resetStartSubtitles]);
+    resetCancelSubtitles();
+  }, [selected?._id, resetStartSubtitles, resetCancelSubtitles]);
 
   function generateSubtitles() {
     if (!selected || startSubtitles.isPending || subtitleActive) return;
@@ -639,10 +665,14 @@ export default function VideoProjectEditor({
                 {subtitleUrl && subtitleTrackLanguage && (
                   <track
                     key={subtitleUrl}
+                    ref={subtitleTrackRef}
                     kind="subtitles"
                     default
                     srcLang={subtitleTrackLanguage}
-                    label={subtitleTrackLanguage}
+                    label={
+                      SUBTITLE_LANGUAGE_NAMES[subtitleTrackLanguage] ??
+                      subtitleTrackLanguage
+                    }
                     src={subtitleUrl}
                   />
                 )}
@@ -729,11 +759,13 @@ export default function VideoProjectEditor({
       variant="outline"
       className="w-full justify-start"
       disabled={selected.has_audio === false}
-      title={selected.has_audio === false ? NO_AUDIO_MESSAGE : undefined}
       onClick={() => setSubtitlesOpen(!subtitlesOpen)}
     >
       Subtitles
     </Button>
+    {selected.has_audio === false && (
+      <p className="text-xs text-muted-foreground">{NO_AUDIO_MESSAGE}</p>
+    )}
   </div>
 
     {trimOpen && (
