@@ -23,6 +23,22 @@ test("stream normal com linhas partidas entre chunks", async () => {
   assert.deepEqual(segments.map((s) => s.text), ["Olá", "mundo"]);
 });
 
+test("caracteres multibyte partidos entre chunks", async () => {
+  const bytes = Buffer.from(
+    '{"type":"segment","start":0,"end":1,"text":"Olá"}\n{"type":"done"}\n',
+  );
+  // Partir a meio dos dois bytes de "á"
+  const cut = bytes.indexOf(Buffer.from("á")) + 1;
+
+  const segments = [];
+  await parseSpeechStream(
+    Readable.from([bytes.subarray(0, cut), bytes.subarray(cut)]),
+    { onSegment: (segment) => segments.push(segment) },
+  );
+
+  assert.equal(segments[0].text, "Olá");
+});
+
 test("evento error rejeita com o código", async () => {
   const stream = Readable.from([
     '{"type":"info","language":null,"probability":0.1}\n{"type":"error",',

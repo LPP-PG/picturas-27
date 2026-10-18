@@ -207,7 +207,9 @@ async function processSubtitleJob(jobId, authorization) {
     await checkCancellation(jobId);
     setProgress(10);
 
-    const metadata = await readVideoMetadata(inputPath);
+    const metadata = await readVideoMetadata(inputPath, {
+      signal: controller.signal,
+    });
 
     if (metadata.has_audio === false) throw codedError("no_audio");
 
@@ -219,11 +221,14 @@ async function processSubtitleJob(jobId, authorization) {
     // Reconhecer a fala.
     const duration = metadata.duration_seconds;
     const rawSegments = [];
+    let detectedLanguage = null;
 
     await transcribe(audioPath, job.language, {
       signal: controller.signal,
       onInfo: (info) => {
         if (!info.language) return;
+
+        detectedLanguage = info.language;
 
         void VideoSubtitle.updateOne(
           { _id: jobId },
@@ -236,7 +241,9 @@ async function processSubtitleJob(jobId, authorization) {
           end: Number(segment.end),
           text: segment.text,
         });
-        setProgress(Math.min(90, 15 + (75 * Number(segment.end)) / duration));
+        if (Number.isFinite(Number(segment.end))) {
+          setProgress(Math.min(90, 15 + (75 * Number(segment.end)) / duration));
+        }
       },
     });
 
@@ -270,6 +277,9 @@ async function processSubtitleJob(jobId, authorization) {
       contentType: "text/vtt",
     });
 
+    // Marcar antes do envio: uma falha ambígua também apaga o ficheiro
+    uploaded = true;
+
     await post_image(userId, videoId, "subtitles", form, {
       headers: {
         "X-Storage-File-Name": fileName,
@@ -277,14 +287,13 @@ async function processSubtitleJob(jobId, authorization) {
       },
     });
 
-    uploaded = true;
     setProgress(95);
     await checkCancellation(jobId);
 
     // Ligar as novas legendas ao vídeo.
     const previous = await Video.findOneAndUpdate(
       { _id: job.video_id, user_id: job.user_id, project_id: job.project_id },
-      { $set: { subtitles_key: newKey, subtitles_language: job.language } },
+      { $set: { subtitles_key: newKey, subtitles_language: detectedLanguage || job.language } },
       { new: false },
     ).lean();
 
@@ -305,7 +314,7 @@ async function processSubtitleJob(jobId, authorization) {
     }
 
     await VideoSubtitle.updateOne(
-      { _id: jobId },
+      { _id: jobId, state: "processing" },
       {
         $set: {
           state: "completed",
@@ -316,21 +325,23 @@ async function processSubtitleJob(jobId, authorization) {
       },
     );
   } catch (error) {
+    // As legendas já estão ligadas ao vídeo: não falhar nem devolver a operação
+    if (linked) {
+      console.error("Error finishing subtitle job:", error.message);
+      return;
+    }
+
     const cancelled = error.name === "AbortError" || cancellationRequested;
 
     // Apagar o ficheiro novo se não chegou a ser ligado ao vídeo.
-    if (uploaded && !linked) {
+    if (uploaded) {
       await delete_image(userId, videoId, "subtitles", fileName).catch(
         (deleteError) => {
-          console.error("Error deleting new subtitles:", deleteError.message);
+          if (deleteError.response?.status !== 404) {
+            console.error("Error deleting new subtitles:", deleteError.message);
+          }
         },
       );
-    }
-
-    // Devolver a operação reservada.
-    let refunded = false;
-    if (job.operation_reserved) {
-      refunded = await refundOperation(userId);
     }
 
     const code = cancelled
@@ -341,18 +352,27 @@ async function processSubtitleJob(jobId, authorization) {
 
     if (!cancelled) console.error("Subtitle job failed:", error.message);
 
-    await VideoSubtitle.updateOne(
-      { _id: jobId },
+    // Primeiro o estado final; só depois a devolução da operação
+    const written = await VideoSubtitle.updateOne(
+      { _id: jobId, state: "processing" },
       {
         $set: {
           state: cancelled ? "cancelled" : "failed",
-          ...(refunded ? { operation_reserved: false } : {}),
           error: cancelled ? "Subtitle generation cancelled." : errorMessages[code],
           error_code: code,
           finished_at: new Date(),
         },
       },
     );
+
+    if (written.matchedCount === 1 && job.operation_reserved) {
+      if (await refundOperation(userId)) {
+        await VideoSubtitle.updateOne(
+          { _id: jobId },
+          { $set: { operation_reserved: false } },
+        );
+      }
+    }
   } finally {
     clearInterval(cancellationTimer);
 
@@ -407,22 +427,31 @@ async function recoverInterruptedSubtitleJobs() {
   });
 
   for (const job of jobs) {
-    const refunded = job.operation_reserved
-      ? await refundOperation(job.user_id)
-      : false;
-
-    await VideoSubtitle.updateOne(
-      { _id: job._id },
-      {
-        $set: {
-          state: "failed",
-          error: errorMessages.failed,
-          error_code: "failed",
-          finished_at: new Date(),
-          ...(refunded ? { operation_reserved: false } : {}),
+    try {
+      // Primeiro o estado final; só depois a devolução da operação
+      const written = await VideoSubtitle.updateOne(
+        { _id: job._id, state: { $in: ["queued", "processing"] } },
+        {
+          $set: {
+            state: "failed",
+            error: errorMessages.failed,
+            error_code: "failed",
+            finished_at: new Date(),
+          },
         },
-      },
-    );
+      );
+
+      if (written.matchedCount === 1 && job.operation_reserved) {
+        if (await refundOperation(job.user_id)) {
+          await VideoSubtitle.updateOne(
+            { _id: job._id },
+            { $set: { operation_reserved: false } },
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error recovering subtitle job:", error.message);
+    }
   }
 }
 
