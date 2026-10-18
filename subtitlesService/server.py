@@ -11,7 +11,13 @@ app = Flask(__name__)
 MIN_PROBABILITY = 0.5
 
 # Modelo carregado uma só vez no arranque
-model = WhisperModel(os.environ.get("WHISPER_MODEL", "small"), device="cpu", compute_type="int8")
+# Limitar os fios de CPU para não esgotar a máquina
+model = WhisperModel(
+    os.environ.get("WHISPER_MODEL", "small"),
+    device="cpu",
+    compute_type="int8",
+    cpu_threads=int(os.environ.get("WHISPER_CPU_THREADS", "2")),
+)
 
 
 @app.get("/health")

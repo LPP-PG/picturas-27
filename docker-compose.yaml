@@ -425,8 +425,10 @@ services:
 
   subtitles_ai:
     build: ./subtitlesService
+    restart: on-failure
     environment:
       WHISPER_MODEL: small
+      WHISPER_CPU_THREADS: 2
     networks:
       - elk
     volumes:
