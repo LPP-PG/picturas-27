@@ -72,12 +72,20 @@ router.post("/:user/subtitles/cancel-active", videoAuth, async (req, res) => {
       state: { $in: ["queued", "processing"] },
     }).lean();
 
+    let cancelled = 0;
+
     for (const job of jobs) {
-      await cancelSubtitleJob(job);
+      // Uma falha não impede o cancelamento dos restantes
+      try {
+        await cancelSubtitleJob(job);
+        cancelled += 1;
+      } catch (error) {
+        console.error("Error cancelling subtitle job:", error);
+      }
     }
 
     res.set("Cache-Control", "no-store");
-    res.json({ cancelled: jobs.length });
+    res.json({ cancelled });
   } catch (error) {
     console.error("Error cancelling active subtitles:", error);
 

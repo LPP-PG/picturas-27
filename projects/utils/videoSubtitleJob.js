@@ -61,6 +61,35 @@ async function refundOperation(userId) {
   }
 }
 
+// Pedidos com devolução em curso (evita devolver duas vezes a mesma operação)
+const refundsInFlight = new Set();
+
+// Devolver a operação de um pedido e assinalá-la como devolvida
+async function refundReserved(jobId, userId) {
+  const key = String(jobId);
+  if (refundsInFlight.has(key)) return;
+
+  refundsInFlight.add(key);
+
+  try {
+    // Confirmar que a operação ainda não foi devolvida
+    const pending = await VideoSubtitle.exists({
+      _id: jobId,
+      operation_reserved: true,
+    });
+    if (!pending) return;
+
+    if (await refundOperation(userId)) {
+      await VideoSubtitle.updateOne(
+        { _id: jobId, operation_reserved: true },
+        { $set: { operation_reserved: false } },
+      );
+    }
+  } finally {
+    refundsInFlight.delete(key);
+  }
+}
+
 async function checkCancellation(jobId) {
   const current = await VideoSubtitle.findById(jobId)
     .select("state cancel_requested")
@@ -117,6 +146,38 @@ function extractAudio(inputPath, outputPath, isCancelled) {
       else reject(new Error(errorMessage || "Audio extraction failed."));
     });
   });
+}
+
+// Escrever o estado concluído do pedido
+function completeJob(jobId, resultKey) {
+  return VideoSubtitle.updateOne(
+    { _id: jobId, state: "processing" },
+    {
+      $set: {
+        state: "completed",
+        progress: 100,
+        result_key: resultKey,
+        finished_at: new Date(),
+      },
+    },
+  );
+}
+
+// As legendas já estão ligadas ao vídeo: repetir a escrita do estado concluído
+async function markCompleted(jobId, resultKey, attempts = 3, delayMs = 1000) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await completeJob(jobId, resultKey);
+      return true;
+    } catch (error) {
+      console.error("Error completing subtitle job:", error.message);
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  return false;
 }
 
 async function processSubtitleJob(jobId, authorization) {
@@ -313,21 +374,12 @@ async function processSubtitleJob(jobId, authorization) {
       });
     }
 
-    await VideoSubtitle.updateOne(
-      { _id: jobId, state: "processing" },
-      {
-        $set: {
-          state: "completed",
-          progress: 100,
-          result_key: newKey,
-          finished_at: new Date(),
-        },
-      },
-    );
+    await completeJob(jobId, newKey);
   } catch (error) {
     // As legendas já estão ligadas ao vídeo: não falhar nem devolver a operação
     if (linked) {
       console.error("Error finishing subtitle job:", error.message);
+      await markCompleted(jobId, newKey);
       return;
     }
 
@@ -366,12 +418,7 @@ async function processSubtitleJob(jobId, authorization) {
     );
 
     if (written.matchedCount === 1 && job.operation_reserved) {
-      if (await refundOperation(userId)) {
-        await VideoSubtitle.updateOne(
-          { _id: jobId },
-          { $set: { operation_reserved: false } },
-        );
-      }
+      await refundReserved(jobId, userId);
     }
   } finally {
     clearInterval(cancellationTimer);
@@ -407,12 +454,7 @@ async function cancelSubtitleJob(job) {
     );
 
     if (cancelled?.operation_reserved) {
-      if (await refundOperation(cancelled.user_id)) {
-        await VideoSubtitle.updateOne(
-          { _id: cancelled._id },
-          { $set: { operation_reserved: false } },
-        );
-      }
+      await refundReserved(cancelled._id, cancelled.user_id);
     }
   }
 
@@ -430,6 +472,43 @@ async function recoverInterruptedSubtitleJobs(startedBefore) {
 
   for (const job of jobs) {
     try {
+      const videoId = String(job.video_id);
+      const fileName = `${job._id}.vtt`;
+
+      // Se as legendas já estavam ligadas ao vídeo, o pedido ficou concluído
+      const video = await Video.findOne({ _id: job.video_id })
+        .select("subtitles_key")
+        .lean();
+
+      if (video?.subtitles_key === `${videoId}/subtitles/${fileName}`) {
+        await VideoSubtitle.updateOne(
+          { _id: job._id, state: { $in: ["queued", "processing"] } },
+          {
+            $set: {
+              state: "completed",
+              progress: 100,
+              result_key: video.subtitles_key,
+              finished_at: new Date(),
+            },
+          },
+        );
+        continue;
+      }
+
+      // Apagar o ficheiro que possa ter ficado sem ser ligado ao vídeo
+      if (job.state === "processing") {
+        await delete_image(
+          String(job.user_id),
+          videoId,
+          "subtitles",
+          fileName,
+        ).catch((error) => {
+          if (error.response?.status !== 404) {
+            console.error("Error deleting orphan subtitles:", error.message);
+          }
+        });
+      }
+
       // Primeiro o estado final; só depois a devolução da operação
       const written = await VideoSubtitle.updateOne(
         { _id: job._id, state: { $in: ["queued", "processing"] } },
@@ -444,12 +523,7 @@ async function recoverInterruptedSubtitleJobs(startedBefore) {
       );
 
       if (written.matchedCount === 1 && job.operation_reserved) {
-        if (await refundOperation(job.user_id)) {
-          await VideoSubtitle.updateOne(
-            { _id: job._id },
-            { $set: { operation_reserved: false } },
-          );
-        }
+        await refundReserved(job._id, job.user_id);
       }
     } catch (error) {
       console.error("Error recovering subtitle job:", error.message);
@@ -457,8 +531,29 @@ async function recoverInterruptedSubtitleJobs(startedBefore) {
   }
 }
 
+// Repetir devoluções que falharam (hoje, pedidos falhados ou cancelados)
+async function retryPendingRefunds() {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  try {
+    const jobs = await VideoSubtitle.find({
+      state: { $in: ["failed", "cancelled"] },
+      operation_reserved: true,
+      finished_at: { $gte: startOfDay },
+    });
+
+    for (const job of jobs) {
+      await refundReserved(job._id, job.user_id);
+    }
+  } catch (error) {
+    console.error("Error retrying subtitle refunds:", error.message);
+  }
+}
+
 module.exports = {
   processSubtitleJob,
   cancelSubtitleJob,
   recoverInterruptedSubtitleJobs,
+  retryPendingRefunds,
 };

@@ -134,6 +134,8 @@ services:
         condition: service_started
       subtitles_ai:
         condition: service_started
+      users:
+        condition: service_started
     ports:
       - "9002:9001"
     restart: on-failure

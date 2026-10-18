@@ -21,6 +21,7 @@ const {
   processSubtitleJob,
   cancelSubtitleJob,
   recoverInterruptedSubtitleJobs,
+  retryPendingRefunds,
 } = require("../utils/videoSubtitleJob");
 
 const usersHttpsAgent = new https.Agent({
@@ -41,13 +42,20 @@ const messages = {
 const STARTED_AT = new Date();
 
 function recover() {
-  recoverInterruptedSubtitleJobs(STARTED_AT).catch((error) => {
-    console.error("Error recovering subtitle jobs:", error);
-  });
+  recoverInterruptedSubtitleJobs(STARTED_AT)
+    .catch((error) => {
+      console.error("Error recovering subtitle jobs:", error);
+    })
+    .then(retryPendingRefunds);
 }
 
 if (mongoose.connection.readyState === 1) recover();
 else mongoose.connection.once("open", recover);
+
+// Repetir as devoluções que falharam (o serviço de utilizadores pode demorar a arrancar)
+setInterval(() => {
+  if (mongoose.connection.readyState === 1) void retryPendingRefunds();
+}, 60000).unref();
 
 function coded(res, status, code) {
   return res.status(status).json({ error: messages[code], error_code: code });
