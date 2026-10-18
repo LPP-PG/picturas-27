@@ -13,8 +13,13 @@ import {
   fetchProjectVideos,
   fetchVideoTrim,
   startVideoTrim,
+  startVideoFilter,
+  fetchVideoFilter,
+  cancelVideoFilter,
   type ProjectVideo,
   type VideoTrimJob,
+  type VideoFilterName,
+  type VideoFilterJob,
 } from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
@@ -66,6 +71,10 @@ export default function VideoProjectEditor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playbackFailed, setPlaybackFailed] = useState(false);
   const [trimOpen, setTrimOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] =
+    useState<VideoFilterName>("grayscale");
+  const [filterJob, setFilterJob] = useState<VideoFilterJob | null>(null);
   const [trimStart, setTrimStart] = useState("0");
   const [trimEnd, setTrimEnd] = useState("");
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
@@ -101,6 +110,101 @@ export default function VideoProjectEditor({
     projectId,
     session.token,
   ];
+
+  const startFilter = useMutation({
+    mutationFn: async () => {
+      if (!selected) {
+        throw new Error("Please select a video first.");
+      }
+
+      return startVideoFilter({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId: selected._id,
+        filterName: selectedFilter,
+      });
+    },
+
+    onSuccess: (job) => {
+      setFilterJob(job);
+    },
+  });
+
+  const filterStatus = useQuery({
+    queryKey: [
+      "videoFilter",
+      session.user._id,
+      projectId,
+      filterJob?._id,
+    ],
+
+    queryFn: ({ signal }) =>
+      fetchVideoFilter({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        filterId: filterJob!._id,
+        signal,
+      }),
+
+    enabled: Boolean(filterJob?._id),
+
+    refetchInterval: (query) => {
+      const state = query.state.data?.state;
+
+      return state === "queued" || state === "processing"
+        ? 1000
+        : false;
+    },
+  });
+
+  const currentFilterJob = filterStatus.data ?? filterJob;
+
+  const cancelFilter = useMutation({
+    mutationFn: async () => {
+      if (!filterJob) {
+        throw new Error("No active filter request.");
+      }
+
+      return cancelVideoFilter({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        filterId: filterJob._id,
+      });
+    },
+
+    onSuccess: (job) => {
+      setFilterJob(job);
+
+      queryClient.setQueryData(
+        ["videoFilter", session.user._id, projectId, job._id],
+        job,
+      );
+    },
+  });
+
+  useEffect(() => {
+  if (filterStatus.data?.state === "completed") {
+    void queryClient.invalidateQueries({
+      queryKey: [
+        "projectVideos",
+        session.user._id,
+        projectId,
+        session.token,
+      ],
+    });
+  }
+}, [
+  filterStatus.data?.state,
+  filterStatus.data?._id,
+  queryClient,
+  session.user._id,
+  projectId,
+  session.token,
+]);
+
   const deletion = useMutation({
     mutationFn: async (video: ProjectVideo) => {
       const response = await api.get<Project[]>(
@@ -494,7 +598,7 @@ export default function VideoProjectEditor({
       type="button"
       variant="outline"
       className="w-full justify-start"
-      disabled
+      onClick={() => setFiltersOpen(!filtersOpen)}
     >
       Filters
     </Button>
@@ -575,6 +679,79 @@ export default function VideoProjectEditor({
       {startTrim.isError && <p role="alert" className="text-xs text-red-500">{errorMessage(startTrim.error)}</p>}
     </form>
   )}
+
+
+    {filtersOpen && (
+      <div className="mt-4 space-y-3 border-t pt-4">
+        <h3 className="text-sm font-medium">
+          Apply video filter
+        </h3>
+
+        <label className="block text-xs">
+          Choose a filter
+
+          <select
+            className="mt-1 w-full rounded border bg-background p-2 text-sm"
+            value={selectedFilter}
+            onChange={(event) =>
+              setSelectedFilter(event.target.value as VideoFilterName)
+            }
+          >
+            <option value="grayscale">Black and White</option>
+            <option value="sepia">Sepia</option>
+            <option value="vintage">Vintage</option>
+            <option value="invert">Invert Colors</option>
+            <option value="contrast">High Contrast</option>
+            <option value="blur">Soft Blur</option>
+          </select>
+        </label>
+
+        <Button
+          type="button"
+          disabled={
+            startFilter.isPending ||
+            ["queued", "processing"].includes(
+              currentFilterJob?.state ?? ""
+            )
+          }
+          onClick={() => startFilter.mutate()}
+        >
+          {startFilter.isPending ? "Starting..." : "Apply Filter"}
+        </Button>
+        {startFilter.isError && (
+          <p role="alert" className="text-xs text-red-500">
+            {errorMessage(startFilter.error, "Could not start video filter.")}
+          </p>
+        )}
+
+
+        {currentFilterJob && (
+          <div className="rounded border p-3 text-sm">
+            <p>Status: {currentFilterJob.state}</p>
+
+            <p>Progress: {currentFilterJob.progress}%</p>
+
+            {["queued", "processing"].includes(currentFilterJob.state) && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cancelFilter.isPending}
+                onClick={() => cancelFilter.mutate()}
+              >
+                {cancelFilter.isPending ? "Cancelling..." : "Cancel"}
+              </Button>
+            )}
+
+            {currentFilterJob.error && (
+              <p role="alert" className="text-red-500">
+                {currentFilterJob.error}
+              </p>
+            )}
+          </div>
+        )}
+
+      </div>
+    )}
 
 </aside>
 

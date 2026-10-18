@@ -334,3 +334,83 @@ export async function cancelVideoTrim({
   );
   return response.data;
 }
+
+
+export type VideoFilterName =
+  | "grayscale"
+  | "sepia"
+  | "vintage"
+  | "invert"
+  | "contrast"
+  | "blur";
+
+export interface VideoFilterJob {
+  _id: string;
+  source_video_id: string;
+  result_video_id: string;
+  filter_name: VideoFilterName;
+  state: "queued" | "processing" | "completed" | "failed" | "cancelled";
+  progress: number;
+  cancel_requested?: boolean;
+  error: string;
+}
+
+export async function startVideoFilter({
+  uid,
+  pid,
+  token,
+  videoId,
+  filterName,
+}: ProjectVideoRequest & {
+  videoId: string;
+  filterName: VideoFilterName;
+}): Promise<VideoFilterJob> {
+  const response = await api.post<VideoFilterJob>(
+    `${projectVideosUrl(uid, pid)}/filters`,
+    {
+      video_id: videoId,
+      filter_name: filterName,
+    },
+    { headers: authHeaders(token) },
+  );
+
+  return response.data;
+}
+
+export async function fetchVideoFilter({
+  uid,
+  pid,
+  token,
+  filterId,
+  signal,
+}: ProjectVideoRequest & {
+  filterId: string;
+}): Promise<VideoFilterJob> {
+  const response = await api.get<VideoFilterJob>(
+    `${projectVideosUrl(uid, pid)}/filters/${encodeURIComponent(filterId)}`,
+    {
+      headers: authHeaders(token),
+      signal,
+    },
+  );
+
+  return response.data;
+}
+
+export async function cancelVideoFilter({
+  uid,
+  pid,
+  token,
+  filterId,
+}: ProjectVideoRequest & {
+  filterId: string;
+}): Promise<VideoFilterJob> {
+  const response = await api.delete<VideoFilterJob>(
+    `${projectVideosUrl(uid, pid)}/filters/${encodeURIComponent(filterId)}`,
+    {
+      headers: authHeaders(token),
+    },
+  );
+
+  return response.data;
+}

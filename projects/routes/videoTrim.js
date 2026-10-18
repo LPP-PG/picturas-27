@@ -5,6 +5,7 @@ const https = require("node:https");
 
 const Video = require("../models/video");
 const VideoTrim = require("../models/videoTrim");
+const VideoFilter = require("../models/videoFilter");
 const {
   getUploadCapacity,
   reserveUpload,
@@ -93,10 +94,18 @@ router.post("/", async (req, res) => {
     validateInterval(start, end, video.duration_seconds);
     const outputFormat = requestedFormat || video.format;
 
-    const activeCount = await VideoTrim.countDocuments({
-      user_id: req.videoUser._id,
-      state: { $in: ["queued", "processing"] },
-    });
+    const [activeTrims, activeFilters] = await Promise.all([
+      VideoTrim.countDocuments({
+        user_id: req.videoUser._id,
+        state: { $in: ["queued", "processing"] },
+      }),
+      VideoFilter.countDocuments({
+        user_id: req.videoUser._id,
+        state: { $in: ["queued", "processing"] },
+      }),
+    ]);
+
+    const activeCount = activeTrims + activeFilters;
     const maxActive = req.videoUser.type === "premium" ? 3 : 1;
     if (activeCount >= maxActive) {
       const error = new Error("The simultaneous video-processing limit was reached.");

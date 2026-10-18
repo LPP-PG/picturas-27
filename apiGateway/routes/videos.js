@@ -153,6 +153,26 @@ controlRoute(
   "/:user/:project/trim/:trimId",
   (req) => `/trim/${encodeURIComponent(req.params.trimId)}`,
 );
+
+// Rotas para aplicação de filtros a vídeos
+controlRoute(
+  "post",
+  "/:user/:project/filters",
+  () => "/filters",
+);
+
+controlRoute(
+  "get",
+  "/:user/:project/filters/:filterId",
+  (req) => `/filters/${encodeURIComponent(req.params.filterId)}`,
+);
+
+controlRoute(
+  "delete",
+  "/:user/:project/filters/:filterId",
+  (req) => `/filters/${encodeURIComponent(req.params.filterId)}`,
+);
+
 controlRoute(
   "post",
   "/:user/:project/uploads/:upload/start",
