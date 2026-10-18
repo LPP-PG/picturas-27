@@ -9,7 +9,7 @@
 | **Grupo / Equipa**      |                                                                                                  |
 | **Autores**             | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
 | **Data**                | 2026-10-18                                                                                       |
-| **Versão do documento** | v1.2                                                                                             |
+| **Versão do documento** | v1.3                                                                                             |
 | **Unidade Curricular**  | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho                                |
 
 ---
@@ -35,11 +35,11 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |---|---|
 |**ID do Caso de Uso**|UC-VID-003|
 |**Nome**|Gerar legendas automáticas para um vídeo de um projeto|
-|**Versão**|v1.2|
+|**Versão**|v1.3|
 |**Autor**|Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto|
 |**Data**|2026-10-18|
 |**Objetivo**|Permitir ao utilizador gerar automaticamente legendas sincronizadas com o conteúdo falado de um vídeo de um projeto de vídeo.|
-|**Âmbito**|Ferramenta Legendas do editor de projetos de vídeo: seleção do idioma, processamento da faixa de áudio, reconhecimento de fala, geração de segmentos de legenda sincronizados, armazenamento das legendas e controlo da quota de operações. Não inclui o carregamento, a listagem nem a visualização dos vídeos (UC-VID-004), nem as ferramentas Recorte e Filtros.|
+|**Âmbito**|Ferramenta Legendas do editor de projetos de vídeo, para vídeos falados em inglês: verificação do idioma, processamento da faixa de áudio, reconhecimento de fala, geração de segmentos de legenda sincronizados, armazenamento das legendas e controlo da quota de operações. Não inclui o carregamento, a listagem nem a visualização dos vídeos (UC-VID-004), nem as ferramentas Recorte e Filtros.|
 |**Ator Principal**|Utilizador Registado. O Utilizador Premium utiliza o mesmo fluxo, com limites diferentes.|
 |**Stakeholders e Interesses**|**Utilizador:** quer obter legendas sincronizadas sem ter de transcrever manualmente o conteúdo falado e quer manter o vídeo original inalterado.  <br>**Dono do sistema:** quer disponibilizar uma funcionalidade de vídeo útil, controlando simultaneamente os recursos utilizados no processamento.  <br>**Equipa de desenvolvimento:** quer garantir que o áudio é processado corretamente, que o texto gerado fica associado aos intervalos temporais adequados e que o processamento não bloqueia o resto da aplicação.|
 |**Pré-condições**|O utilizador tem sessão iniciada como Registado ou Premium.  <br>Existe um projeto de vídeo com o vídeo selecionado já disponível para edição, ou seja, carregado, validado, guardado com miniatura e associado ao projeto (UC-VID-004, RN9).|
@@ -51,12 +51,12 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |---|---|---|
 |1|O utilizador abre um projeto de vídeo e seleciona um vídeo pela sua miniatura|Apresenta o vídeo selecionado no leitor e as ferramentas de vídeo (UC-VID-004)|
 |2|O utilizador escolhe a ferramenta **Legendas**|Verifica a existência de uma faixa de áudio e a quota diária restante|
-|3||Apresenta o ecrã de geração de legendas e os idiomas suportados|
-|4|O utilizador seleciona o idioma falado no vídeo|Regista o idioma selecionado|
+|3||Apresenta o ecrã de geração de legendas, indicando que o único idioma suportado é o inglês|
+|4||Regista o inglês como idioma do pedido|
 |5|O utilizador confirma com **Gerar legendas**|Verifica novamente a quota diária, o espaço de armazenamento disponível no projeto e na conta e o número de pedidos de processamento de vídeo em simultâneo|
 |6||Reserva 1 operação na quota diária quando aplicável, cria o pedido de processamento e apresenta o estado **A aguardar**|
 |7||Inicia o processamento, passa o estado para **A processar** e apresenta o progresso|
-|8||Processa a faixa de áudio, reconhece a fala e gera segmentos de texto associados aos respetivos intervalos temporais|
+|8||Processa a faixa de áudio, identifica o idioma da fala para confirmar que é inglês (RN4), reconhece a fala e gera segmentos de texto associados aos respetivos intervalos temporais|
 |9|O utilizador acompanha o progresso e pode continuar a utilizar outros ecrãs do PictuRAS|Atualiza periodicamente o progresso|
 |10||Guarda as legendas geradas, associa-as ao vídeo no respetivo projeto e atualiza o espaço ocupado no projeto e na conta|
 |11||Passa o pedido para **Concluído**, mantém contabilizada a operação reservada no passo 6 e notifica o utilizador|
@@ -66,8 +66,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 
 |**Fluxo**|**Descrição**|
 |---|---|
-|**FA1 – Deteção automática do idioma**|No passo 4, o utilizador seleciona **Detetar automaticamente** em vez de escolher um idioma. Durante o processamento, o sistema analisa a fala presente no vídeo e determina o idioma. Se conseguir identificá-lo, utiliza-o na geração das legendas e o fluxo prossegue normalmente|
-|**FA2 – Deteção automática inconclusiva**|No FA1, durante o processamento, o sistema não consegue determinar o idioma com confiança suficiente. O sistema interrompe o processamento, passa o pedido para **Falhou** sem guardar legendas, não contabiliza a operação e informa o utilizador de que deve repetir o pedido escolhendo manualmente um dos idiomas suportados|
+|**FA1 – Idioma da fala sem confiança suficiente**|No passo 8, o sistema não consegue identificar o idioma da fala com confiança suficiente (por exemplo, por ruído ou pouca fala). O sistema prossegue a geração em inglês. Se não houver fala reconhecível, aplica a exceção de ausência de fala|
 |**FA3 – Cancelar o processamento**|Enquanto o pedido está **A aguardar** ou **A processar**, o utilizador seleciona **Cancelar**. O sistema interrompe o processamento, elimina quaisquer legendas parciais, passa o pedido para **Cancelado** e não contabiliza a operação|
 |**FA4 – Utilizador abandona o ecrã**|Depois de iniciar o pedido, o utilizador navega para outro ecrã, muda de projeto ou fecha o separador. O processamento continua em segundo plano enquanto a sessão se mantiver ativa e o estado continua disponível quando o utilizador regressar|
 |**FA5 – Limite de pedidos em simultâneo**|No passo 5, o utilizador já atingiu o número máximo de pedidos de processamento de vídeo em simultâneo permitido pelo seu perfil, em qualquer ferramenta de vídeo. O sistema não cria o pedido, informa o utilizador e oferece a navegação para a lista de pedidos, onde pode acompanhar ou cancelar os pedidos em curso|
@@ -85,6 +84,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |O serviço de processamento está indisponível ou a fila está cheia (passo 6)|Informa que o serviço está temporariamente indisponível, não cria o pedido e não contabiliza a operação|
 |O espaço livre no projeto ou na conta não chega para guardar as legendas (passo 5)|Apresenta **"Espaço de armazenamento insuficiente"** com o limite atingido (projeto ou conta), não cria o pedido e não contabiliza a operação|
 |Não existe espaço suficiente no projeto ou na conta para guardar as legendas no fim do processamento (passo 10)|Passa o pedido para **Falhou**, elimina qualquer resultado parcial, apresenta **"Espaço de armazenamento insuficiente"** e não contabiliza a operação|
+|A fala do vídeo está num idioma que não é o inglês (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Este vídeo não parece estar em inglês"**, não cria legendas e não contabiliza a operação. O sistema não traduz o conteúdo falado|
 
 ### 2.5 Pós-condições
 
@@ -100,7 +100,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**RN1**|Os formatos de vídeo aceites (MP4 e MOV) e a validação do conteúdo são os do UC-VID-004 (RN3), verificados no carregamento; a geração de legendas não os repete|
 |**RN2**|Só os perfis Registado e Premium têm acesso a projetos de vídeo e, por isso, à ferramenta Legendas (UC-VID-004, RN2). Os limites de duração e de tamanho dos vídeos são os do UC-VID-004 (RN4), verificados no carregamento; a geração de legendas não os repete|
 |**RN3**|Para gerar legendas, o vídeo tem de possuir uma faixa de áudio|
-|**RN4**|O utilizador pode selecionar manualmente um idioma suportado ou solicitar a deteção automática do idioma|
+|**RN4**|Só é suportado o inglês. Antes de transcrever, o sistema identifica o idioma da fala: se for outro idioma com confiança ≥ 0,5, o pedido falha (Exceção 8); com confiança inferior, a geração prossegue em inglês (FA1). O sistema nunca traduz o conteúdo falado; a tradução é uma funcionalidade separada (Q9)|
 |**RN5**|Cada segmento de legenda contém um instante inicial, um instante final e o respetivo texto|
 |**RN6**|Os instantes das legendas têm de estar dentro da duração total do vídeo e o instante inicial de cada segmento tem de ser anterior ao instante final|
 |**RN7**|A geração automática de legendas conta como 1 operação na quota diária. A operação é reservada quando o pedido é criado (passo 6) e devolvida se o pedido terminar em **Falhou** ou **Cancelado**; só os pedidos **Concluído** consomem quota. A reserva impede que pedidos em curso permitam ultrapassar o limite diário (como no UC-VID-001 e nos Filtros)|
@@ -120,8 +120,8 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |---|---|
 |**A1**|O vídeo encontra-se integralmente armazenado e acessível ao serviço de processamento no momento do pedido|
 |**A2**|A faixa de áudio do vídeo pode ser extraída e processada pelo serviço de geração de legendas|
-|**A3**|Todo o conteúdo falado do vídeo utiliza um único idioma durante toda a sua duração|
-|**A4**|Quando é utilizada a deteção automática, o idioma identificado é utilizado durante todo o processo de geração das legendas|
+|**A3**|Todo o conteúdo falado do vídeo está em inglês, num único idioma durante toda a sua duração|
+|**A4**|A identificação do idioma serve apenas para confirmar que a fala está em inglês; não é usada para gerar legendas noutros idiomas|
 |**A5**|O serviço de reconhecimento de fala consegue devolver informação temporal suficiente para sincronizar os segmentos de texto com o vídeo|
 |**A6**|A geração automática de legendas pode conter erros quando existe ruído, fala pouco clara ou sobreposição de vozes|
 |**A7**|A notificação de conclusão é apresentada apenas dentro da aplicação|
@@ -135,15 +135,13 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 
 |**ID**|**Questão**|
 |---|---|
-|**Q1**|Que idiomas devem ser suportados pela geração automática de legendas?|
-|**Q2**|Que nível de confiança deve ser considerado suficiente para aceitar automaticamente o idioma detetado?|
 |**Q3**|Deve o utilizador poder editar manualmente o texto das legendas depois da geração?|
 |**Q4**|Deve ser possível alterar manualmente os instantes inicial e final de cada segmento?|
 |**Q5**|Deve ser possível exportar as legendas para formatos como SRT ou WebVTT?|
 |**Q6**|Deve existir uma opção para incorporar permanentemente as legendas na imagem do vídeo?|
 |**Q7**|Deve uma versão futura suportar vídeos em que são utilizados vários idiomas?|
 |**Q8**|Deve o sistema conseguir identificar diferentes pessoas a falar no mesmo vídeo?|
-|**Q9**|Deve existir uma funcionalidade separada para traduzir automaticamente as legendas?|
+|**Q9**|Deve existir uma funcionalidade separada para traduzir automaticamente as legendas, por exemplo para legendar em inglês vídeos falados noutros idiomas?|
 |**Q11**|No sistema existente, as funcionalidades com IA são uma vantagem do perfil Premium. A geração de legendas, que usa reconhecimento de fala, deve estar disponível para o perfil Registado ou apenas para o Premium?|
 |**Q12**|A restrição R5 do sistema existente limita as operações com IA a 60 s de tempo de resposta médio. Como se aplica a vídeos Premium com até 10 min, cuja transcrição pode demorar mais?|
 |**Q15**|Quando um vídeo com legendas é recortado (UC-VID-001), o novo vídeo deve herdar as legendas do intervalo, com os instantes ajustados, ou fica sem legendas (UC-VID-001, Q6)? No caso dos Filtros a questão está decidida na RN16|
@@ -153,6 +151,8 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 **Questões retiradas na v1.1** (os IDs não serão reutilizados):
 - Q10: acesso do perfil Anónimo; decidido no UC-VID-004 (RN2): o Anónimo não cria projetos de vídeo.
 - Q14: relação entre vídeos e projetos; decidido no UC-VID-004 (A6 e RN14): os vídeos ficam em projetos de vídeo, sem encadeamento nem processamento em lote no MVP.
+- Q1: idiomas suportados; decidido na RN4: só inglês.
+- Q2: confiança mínima da identificação do idioma; decidido na RN4: 0,5.
 - Q13: reserva da operação na confirmação; decidido na RN7: a operação é reservada ao criar o pedido e devolvida em falha ou cancelamento.
 -->
 
@@ -176,8 +176,8 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | REQ-VID-LEG-006 | O sistema deve rejeitar vídeos sem faixa de áudio, apresentando a mensagem "Não foi encontrada uma faixa de áudio neste vídeo". | F | Deve ter | NOVO | Passo 2 / Exceção 1 / RN3 | Dado um vídeo sem áudio, quando se escolhe gerar legendas, então aparece a mensagem indicada e a operação é impedida. |
 | REQ-VID-LEG-010 | O sistema deve impedir novos pedidos quando a quota diária aplicável estiver esgotada, apresentando a mensagem "Atingiu o limite diário de operações" e indicando quando será reposta. | F | Deve ter | ALT | Passos 2 e 5 / Exceção 2 | Dado um Registado sem quota disponível, quando abre ou confirma a geração, então nenhum pedido é criado e a mensagem indica a reposição. |
 | REQ-VID-LEG-011 | O sistema deve solicitar confirmação quando o vídeo já tiver legendas, avisando que estas só serão substituídas se a nova geração terminar em Concluído. | F | Deve ter | NOVO | FA7 / RN14 | Dado um vídeo com legendas, quando se solicita uma nova geração, então aparece o aviso; se o utilizador desistir, nenhum pedido é criado. |
-| REQ-VID-LEG-012 | O sistema deve apresentar o ecrã de geração com os idiomas suportados e a opção Detetar automaticamente. | F | Deve ter | NOVO | Passo 3 / FA1 / RN4 | Dado um vídeo elegível, quando o ecrã abre, então apresenta os idiomas suportados e a opção de deteção automática. |
-| REQ-VID-LEG-013 | O sistema deve permitir ao utilizador escolher e registar o idioma do pedido, por seleção manual ou deteção automática. | F | Deve ter | NOVO | Passo 4 / FA1 / RN4 | Dado o ecrã de geração, quando o utilizador escolhe um idioma ou deteção automática, então o pedido conserva essa escolha. |
+| REQ-VID-LEG-012 | O sistema deve apresentar o ecrã de geração indicando que o único idioma suportado é o inglês. | F | Deve ter | NOVO | Passo 3 / RN4 | Dado um vídeo elegível, quando o ecrã abre, então indica o inglês como idioma e não oferece outros idiomas nem deteção automática. |
+| REQ-VID-LEG-013 | O sistema deve registar o inglês como idioma de todos os pedidos de legendas. | F | Deve ter | NOVO | Passo 4 / RN4 | Dado um pedido criado, quando se consulta, então o idioma do pedido é o inglês; um pedido com outro idioma é recusado. |
 | REQ-VID-LEG-014 | O sistema deve aceitar a confirmação da geração apenas quando a quota diária, o espaço de armazenamento disponível e o número de pedidos de processamento de vídeo em simultâneo forem novamente validados. | F | Deve ter | ALT | Passo 5 / FA5 / Exceções 2 e 6 | Dado uma condição que deixou de ser satisfeita após abrir o ecrã, quando o utilizador confirma, então o pedido não é criado. |
 | REQ-VID-LEG-015 | O sistema deve limitar os pedidos de processamento de vídeo A aguardar ou A processar a 1 por utilizador Registado e a 3 por utilizador Premium, contando os pedidos de todas as ferramentas de vídeo da conta. | NF — Capacidade / limites | Deve ter | ALT | RN11 / FA5 | Dado um Registado com 1 pedido ativo de qualquer ferramenta de vídeo (por exemplo, um recorte) ou um Premium com 3, quando confirma uma geração de legendas, então o novo pedido é rejeitado. |
 | REQ-VID-LEG-016 | O sistema deve informar o utilizador quando o limite de pedidos em simultâneo for atingido e oferecer a navegação para a lista de pedidos. | F | Deve ter | NOVO | FA5 | Dado o limite atingido, quando o utilizador confirma outro pedido, então recebe uma mensagem com a causa da rejeição e pode abrir a lista de pedidos. |
@@ -189,8 +189,8 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | REQ-VID-LEG-022 | O sistema deve manter o processamento em segundo plano quando o utilizador muda de ecrã ou de projeto ou fecha o separador, enquanto a sessão se mantiver ativa. | F | Deve ter | NOVO | Passo 9 / FA4 / A8 | Dado um pedido ativo, quando o utilizador abandona o ecrã sem terminar a sessão, então o processamento continua. |
 | REQ-VID-LEG-023 | O sistema deve gerar segmentos de legenda a partir da fala, contendo cada segmento um instante inicial, um instante final e o texto reconhecido. | F | Deve ter | NOVO | Passo 8 / RN5 / A5 | Dado um vídeo com fala reconhecível, quando a geração conclui, então cada segmento contém os três elementos. |
 | REQ-VID-LEG-024 | O sistema deve garantir que cada segmento satisfaz 0 ≤ instante inicial < instante final ≤ duração do vídeo. | NF — Integridade temporal | Deve ter | NOVO | RN6 | Dado legendas geradas, quando se verificam os tempos, então todos os segmentos satisfazem a condição. |
-| REQ-VID-LEG-025 | O sistema deve identificar e utilizar o idioma da fala na geração das legendas quando for escolhida a deteção automática. | F | Deve ter | NOVO | FA1 / A4 | Dado um vídeo com idioma identificável, quando se escolhe deteção automática, então as legendas são geradas utilizando o idioma identificado. |
-| REQ-VID-LEG-026 | O sistema deve passar o pedido para Falhou quando a deteção do idioma for inconclusiva, orientando o utilizador para repetir o pedido com seleção manual. | F | Deve ter | NOVO | FA2 | Dado uma deteção inconclusiva, quando o processamento chega a essa conclusão, então o pedido fica Falhou e a mensagem indica a seleção manual. |
+| REQ-VID-LEG-025 | O sistema deve identificar o idioma da fala antes de gerar as legendas e só prosseguir quando a fala for inglesa ou o idioma não for identificado com confiança ≥ 0,5. | F | Deve ter | NOVO | Passo 8 / FA1 / RN4 / A4 | Dado um vídeo em inglês, quando é processado, então as legendas são geradas em inglês; dado um vídeo com idioma não identificável, então a geração prossegue em inglês. |
+| REQ-VID-LEG-026 | O sistema deve passar o pedido para Falhou quando a fala estiver noutro idioma identificado com confiança ≥ 0,5, apresentando a mensagem "Este vídeo não parece estar em inglês", sem traduzir o conteúdo. | F | Deve ter | NOVO | Exceção 8 / RN4 | Dado um vídeo falado em português, quando é processado, então o pedido fica Falhou com a mensagem indicada, não são criadas legendas e a operação é devolvida. |
 | REQ-VID-LEG-027 | O sistema deve passar o pedido para Falhou quando não detetar fala reconhecível, apresentando a mensagem "Não foi possível identificar fala neste vídeo". | F | Deve ter | NOVO | Exceção 3 | Dado um vídeo sem fala reconhecível, quando é processado, então o pedido fica Falhou com a mensagem indicada. |
 | REQ-VID-LEG-028 | O sistema deve passar o pedido para Falhou quando o reconhecimento de fala falhar, apresentando uma mensagem de erro. | F | Deve ter | NOVO | Exceção 4 | Dado uma falha do reconhecimento, quando ocorre, então o pedido fica Falhou e o utilizador recebe uma mensagem de erro. |
 | REQ-VID-LEG-029 | O sistema deve passar o pedido para Falhou quando não existir espaço no projeto ou na conta para guardar as legendas no fim do processamento, apresentando a mensagem "Espaço de armazenamento insuficiente". | F | Deve ter | NOVO | Exceção 7 / A12 | Dado espaço insuficiente no momento de guardar, quando o armazenamento é tentado, então o pedido fica Falhou com a mensagem indicada. |
@@ -198,7 +198,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | REQ-VID-LEG-031 | O sistema deve manter no máximo um conjunto de legendas associado ao vídeo, substituindo o anterior apenas quando a nova geração terminar em Concluído. | NF — Fiabilidade / integridade | Deve ter | NOVO | RN14 / FA7 / Pós-condições | Dado um vídeo com legendas, quando a nova geração conclui, então fica apenas o novo conjunto; se falhar ou for cancelada, permanece o anterior. |
 | REQ-VID-LEG-032 | O sistema deve permitir cancelar apenas pedidos A aguardar ou A processar, passando-os para Cancelado e interrompendo o respetivo processamento. | F | Deve ter | NOVO | FA3 / RN9 / RN10 | Dado pedidos nos cinco estados, quando se tenta cancelar, então apenas os ativos aceitam a ação, passam para Cancelado e deixam de ser processados. |
 | REQ-VID-LEG-033 | O sistema deve cancelar os pedidos de legendas ativos quando o utilizador termina explicitamente a sessão. | F | Deve ter | ALT | FA6 / A8 | Dado pedidos A aguardar ou A processar, quando o utilizador faz logout, então esses pedidos são cancelados. |
-| REQ-VID-LEG-034 | O sistema deve eliminar os resultados parciais de pedidos que terminem em Falhou ou Cancelado. | F | Deve ter | NOVO | FA2 / FA3 / FA6 / Exceções 3, 4 e 7 / Pós-condição mínima | Dado um pedido com resultados parciais, quando falha ou é cancelado, então esses resultados são eliminados. |
+| REQ-VID-LEG-034 | O sistema deve eliminar os resultados parciais de pedidos que terminem em Falhou ou Cancelado. | F | Deve ter | NOVO | FA3 / FA6 / Exceções 3, 4, 7 e 8 / Pós-condição mínima | Dado um pedido com resultados parciais, quando falha ou é cancelado, então esses resultados são eliminados. |
 | REQ-VID-LEG-035 | O sistema deve reservar 1 operação na quota diária aplicável ao criar o pedido e devolvê-la quando o pedido terminar em Falhou ou Cancelado. | F | Deve ter | ALT | Passos 6 e 11 / RN7 / A10 / Pós-condições | Dado um Registado com 4 operações gastas, quando confirma uma geração, então a quota passa a 5 e uma nova operação sobre imagem é recusada; se o pedido falhar ou for cancelado, a quota volta a 4; pedidos rejeitados antes de criados não alteram a quota. |
 | REQ-VID-LEG-036 | O sistema deve passar o pedido para Concluído após guardar e associar as legendas ao vídeo. | F | Deve ter | NOVO | Passos 10 e 11 / RN9 / Pós-condição de sucesso | Dado legendas guardadas e associadas, quando a operação termina com sucesso, então o pedido passa para Concluído. |
 | REQ-VID-LEG-037 | O sistema deve notificar o utilizador dentro da aplicação quando o pedido terminar em Concluído. | F | Deveria ter | NOVO | Passo 11 / A7 | Dado um pedido concluído, quando o utilizador consulta a aplicação, então a notificação está disponível. |
@@ -227,7 +227,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Gestão da sessão | Estender | Associar o logout explícito ao cancelamento dos pedidos ativos, mantendo o processamento quando o utilizador apenas abandona o ecrã. | REQ-VID-LEG-022, 033 |
 | Armazenamento e gestão de recursos | Estender | Armazenar legendas separadas do vídeo, contabilizadas no espaço do projeto e da conta (UC-VID-004, RN7), verificar o espaço na confirmação e ao guardar e preservar o original e as legendas anteriores perante falhas ou cancelamentos. | REQ-VID-LEG-029, 030, 031, 034, 039, 041, 043 |
 | Controlo de acesso e privacidade | Estender | Aplicar o acesso exclusivo do proprietário aos pedidos, ao áudio processado e às legendas; o acesso aos vídeos e aos projetos segue o UC-VID-004. | REQ-VID-LEG-040 |
-| Editor do projeto de vídeo | Estender | A ferramenta Legendas passa a fazer parte do catálogo de ferramentas do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), com escolha do idioma, acompanhamento dos pedidos e reprodução com legendas. | REQ-VID-LEG-002, 011, 012, 013, 017, 021, 038 |
+| Editor do projeto de vídeo | Estender | A ferramenta Legendas passa a fazer parte do catálogo de ferramentas do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), apenas para inglês, acompanhamento dos pedidos e reprodução com legendas. | REQ-VID-LEG-002, 011, 012, 013, 017, 021, 038 |
 | Notificações internas | Estender | Apresentar notificações de conclusão dos pedidos de legendas dentro da aplicação. | REQ-VID-LEG-037 |
 | Projetos de vídeo e gestão de vídeos | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo. O encadeamento de ferramentas e o processamento em lote ficam fora do MVP (UC-VID-004, RN14). O resultado de um filtro recebe uma cópia das legendas do original (RN16). | REQ-VID-LEG-030, 042, 044 |
 | Restrição de desempenho das operações com IA | Manter | Não é introduzido um novo limite de processamento. A aplicação de R5 aos vídeos permanece em aberto em Q12. | Sem requisito derivado de Q12 |
@@ -241,8 +241,8 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Trigger | Selecionar vídeo no projeto e escolher Legendas | REQ-VID-LEG-002 |
 | Passo 1 | Selecionar o vídeo pela miniatura | Coberto por UC-VID-004 (REQ-VID-UPLOAD-030, REQ-VID-UPLOAD-031) |
 | Passo 2 | Escolher Legendas; validar áudio e quota | REQ-VID-LEG-002, 006, 010, 011 |
-| Passo 3 | Ecrã de geração e idiomas | REQ-VID-LEG-012 |
-| Passo 4 | Escolha e registo do idioma | REQ-VID-LEG-013 |
+| Passo 3 | Ecrã de geração (só inglês) | REQ-VID-LEG-012 |
+| Passo 4 | Registo do inglês como idioma | REQ-VID-LEG-013 |
 | Passo 5 | Confirmação e revalidação | REQ-VID-LEG-014, 041 |
 | Passo 6 | Reservar a operação e criar pedido A aguardar | REQ-VID-LEG-018, 035 |
 | Passo 7 | Iniciar processamento e apresentar progresso | REQ-VID-LEG-020, 021 |
@@ -251,8 +251,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Passo 10 | Guardar, associar e contabilizar legendas | REQ-VID-LEG-030, 043 |
 | Passo 11 | Conclusão, contabilização e notificação | REQ-VID-LEG-035, 036, 037 |
 | Passo 12 | Reprodução com legendas | REQ-VID-LEG-038 |
-| FA1 | Deteção automática do idioma | REQ-VID-LEG-012, 013, 025 |
-| FA2 | Deteção automática inconclusiva | REQ-VID-LEG-026, 034, 035 |
+| FA1 | Idioma da fala sem confiança suficiente | REQ-VID-LEG-025 |
 | FA3 | Cancelar processamento | REQ-VID-LEG-032, 034, 035 |
 | FA4 | Abandonar o ecrã ou fechar o separador | REQ-VID-LEG-017, 022 |
 | FA5 | Limite de pedidos em simultâneo | REQ-VID-LEG-014, 015, 016, 017 |
@@ -265,12 +264,13 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Exceção 5 | Serviço indisponível ou fila cheia | REQ-VID-LEG-019, 035 |
 | Exceção 6 | Espaço insuficiente na confirmação | REQ-VID-LEG-014, 041 |
 | Exceção 7 | Espaço insuficiente ao guardar | REQ-VID-LEG-029, 034, 035 |
+| Exceção 8 | Fala noutro idioma | REQ-VID-LEG-026, 034, 035 |
 | Pós-condição de sucesso | Legendas associadas e contabilizadas, original intacto e operação contabilizada | REQ-VID-LEG-023, 030, 031, 035, 036, 038, 039, 043 |
 | Pós-condição mínima | Sem parciais; original, legendas anteriores e quota preservados | REQ-VID-LEG-026 a 029, 031, 032, 033, 034, 035, 039 |
 | RN1 | Formatos e validação do UC-VID-004 | Coberto por UC-VID-004 (REQ-VID-UPLOAD-011) |
 | RN2 | Acesso e limites por perfil do UC-VID-004 | Coberto por UC-VID-004 (REQ-VID-UPLOAD-009, 012, 013) |
 | RN3 | Faixa de áudio obrigatória | REQ-VID-LEG-006 |
-| RN4 | Idioma manual ou automático | REQ-VID-LEG-012, 013, 025 |
+| RN4 | Só inglês, com verificação do idioma e sem tradução | REQ-VID-LEG-012, 013, 025, 026 |
 | RN5 | Estrutura dos segmentos | REQ-VID-LEG-023 |
 | RN6 | Intervalos temporais válidos | REQ-VID-LEG-024 |
 | RN7 | Operação reservada ao criar o pedido e devolvida em falha ou cancelamento | REQ-VID-LEG-035 |
@@ -285,8 +285,8 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | RN16 | Resultado de um filtro recebe cópia das legendas | REQ-VID-LEG-044 |
 | A1 | Vídeo armazenado e acessível | Pressuposto do ambiente; não origina um requisito autónomo. |
 | A2 | Áudio extraível e processável | REQ-VID-LEG-023; pressuposto de viabilidade. |
-| A3 | Um único idioma por vídeo | Delimitação do âmbito; não exige suporte a vários idiomas. |
-| A4 | Utilização do idioma detetado | REQ-VID-LEG-025 |
+| A3 | Fala em inglês, num único idioma | Delimitação do âmbito; não exige suporte a outros idiomas. |
+| A4 | Identificação do idioma só para verificação | REQ-VID-LEG-025 |
 | A5 | Informação temporal para sincronização | REQ-VID-LEG-023, 024, 038 |
 | A6 | Possibilidade de erros de reconhecimento | Limitação assumida; não estabelece um alvo mensurável de precisão. |
 | A7 | Notificação apenas interna | REQ-VID-LEG-037 |
@@ -295,4 +295,4 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | A10 | Quota partilhada entre imagens e vídeos | REQ-VID-LEG-010, 035 |
 | A11 | Vídeos já validados no carregamento | Coberto por UC-VID-004 (REQ-VID-UPLOAD-011 a 013) |
 | A12 | Espaço verificado na confirmação e ao guardar, sem reserva | REQ-VID-LEG-029, 041, 043 |
-| Q1–Q16 | Questões em aberto (Q10, Q13 e Q14 retiradas) | Não originam requisitos adicionais enquanto não forem decididas e incorporadas no caso de uso. |
+| Q3–Q16 | Questões em aberto (Q1, Q2, Q10, Q13 e Q14 retiradas) | Não originam requisitos adicionais enquanto não forem decididas e incorporadas no caso de uso. |
