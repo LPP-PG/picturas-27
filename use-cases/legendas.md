@@ -9,7 +9,7 @@
 | **Grupo / Equipa**      |                                                                                                  |
 | **Autores**             | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
 | **Data**                | 2026-10-18                                                                                       |
-| **Versão do documento** | v1.3                                                                                             |
+| **Versão do documento** | v1.4                                                                                             |
 | **Unidade Curricular**  | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho                                |
 
 ---
@@ -35,7 +35,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |---|---|
 |**ID do Caso de Uso**|UC-VID-003|
 |**Nome**|Gerar legendas automáticas para um vídeo de um projeto|
-|**Versão**|v1.3|
+|**Versão**|v1.4|
 |**Autor**|Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto|
 |**Data**|2026-10-18|
 |**Objetivo**|Permitir ao utilizador gerar automaticamente legendas sincronizadas com o conteúdo falado de um vídeo de um projeto de vídeo.|
@@ -57,10 +57,10 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |6||Reserva 1 operação na quota diária quando aplicável, cria o pedido de processamento e apresenta o estado **A aguardar**|
 |7||Inicia o processamento, passa o estado para **A processar** e apresenta o progresso|
 |8||Processa a faixa de áudio, identifica o idioma da fala para confirmar que é inglês (RN4), reconhece a fala e gera segmentos de texto associados aos respetivos intervalos temporais|
-|9|O utilizador acompanha o progresso e pode continuar a utilizar outros ecrãs do PictuRAS|Atualiza periodicamente o progresso|
+|9|O utilizador acompanha o progresso e pode continuar a utilizar outros ecrãs do PictuRAS|Atualiza periodicamente o progresso. Enquanto o pedido está ativo, não permite iniciar outra geração para o mesmo vídeo; ao regressar, o ecrã apresenta o pedido mais recente do vídeo selecionado|
 |10||Guarda as legendas geradas, associa-as ao vídeo no respetivo projeto e atualiza o espaço ocupado no projeto e na conta|
-|11||Passa o pedido para **Concluído**, mantém contabilizada a operação reservada no passo 6 e notifica o utilizador|
-|12|O utilizador seleciona o vídeo no projeto pela sua miniatura|Apresenta o vídeo com as legendas sincronizadas, permitindo a sua visualização durante a reprodução|
+|11||Passa o pedido para **Concluído**, mantém contabilizada a operação reservada no passo 6, atualiza o contador de operações diárias restantes e notifica o utilizador|
+|12|O utilizador seleciona o vídeo no projeto pela sua miniatura|Apresenta o vídeo com as legendas sincronizadas, ativas por omissão e identificadas pelo nome do idioma, permitindo a sua visualização durante a reprodução|
 
 ### 2.3 Fluxos Alternativos
 
@@ -70,8 +70,11 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**FA3 – Cancelar o processamento**|Enquanto o pedido está **A aguardar** ou **A processar**, o utilizador seleciona **Cancelar**. O sistema interrompe o processamento, elimina quaisquer legendas parciais, passa o pedido para **Cancelado** e não contabiliza a operação|
 |**FA4 – Utilizador abandona o ecrã**|Depois de iniciar o pedido, o utilizador navega para outro ecrã, muda de projeto ou fecha o separador. O processamento continua em segundo plano enquanto a sessão se mantiver ativa e o estado continua disponível quando o utilizador regressar|
 |**FA5 – Limite de pedidos em simultâneo**|No passo 5, o utilizador já atingiu o número máximo de pedidos de processamento de vídeo em simultâneo permitido pelo seu perfil, em qualquer ferramenta de vídeo. O sistema não cria o pedido, informa o utilizador e oferece a navegação para a lista de pedidos, onde pode acompanhar ou cancelar os pedidos em curso|
-|**FA6 – Utilizador termina a sessão**|O utilizador termina a sessão enquanto o pedido está **A aguardar** ou **A processar**. O sistema cancela o pedido, interrompe o processamento, elimina quaisquer resultados parciais e não contabiliza a operação|
+|**FA6 – Utilizador termina a sessão**|O utilizador termina a sessão enquanto o pedido está **A aguardar** ou **A processar**. O sistema cancela o pedido, interrompe o processamento, elimina quaisquer resultados parciais e não contabiliza a operação. A tentativa de cancelamento nunca impede o fim da sessão: se não obtiver resposta em 5 segundos, a sessão termina na mesma|
 |**FA7 – Vídeo já tem legendas**|No passo 2, o vídeo já tem legendas associadas. O sistema avisa que, se a nova geração terminar em **Concluído**, as legendas atuais serão substituídas. O utilizador confirma e o fluxo prossegue no passo 3, ou desiste e nenhum pedido é criado|
+|**FA8 – Pedido já em curso para o vídeo**|No passo 5, já existe um pedido **A aguardar** ou **A processar** para o mesmo vídeo. O sistema não cria o pedido e informa que já estão a ser geradas legendas para este vídeo|
+|**FA9 – Vídeo retirado do projeto**|No passo 5, o vídeo já não pertence ao projeto (por exemplo, foi eliminado noutro separador). O sistema não cria o pedido e informa que o vídeo não foi encontrado no projeto|
+|**FA10 – Cancelamento tardio**|O utilizador seleciona **Cancelar** depois de as novas legendas já terem sido associadas ao vídeo (passo 10). O cancelamento já não tem efeito: o pedido termina em **Concluído** e a operação fica contabilizada|
 
 ### 2.4 Exceções
 
@@ -85,6 +88,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |O espaço livre no projeto ou na conta não chega para guardar as legendas (passo 5)|Apresenta **"Espaço de armazenamento insuficiente"** com o limite atingido (projeto ou conta), não cria o pedido e não contabiliza a operação|
 |Não existe espaço suficiente no projeto ou na conta para guardar as legendas no fim do processamento (passo 10)|Passa o pedido para **Falhou**, elimina qualquer resultado parcial, apresenta **"Espaço de armazenamento insuficiente"** e não contabiliza a operação|
 |A fala do vídeo está num idioma que não é o inglês (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Este vídeo não parece estar em inglês"**, não cria legendas e não contabiliza a operação. O sistema não traduz o conteúdo falado|
+|Não se sabe se o vídeo tem faixa de áudio (vídeo carregado antes desta funcionalidade) e, durante o processamento, verifica-se que não tem (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Não foi encontrada uma faixa de áudio neste vídeo"**, não cria legendas e não contabiliza a operação|
 
 ### 2.5 Pós-condições
 
@@ -101,18 +105,20 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**RN2**|Só os perfis Registado e Premium têm acesso a projetos de vídeo e, por isso, à ferramenta Legendas (UC-VID-004, RN2). Os limites de duração e de tamanho dos vídeos são os do UC-VID-004 (RN4), verificados no carregamento; a geração de legendas não os repete|
 |**RN3**|Para gerar legendas, o vídeo tem de possuir uma faixa de áudio|
 |**RN4**|Só é suportado o inglês. Antes de transcrever, o sistema identifica o idioma da fala: se for outro idioma com confiança ≥ 0,5, o pedido falha (Exceção 8); com confiança inferior, a geração prossegue em inglês (FA1). O sistema nunca traduz o conteúdo falado; a tradução é uma funcionalidade separada (Q9)|
-|**RN5**|Cada segmento de legenda contém um instante inicial, um instante final e o respetivo texto|
-|**RN6**|Os instantes das legendas têm de estar dentro da duração total do vídeo e o instante inicial de cada segmento tem de ser anterior ao instante final|
+|**RN5**|Cada segmento de legenda contém um instante inicial, um instante final e o respetivo texto. As legendas são guardadas em formato WebVTT; o texto de cada segmento ocupa uma só linha e os caracteres especiais são escapados|
+|**RN6**|Os instantes das legendas têm de estar dentro da duração total do vídeo e o instante inicial de cada segmento tem de ser anterior ao instante final. Os segmentos que ultrapassam a duração são ajustados ao fim do vídeo; os segmentos sem texto ou com intervalo inválido são descartados|
 |**RN7**|A geração automática de legendas conta como 1 operação na quota diária. A operação é reservada quando o pedido é criado (passo 6) e devolvida se o pedido terminar em **Falhou** ou **Cancelado**; só os pedidos **Concluído** consomem quota. A reserva impede que pedidos em curso permitam ultrapassar o limite diário (como no UC-VID-001 e nos Filtros)|
 |**RN8**|As legendas são armazenadas separadamente do ficheiro de vídeo, ficam associadas ao vídeo no respetivo projeto e contam para o espaço do projeto e da conta (UC-VID-004, RN7; a forma de contabilização fica em UC-VID-004, Q1). A sua geração não altera o vídeo original|
 |**RN9**|O pedido pode assumir os estados **A aguardar**, **A processar**, **Concluído**, **Falhou** e **Cancelado**|
-|**RN10**|Apenas pedidos nos estados **A aguardar** ou **A processar** podem ser cancelados|
+|**RN10**|Apenas pedidos nos estados **A aguardar** ou **A processar** podem ser cancelados. Um cancelamento que chega depois de as legendas estarem associadas ao vídeo já não tem efeito (FA10)|
 |**RN11**|O perfil Registado pode ter no máximo 1 pedido de processamento de vídeo a aguardar ou a processar; o Premium, no máximo 3. O limite é global à conta, partilhado pelas ferramentas Recorte, Filtros e Legendas (UC-VID-001, RN7), e independente dos carregamentos simultâneos (UC-VID-004, RN10)|
 |**RN12**|A ferramenta Legendas só é oferecida para vídeos disponíveis para edição, ou seja, recebidos, validados, guardados com miniatura e associados ao projeto (UC-VID-004, RN9). Um vídeo ainda em carregamento não pode ser utilizado para gerar legendas|
 |**RN13**|Os pedidos de legendas, a faixa de áudio processada e as legendas geradas apenas podem ser acedidos pelo proprietário do vídeo. O acesso aos vídeos, miniaturas e projetos é regulado pelo UC-VID-004 (RN2) e fica sujeito às regras de privacidade e armazenamento do PictuRAS|
 |**RN14**|Cada vídeo tem no máximo um conjunto de legendas. Uma nova geração só substitui as legendas existentes quando termina em **Concluído**; se falhar ou for cancelada, as legendas anteriores mantêm-se|
-|**RN15**|Enquanto existir um pedido de legendas **A aguardar** ou **A processar**, o vídeo, ou o projeto que o contém, não pode ser eliminado; para o eliminar, o utilizador deve primeiro cancelar o pedido em curso (tal como no UC-VID-001, RN5)|
-|**RN16**|Quando é aplicado um filtro (UC-VID-002) a um vídeo com legendas, o novo vídeo resultante recebe uma cópia das legendas do original, no mesmo idioma, porque o filtro não altera a duração nem os instantes do vídeo. A cópia é independente das legendas do original e conta para o espaço do projeto e da conta. Se a cópia falhar, o resultado do filtro é guardado sem legendas e o pedido de filtro não falha por isso|
+|**RN15**|Enquanto existir um pedido de legendas **A aguardar** ou **A processar**, o vídeo, ou o projeto que o contém, não pode ser eliminado; para o eliminar, o utilizador deve primeiro cancelar o pedido em curso (tal como no UC-VID-001, RN5). Quando um vídeo ou um projeto é eliminado, as respetivas legendas também são eliminadas e o espaço que ocupavam é libertado|
+|**RN16**|Quando é aplicado um filtro (UC-VID-002) a um vídeo com legendas, o novo vídeo resultante recebe uma cópia das legendas do original, no mesmo idioma, porque o filtro não altera a duração nem os instantes do vídeo. A cópia é independente das legendas do original e conta para o espaço do projeto e da conta. Se a cópia falhar ou não houver espaço livre suficiente para ela, o resultado do filtro é guardado sem legendas e o pedido de filtro não falha por isso|
+|**RN17**|Os pedidos **A aguardar** ou **A processar** interrompidos por um reinício do sistema passam a **Falhou** e a operação reservada é devolvida. Se as legendas já estavam associadas ao vídeo, o pedido passa a **Concluído**|
+|**RN18**|Se a devolução de uma operação falhar (por exemplo, por indisponibilidade temporária do serviço de utilizadores), o sistema repete-a periodicamente, a cada minuto, durante o próprio dia|
 
 ### 2.7 Assunções
 
@@ -129,7 +135,9 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**A9**|Os vídeos estão organizados em projetos de vídeo (UC-VID-004, A6). As legendas ficam associadas ao vídeo, no projeto a que este pertence|
 |**A10**|A quota diária de 5 operações do perfil Registado é partilhada entre as operações sobre imagens e as operações sobre vídeos|
 |**A11**|Todos os vídeos de um projeto de vídeo estão em MP4 ou MOV e dentro dos limites do perfil, verificados no carregamento (UC-VID-004, RN3 e RN4). A geração de legendas não repete estas verificações|
-|**A12**|O armazenamento do projeto e da conta e a sua contabilização seguem o UC-VID-004 (RN5 a RN7). Dado o tamanho reduzido das legendas face ao vídeo, não se reserva espaço antecipadamente: o espaço é verificado na confirmação (passo 5) e ao guardar (passo 10)|
+|**A12**|O armazenamento do projeto e da conta e a sua contabilização seguem o UC-VID-004 (RN5 a RN7). Dado o tamanho reduzido das legendas face ao vídeo, não se reserva espaço antecipadamente: o espaço é verificado na confirmação (passo 5), com uma estimativa de 100 bytes por segundo de vídeo e um mínimo de 1 KB, e ao guardar (passo 10), com o tamanho real|
+|**A13**|A interface é apresentada em inglês; as mensagens indicadas neste documento são o seu equivalente em português|
+|**A14**|O reconhecimento de fala usa o modelo Whisper (variante *small*, multilingue), executado localmente em CPU, com deteção de atividade de voz para ignorar silêncio e ruído. A identificação do idioma (RN4) é a do próprio modelo|
 
 ### 2.8 Questões em Aberto
 
@@ -209,6 +217,18 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | REQ-VID-LEG-042 | O sistema deve impedir a eliminação do vídeo, ou do projeto que o contém, enquanto existir um pedido de legendas associado nos estados A aguardar ou A processar. | F | Deve ter | NOVO | RN15 | Dado um vídeo com um pedido A aguardar ou A processar, quando o utilizador tenta eliminar o vídeo ou o projeto, então o sistema impede a eliminação. |
 | REQ-VID-LEG-043 | O sistema deve contabilizar as legendas guardadas no espaço ocupado do projeto e da conta. | F | Deve ter | ALT | Passo 10 / RN8 / A12; UC-VID-004: RN7 | Dado um pedido concluído, quando se consulta o espaço ocupado do projeto e da conta, então ambos incluem o espaço das legendas. |
 | REQ-VID-LEG-044 | O sistema deve copiar as legendas de um vídeo para o novo vídeo criado quando lhe é aplicado um filtro, mantendo o idioma e os instantes. | F | Deveria ter | NOVO | RN16; UC-VID-002 | Dado um vídeo com legendas, quando um filtro termina em Concluído, então o novo vídeo tem legendas com o mesmo texto, idioma e instantes; o original mantém as suas; se o original não tinha legendas, o resultado também não tem. |
+| REQ-VID-LEG-045 | O sistema deve recusar um novo pedido de legendas para um vídeo que já tenha um pedido A aguardar ou A processar, informando que já estão a ser geradas legendas para esse vídeo. | F | Deve ter | NOVO | FA8 | Dado um vídeo com um pedido ativo, quando o utilizador confirma outro pedido para o mesmo vídeo, então nenhum pedido é criado e a mensagem é apresentada. |
+| REQ-VID-LEG-046 | O sistema deve recusar o pedido quando o vídeo já não pertence ao projeto. | F | Deveria ter | NOVO | FA9 | Dado um vídeo retirado do projeto, quando o utilizador confirma a geração, então nenhum pedido é criado e é indicado que o vídeo não foi encontrado no projeto. |
+| REQ-VID-LEG-047 | O sistema deve terminar em Concluído, com a operação contabilizada, um pedido cujo cancelamento chegue depois de as legendas estarem associadas ao vídeo. | F | Deveria ter | NOVO | FA10 / RN10 | Dado um pedido cujas legendas já foram associadas, quando o cancelamento chega, então o pedido fica Concluído e as legendas mantêm-se. |
+| REQ-VID-LEG-048 | O sistema deve verificar a existência de faixa de áudio durante o processamento quando essa informação não é conhecida, passando o pedido para Falhou se não existir. | F | Deve ter | NOVO | Exceção 9 / RN3 | Dado um vídeo antigo sem informação de áudio e sem áudio, quando é processado, então o pedido fica Falhou com a mensagem de ausência de áudio e a operação é devolvida. |
+| REQ-VID-LEG-049 | O sistema deve, ao arrancar, passar para Falhou os pedidos interrompidos e devolver a respetiva operação, ou passá-los para Concluído se as legendas já estavam associadas ao vídeo. | NF — Fiabilidade | Deve ter | NOVO | RN17 | Dado um pedido A processar, quando o sistema reinicia, então o pedido fica Falhou e a quota é reposta; se as legendas já estavam associadas, fica Concluído. |
+| REQ-VID-LEG-050 | O sistema deve repetir, a cada minuto e durante o próprio dia, as devoluções de operações que tenham falhado. | NF — Fiabilidade | Deveria ter | NOVO | RN18 | Dado o serviço de utilizadores indisponível no momento da devolução, quando volta a estar disponível, então a operação é devolvida no máximo um minuto depois. |
+| REQ-VID-LEG-051 | O sistema deve eliminar as legendas de um vídeo quando o vídeo ou o projeto que o contém é eliminado, libertando o espaço ocupado. | F | Deve ter | NOVO | RN15 | Dado um vídeo com legendas, quando é eliminado, então o ficheiro de legendas deixa de existir e o espaço ocupado da conta diminui. |
+| REQ-VID-LEG-052 | O sistema deve guardar as legendas em WebVTT, com o texto de cada segmento numa só linha e os caracteres especiais escapados. | F | Deve ter | NOVO | RN5 / RN6 | Dado um segmento com quebras de linha ou caracteres como < e &, quando as legendas são guardadas, então o ficheiro WebVTT é válido e o texto ocupa uma linha. |
+| REQ-VID-LEG-053 | O sistema deve impedir que o utilizador inicie outra geração para o mesmo vídeo enquanto o pedido está ativo, e apresentar ao regressar o pedido mais recente do vídeo selecionado. | F | Deveria ter | NOVO | Passo 9 / FA8 | Dado um pedido ativo, quando o utilizador observa o ecrã, então a opção de gerar está indisponível; ao regressar ao vídeo, vê o estado do último pedido. |
+| REQ-VID-LEG-054 | O sistema deve atualizar o contador de operações diárias restantes quando o pedido é criado e quando termina. | F | Deveria ter | NOVO | Passos 6 e 11 / RN7 | Dado um Registado com 1 operação restante, quando cria um pedido, então o contador passa a 0; se o pedido falhar, volta a 1. |
+| REQ-VID-LEG-055 | O sistema deve apresentar as legendas ativas por omissão na reprodução, identificadas pelo nome do idioma. | F | Deveria ter | NOVO | Passo 12 | Dado um vídeo com legendas, quando é reproduzido, então as legendas aparecem sem o utilizador as ativar e o nome do idioma é apresentado no leitor. |
+| REQ-VID-LEG-056 | O sistema deve terminar a sessão mesmo que o cancelamento dos pedidos ativos falhe ou não responda em 5 segundos. | NF — Usabilidade | Deveria ter | NOVO | FA6 | Dado o serviço de vídeos sem resposta, quando o utilizador faz logout, então a sessão termina em no máximo 5 segundos. |
 
 <!--
 **IDs retirados na v1.1** (nunca serão reutilizados):
@@ -224,12 +244,12 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | --- | --- | --- | --- |
 | Perfis e permissões | Estender | O acesso a vídeo e os limites de duração e tamanho por perfil são definidos no UC-VID-004. A geração de legendas aplica o limite de pedidos de processamento de vídeo em simultâneo por perfil, global à conta e partilhado pelas ferramentas de vídeo. | REQ-VID-LEG-014, 015 |
 | Quota diária de operações | Estender | Integrar a geração de legendas na quota partilhada entre imagens e vídeos, verificando-a na abertura e confirmação, reservando a operação ao criar o pedido e devolvendo-a em falha ou cancelamento. | REQ-VID-LEG-010, 014, 035 |
-| Gestão da sessão | Estender | Associar o logout explícito ao cancelamento dos pedidos ativos, mantendo o processamento quando o utilizador apenas abandona o ecrã. | REQ-VID-LEG-022, 033 |
-| Armazenamento e gestão de recursos | Estender | Armazenar legendas separadas do vídeo, contabilizadas no espaço do projeto e da conta (UC-VID-004, RN7), verificar o espaço na confirmação e ao guardar e preservar o original e as legendas anteriores perante falhas ou cancelamentos. | REQ-VID-LEG-029, 030, 031, 034, 039, 041, 043 |
+| Gestão da sessão | Estender | Associar o logout explícito ao cancelamento dos pedidos ativos, mantendo o processamento quando o utilizador apenas abandona o ecrã; o cancelamento nunca impede o fim da sessão. | REQ-VID-LEG-022, 033, 056 |
+| Armazenamento e gestão de recursos | Estender | Armazenar legendas separadas do vídeo, contabilizadas no espaço do projeto e da conta (UC-VID-004, RN7), verificar o espaço na confirmação e ao guardar e preservar o original e as legendas anteriores perante falhas ou cancelamentos. As legendas são eliminadas com o vídeo ou o projeto, e os pedidos interrompidos por um reinício são recuperados, com repetição das devoluções que falharem. | REQ-VID-LEG-029, 030, 031, 034, 039, 041, 043, 049, 050, 051, 052 |
 | Controlo de acesso e privacidade | Estender | Aplicar o acesso exclusivo do proprietário aos pedidos, ao áudio processado e às legendas; o acesso aos vídeos e aos projetos segue o UC-VID-004. | REQ-VID-LEG-040 |
-| Editor do projeto de vídeo | Estender | A ferramenta Legendas passa a fazer parte do catálogo de ferramentas do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), apenas para inglês, acompanhamento dos pedidos e reprodução com legendas. | REQ-VID-LEG-002, 011, 012, 013, 017, 021, 038 |
+| Editor do projeto de vídeo | Estender | A ferramenta Legendas passa a fazer parte do catálogo de ferramentas do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), apenas para inglês, acompanhamento dos pedidos, atualização do contador de operações e reprodução com legendas ativas por omissão. | REQ-VID-LEG-002, 011, 012, 013, 017, 021, 038, 053, 054, 055 |
 | Notificações internas | Estender | Apresentar notificações de conclusão dos pedidos de legendas dentro da aplicação. | REQ-VID-LEG-037 |
-| Projetos de vídeo e gestão de vídeos | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo. O encadeamento de ferramentas e o processamento em lote ficam fora do MVP (UC-VID-004, RN14). O resultado de um filtro recebe uma cópia das legendas do original (RN16). | REQ-VID-LEG-030, 042, 044 |
+| Projetos de vídeo e gestão de vídeos | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo. O encadeamento de ferramentas e o processamento em lote ficam fora do MVP (UC-VID-004, RN14). O resultado de um filtro recebe uma cópia das legendas do original (RN16). Não são aceites pedidos para vídeos já retirados do projeto. | REQ-VID-LEG-030, 042, 044, 046 |
 | Restrição de desempenho das operações com IA | Manter | Não é introduzido um novo limite de processamento. A aplicação de R5 aos vídeos permanece em aberto em Q12. | Sem requisito derivado de Q12 |
 
 ### 4.3 Matriz de Rastreabilidade
@@ -247,16 +267,19 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Passo 6 | Reservar a operação e criar pedido A aguardar | REQ-VID-LEG-018, 035 |
 | Passo 7 | Iniciar processamento e apresentar progresso | REQ-VID-LEG-020, 021 |
 | Passo 8 | Reconhecer fala e gerar segmentos | REQ-VID-LEG-023 |
-| Passo 9 | Acompanhamento e processamento em segundo plano | REQ-VID-LEG-017, 021, 022 |
+| Passo 9 | Acompanhamento e processamento em segundo plano | REQ-VID-LEG-017, 021, 022, 053 |
 | Passo 10 | Guardar, associar e contabilizar legendas | REQ-VID-LEG-030, 043 |
-| Passo 11 | Conclusão, contabilização e notificação | REQ-VID-LEG-035, 036, 037 |
-| Passo 12 | Reprodução com legendas | REQ-VID-LEG-038 |
+| Passo 11 | Conclusão, contabilização e notificação | REQ-VID-LEG-035, 036, 037, 054 |
+| Passo 12 | Reprodução com legendas ativas por omissão | REQ-VID-LEG-038, 055 |
 | FA1 | Idioma da fala sem confiança suficiente | REQ-VID-LEG-025 |
 | FA3 | Cancelar processamento | REQ-VID-LEG-032, 034, 035 |
 | FA4 | Abandonar o ecrã ou fechar o separador | REQ-VID-LEG-017, 022 |
 | FA5 | Limite de pedidos em simultâneo | REQ-VID-LEG-014, 015, 016, 017 |
-| FA6 | Terminar explicitamente a sessão | REQ-VID-LEG-033, 034, 035 |
+| FA6 | Terminar explicitamente a sessão | REQ-VID-LEG-033, 034, 035, 056 |
 | FA7 | Vídeo com legendas existentes | REQ-VID-LEG-011, 031 |
+| FA8 | Pedido já em curso para o vídeo | REQ-VID-LEG-045, 053 |
+| FA9 | Vídeo retirado do projeto | REQ-VID-LEG-046 |
+| FA10 | Cancelamento tardio | REQ-VID-LEG-047 |
 | Exceção 1 | Ausência de áudio | REQ-VID-LEG-006 |
 | Exceção 2 | Quota esgotada | REQ-VID-LEG-010, 014 |
 | Exceção 3 | Ausência de fala reconhecível | REQ-VID-LEG-027, 034, 035 |
@@ -265,24 +288,27 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | Exceção 6 | Espaço insuficiente na confirmação | REQ-VID-LEG-014, 041 |
 | Exceção 7 | Espaço insuficiente ao guardar | REQ-VID-LEG-029, 034, 035 |
 | Exceção 8 | Fala noutro idioma | REQ-VID-LEG-026, 034, 035 |
+| Exceção 9 | Ausência de áudio detetada no processamento | REQ-VID-LEG-048, 034, 035 |
 | Pós-condição de sucesso | Legendas associadas e contabilizadas, original intacto e operação contabilizada | REQ-VID-LEG-023, 030, 031, 035, 036, 038, 039, 043 |
 | Pós-condição mínima | Sem parciais; original, legendas anteriores e quota preservados | REQ-VID-LEG-026 a 029, 031, 032, 033, 034, 035, 039 |
 | RN1 | Formatos e validação do UC-VID-004 | Coberto por UC-VID-004 (REQ-VID-UPLOAD-011) |
 | RN2 | Acesso e limites por perfil do UC-VID-004 | Coberto por UC-VID-004 (REQ-VID-UPLOAD-009, 012, 013) |
 | RN3 | Faixa de áudio obrigatória | REQ-VID-LEG-006 |
 | RN4 | Só inglês, com verificação do idioma e sem tradução | REQ-VID-LEG-012, 013, 025, 026 |
-| RN5 | Estrutura dos segmentos | REQ-VID-LEG-023 |
-| RN6 | Intervalos temporais válidos | REQ-VID-LEG-024 |
+| RN5 | Estrutura dos segmentos e formato WebVTT | REQ-VID-LEG-023, 052 |
+| RN6 | Intervalos temporais válidos, ajustados ou descartados | REQ-VID-LEG-024, 052 |
 | RN7 | Operação reservada ao criar o pedido e devolvida em falha ou cancelamento | REQ-VID-LEG-035 |
 | RN8 | Legendas separadas, associadas ao vídeo do projeto e contabilizadas; original inalterado | REQ-VID-LEG-030, 039, 043 |
 | RN9 | Estados dos pedidos | REQ-VID-LEG-017, 018, 020, 026, 027, 028, 029, 032, 036 |
-| RN10 | Cancelamento apenas de pedidos ativos | REQ-VID-LEG-032 |
+| RN10 | Cancelamento apenas de pedidos ativos e cancelamento tardio | REQ-VID-LEG-032, 047 |
 | RN11 | Pedidos em simultâneo por perfil, globais à conta | REQ-VID-LEG-014, 015 |
 | RN12 | Vídeo disponível para edição | Coberto por UC-VID-004 (REQ-VID-UPLOAD-029) |
 | RN13 | Acesso exclusivo do proprietário | REQ-VID-LEG-040 |
 | RN14 | Um conjunto de legendas e substituição apenas na conclusão | REQ-VID-LEG-011, 031 |
-| RN15 | Vídeo e projeto não elimináveis com pedido ativo | REQ-VID-LEG-042 |
+| RN15 | Vídeo e projeto não elimináveis com pedido ativo; legendas eliminadas com o vídeo | REQ-VID-LEG-042, 051 |
 | RN16 | Resultado de um filtro recebe cópia das legendas | REQ-VID-LEG-044 |
+| RN17 | Recuperação após reinício | REQ-VID-LEG-049 |
+| RN18 | Repetição das devoluções falhadas | REQ-VID-LEG-050 |
 | A1 | Vídeo armazenado e acessível | Pressuposto do ambiente; não origina um requisito autónomo. |
 | A2 | Áudio extraível e processável | REQ-VID-LEG-023; pressuposto de viabilidade. |
 | A3 | Fala em inglês, num único idioma | Delimitação do âmbito; não exige suporte a outros idiomas. |
@@ -295,4 +321,6 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | A10 | Quota partilhada entre imagens e vídeos | REQ-VID-LEG-010, 035 |
 | A11 | Vídeos já validados no carregamento | Coberto por UC-VID-004 (REQ-VID-UPLOAD-011 a 013) |
 | A12 | Espaço verificado na confirmação e ao guardar, sem reserva | REQ-VID-LEG-029, 041, 043 |
+| A13 | Interface em inglês | Delimitação da apresentação; não origina um requisito autónomo. |
+| A14 | Modelo de reconhecimento de fala | Decisão técnica; suporta REQ-VID-LEG-023, 025, 026. |
 | Q3–Q16 | Questões em aberto (Q1, Q2, Q10, Q13 e Q14 retiradas) | Não originam requisitos adicionais enquanto não forem decididas e incorporadas no caso de uso. |
