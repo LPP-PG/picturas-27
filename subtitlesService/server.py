@@ -7,7 +7,10 @@ from flask import Flask, Response, jsonify, request, stream_with_context
 
 app = Flask(__name__)
 
-# Confiança mínima da deteção automática do idioma
+# Único idioma suportado
+LANGUAGE = "en"
+
+# Confiança mínima para considerar que a fala está noutro idioma
 MIN_PROBABILITY = 0.5
 
 # Modelo carregado uma só vez no arranque
@@ -31,7 +34,10 @@ def transcribe():
     if audio is None:
         return jsonify({"error": "audio is required"}), 400
 
-    language = request.form.get("language", "auto")
+    # Só é suportado o inglês (RN4 das legendas)
+    language = request.form.get("language", LANGUAGE)
+    if language != LANGUAGE:
+        return jsonify({"error": "only English is supported"}), 400
 
     # Guardar o áudio num ficheiro temporário
     fd, path = tempfile.mkstemp(suffix=".wav")
@@ -40,25 +46,24 @@ def transcribe():
 
     def gen():
         try:
+            # Identificar o idioma da fala antes de transcrever
             try:
-                segments, info = model.transcribe(
-                    path,
-                    language=None if language == "auto" else language,
-                    vad_filter=True,
-                )
+                segments, info = model.transcribe(path, language=None, vad_filter=True)
                 lang, prob = info.language, info.language_probability
             except ValueError:
                 # Sem fala detetável o modelo não consegue escolher o idioma
-                if language != "auto":
-                    raise
-                segments, lang, prob = [], None, 0.0
+                segments, lang, prob = None, None, 0.0
 
             yield json.dumps({"type": "info", "language": lang, "probability": prob}) + "\n"
 
-            # Idioma automático com pouca confiança: terminar com erro
-            if language == "auto" and prob < MIN_PROBABILITY:
-                yield json.dumps({"type": "error", "code": "language_undetermined"}) + "\n"
+            # Fala noutro idioma com confiança suficiente: não traduzir
+            if lang != LANGUAGE and prob >= MIN_PROBABILITY:
+                yield json.dumps({"type": "error", "code": "not_english"}) + "\n"
                 return
+
+            # Idioma incerto: transcrever em inglês
+            if lang != LANGUAGE:
+                segments, _ = model.transcribe(path, language=LANGUAGE, vad_filter=True)
 
             for seg in segments:
                 yield json.dumps({
