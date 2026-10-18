@@ -9,6 +9,7 @@ import {
   updateUser,
   updatePassword,
 } from "../session";
+import { cancelActiveSubtitles } from "../videos";
 
 export const useLogin = () => {
   const qc = useQueryClient();
@@ -58,7 +59,24 @@ export const useLogout = () => {
   const register = useRegister();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () => localStorage.removeItem("session"),
+    mutationFn: async () => {
+      // Cancelar legendas ativas antes de terminar a sessão (nunca bloqueia o logout)
+      try {
+        const stored = localStorage.getItem("session");
+        const current = stored ? (JSON.parse(stored) as SessionData) : null;
+
+        if (current?.token && current.user.type !== "anonymous") {
+          await cancelActiveSubtitles({
+            uid: current.user._id,
+            token: current.token,
+          });
+        }
+      } catch {
+        // Ignorar falhas
+      }
+
+      localStorage.removeItem("session");
+    },
     onSuccess: () => {
       window.dispatchEvent(new Event("session-updated")); 
 

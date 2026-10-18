@@ -11,6 +11,10 @@ export interface ProjectVideo {
   thumbnail_time_seconds?: number | null;
   thumbnail_url?: string | null;
   video_url?: string | null;
+  // null = desconhecido (tratado como permitido)
+  has_audio?: boolean | null;
+  has_subtitles?: boolean;
+  subtitles_language?: string | null;
   createdAt?: string;
 }
 
@@ -410,6 +414,133 @@ export async function cancelVideoFilter({
     {
       headers: authHeaders(token),
     },
+  );
+
+  return response.data;
+}
+
+export type SubtitleLanguage = "auto" | "pt" | "en" | "es" | "fr";
+
+export interface VideoSubtitleJob {
+  _id: string;
+  video_id: string;
+  language: string;
+  detected_language?: string | null;
+  state: "queued" | "processing" | "completed" | "failed" | "cancelled";
+  progress: number;
+  error_code?: string;
+  error: string;
+}
+
+export async function startVideoSubtitles({
+  uid,
+  pid,
+  token,
+  videoId,
+  language,
+}: ProjectVideoRequest & {
+  videoId: string;
+  language: SubtitleLanguage;
+}): Promise<VideoSubtitleJob> {
+  const response = await api.post<VideoSubtitleJob>(
+    `${projectVideosUrl(uid, pid)}/subtitles`,
+    { video_id: videoId, language },
+    { headers: authHeaders(token) },
+  );
+
+  return response.data;
+}
+
+// Último pedido de legendas do vídeo (null se nunca houve)
+export async function fetchLatestVideoSubtitles({
+  uid,
+  pid,
+  token,
+  videoId,
+  signal,
+}: ProjectVideoRequest & {
+  videoId: string;
+}): Promise<VideoSubtitleJob | null> {
+  const response = await api.get<VideoSubtitleJob | null>(
+    `${projectVideosUrl(uid, pid)}/subtitles`,
+    {
+      headers: authHeaders(token),
+      params: { video_id: videoId },
+      signal,
+    },
+  );
+
+  return response.data;
+}
+
+export async function fetchVideoSubtitles({
+  uid,
+  pid,
+  token,
+  subtitleId,
+  signal,
+}: ProjectVideoRequest & {
+  subtitleId: string;
+}): Promise<VideoSubtitleJob> {
+  const response = await api.get<VideoSubtitleJob>(
+    `${projectVideosUrl(uid, pid)}/subtitles/${encodeURIComponent(subtitleId)}`,
+    {
+      headers: authHeaders(token),
+      signal,
+    },
+  );
+
+  return response.data;
+}
+
+export async function cancelVideoSubtitles({
+  uid,
+  pid,
+  token,
+  subtitleId,
+}: ProjectVideoRequest & {
+  subtitleId: string;
+}): Promise<VideoSubtitleJob> {
+  const response = await api.delete<VideoSubtitleJob>(
+    `${projectVideosUrl(uid, pid)}/subtitles/${encodeURIComponent(subtitleId)}`,
+    {
+      headers: authHeaders(token),
+    },
+  );
+
+  return response.data;
+}
+
+export async function fetchSubtitlesVtt({
+  uid,
+  pid,
+  token,
+  videoId,
+  signal,
+}: ProjectVideoRequest & {
+  videoId: string;
+}): Promise<{ language: string; vtt: string }> {
+  const response = await api.get<{ language: string; vtt: string }>(
+    `${projectVideosUrl(uid, pid)}/subtitles/vtt/${encodeURIComponent(videoId)}`,
+    {
+      headers: authHeaders(token),
+      signal,
+    },
+  );
+
+  return response.data;
+}
+
+// Cancelar todos os pedidos de legendas ativos da conta (usado no logout)
+export async function cancelActiveSubtitles({
+  uid,
+  token,
+}: AccountRequest): Promise<{ cancelled: number }> {
+  const response = await api.post<{ cancelled: number }>(
+    `/videos/${encodeURIComponent(uid)}/subtitles/cancel-active`,
+    {},
+    // Timeout curto para não atrasar o logout
+    { headers: authHeaders(token), timeout: 5000 },
   );
 
   return response.data;
