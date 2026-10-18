@@ -30,12 +30,17 @@ const errorMessages = {
   no_speech: "No speech could be identified in this video.",
   language_undetermined:
     "The spoken language could not be detected. Please choose the language manually and try again.",
-  storage: "Insufficient storage space.",
+  storage: "Insufficient storage space in the account.",
   failed: "Could not generate subtitles. Please try again.",
 };
 
-function codedError(code) {
-  const error = new Error(errorMessages[code]);
+const storageMessages = {
+  project: "Insufficient storage space in the project.",
+  account: "Insufficient storage space in the account.",
+};
+
+function codedError(code, message = errorMessages[code]) {
+  const error = new Error(message);
   error.code = code;
   return error;
 }
@@ -324,11 +329,13 @@ async function processSubtitleJob(jobId, authorization) {
       authorization,
     });
 
-    if (
-      vttBytes > capacity.account_available_bytes ||
-      vttBytes > capacity.project_available_bytes
-    ) {
-      throw codedError("storage");
+    // Indicar qual o limite atingido: primeiro o do projeto, depois o da conta
+    if (vttBytes > capacity.project_available_bytes) {
+      throw codedError("storage", storageMessages.project);
+    }
+
+    if (vttBytes > capacity.account_available_bytes) {
+      throw codedError("storage", storageMessages.account);
     }
 
     // Guardar o ficheiro de legendas.
@@ -410,7 +417,11 @@ async function processSubtitleJob(jobId, authorization) {
       {
         $set: {
           state: cancelled ? "cancelled" : "failed",
-          error: cancelled ? "Subtitle generation cancelled." : errorMessages[code],
+          error: cancelled
+            ? "Subtitle generation cancelled."
+            : code === "storage"
+              ? error.message
+              : errorMessages[code],
           error_code: code,
           finished_at: new Date(),
         },

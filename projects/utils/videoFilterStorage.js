@@ -155,7 +155,7 @@ async function saveFilteredVideo({
       duration_seconds: metadata.duration_seconds,
       size_bytes: sizeBytes,
       original_video_id: job.source_video_id,
-      has_audio: source.has_audio ?? null,
+      has_audio: metadata.has_audio ?? null,
     });
 
     videoCreated = true;

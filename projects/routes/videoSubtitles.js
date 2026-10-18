@@ -32,7 +32,8 @@ const messages = {
   no_audio: "No audio track was found in this video.",
   quota: "You have reached the daily operations limit. It resets at midnight.",
   limit: "The simultaneous video-processing limit was reached.",
-  storage: "Insufficient storage space.",
+  storage_project: "Insufficient storage space in the project.",
+  storage_account: "Insufficient storage space in the account.",
   service:
     "The subtitle service is temporarily unavailable. Please try again later.",
   duplicate: "Subtitles are already being generated for this video.",
@@ -58,7 +59,11 @@ setInterval(() => {
 }, 60000).unref();
 
 function coded(res, status, code) {
-  return res.status(status).json({ error: messages[code], error_code: code });
+  // As mensagens de armazenamento partilham o código "storage"
+  const errorCode = code.startsWith("storage") ? "storage" : code;
+  return res
+    .status(status)
+    .json({ error: messages[code], error_code: errorCode });
 }
 
 function publicJob(job) {
@@ -99,7 +104,12 @@ router.post("/", async (req, res) => {
       project_id: req.videoProject._id,
     }).lean();
 
-    if (!video) {
+    // O vídeo também tem de continuar associado ao projeto
+    const inProject = (req.videoProject.video_ids || []).some(
+      (id) => String(id) === String(video?._id),
+    );
+
+    if (!video || !inProject) {
       return res.status(404).json({
         error: "Video not found in this project.",
       });
@@ -138,11 +148,13 @@ router.post("/", async (req, res) => {
 
     const estimatedBytes = estimateSubtitleBytes(video.duration_seconds);
 
-    if (
-      estimatedBytes > capacity.account_available_bytes ||
-      estimatedBytes > capacity.project_available_bytes
-    ) {
-      return coded(res, 409, "storage");
+    // Indicar qual o limite atingido: primeiro o do projeto, depois o da conta
+    if (estimatedBytes > capacity.project_available_bytes) {
+      return coded(res, 409, "storage_project");
+    }
+
+    if (estimatedBytes > capacity.account_available_bytes) {
+      return coded(res, 409, "storage_account");
     }
 
     // Verificar se o serviço de reconhecimento de fala está disponível
