@@ -419,7 +419,8 @@ export async function cancelVideoFilter({
   return response.data;
 }
 
-export type SubtitleLanguage = "auto" | "pt" | "en" | "es" | "fr";
+// Só é suportado o inglês
+export type SubtitleLanguage = "en";
 
 export interface VideoSubtitleJob {
   _id: string;

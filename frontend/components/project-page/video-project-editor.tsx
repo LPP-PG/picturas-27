@@ -97,8 +97,6 @@ export default function VideoProjectEditor({
     useState<VideoFilterName>("grayscale");
   const [filterJob, setFilterJob] = useState<VideoFilterJob | null>(null);
   const [subtitlesOpen, setSubtitlesOpen] = useState(false);
-  const [subtitleLanguage, setSubtitleLanguage] =
-    useState<SubtitleLanguage>("auto");
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
   const subtitleTrackRef = useRef<HTMLTrackElement | null>(null);
   const [trimStart, setTrimStart] = useState("0");
@@ -445,7 +443,7 @@ export default function VideoProjectEditor({
 
     startSubtitles.mutate({
       videoId: selected._id,
-      language: subtitleLanguage,
+      language: "en",
     });
   }
 
@@ -921,23 +919,10 @@ export default function VideoProjectEditor({
       <div className="mt-4 space-y-3 border-t pt-4">
         <h3 className="text-sm font-medium">Generate subtitles</h3>
 
-        <label className="block text-xs">
-          Spoken language
-
-          <select
-            className="mt-1 w-full rounded border bg-background p-2 text-sm"
-            value={subtitleLanguage}
-            onChange={(event) =>
-              setSubtitleLanguage(event.target.value as SubtitleLanguage)
-            }
-          >
-            <option value="auto">Detect automatically</option>
-            <option value="en">English</option>
-            <option value="pt">Portuguese</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-          </select>
-        </label>
+        <p className="text-xs text-muted-foreground">
+          Spoken language: English. Videos in other languages are not
+          supported and are not translated.
+        </p>
 
         <Button
           type="button"
