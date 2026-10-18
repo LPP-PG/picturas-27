@@ -379,22 +379,4 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | DQ-005 | As legendas são produzidas em WebVTT e verificadas no navegador usado pela equipa no MVP; em produção, em todos os navegadores suportados. | O WebVTT é o formato de legendas que os navegadores reproduzem diretamente no elemento de vídeo, sem bibliotecas adicionais. | REQ-VID-LEG-052, 065 |
 | DQ-006 | As ferramentas de vídeo são independentes entre si (objetivo no MVP, obrigatório em produção) e o reconhecimento de fala corre num serviço em contentor, com o modelo descarregado automaticamente (obrigatório no MVP). | O processamento depende de software externo (FFmpeg e o modelo Whisper), que tem de ser isolado e instalável de forma repetível. | REQ-VID-LEG-066, 067 |
 
-**Verificações de cobertura**
-- [x] Cada requisito funcional e não funcional aparece na matriz.
-- [x] Cada requisito tem origem identificada: elemento do caso de uso, regra de negócio ou decisão de qualidade.
-- [x] Todos os elementos relevantes do caso de uso têm requisito associado ou justificação para não terem (pré-condições, passo 1, RN1, RN2, RN12 e A11, cobertos pelo UC-VID-004, e A1, A3, A6 e A13, que são condições assumidas ou delimitações).
-- [x] Os tópicos excluídos na secção 4.1.3 estão justificados.
-- [x] O impacto no sistema existente está atualizado e ligado aos requisitos relevantes.
 
----
-
-## ✅ Lista de verificação antes de entregar
-
-- [x] As secções 0 a 3 do dossiê foram preservadas; as assunções, questões em aberto e utilização de IA foram atualizadas.
-- [x] A funcionalidade, o caso de uso e o perfil do Exercício 1 foram mantidos.
-- [x] Requisitos funcionais estão completos para o âmbito e têm critérios verificáveis.
-- [x] Requisitos de qualidade estão classificados e distinguem os alvos MVP e produção.
-- [x] Os IDs existentes foram preservados quando a intenção não mudou.
-- [x] A análise de completude não alargou o âmbito sem decisão explícita.
-- [x] A matriz de rastreabilidade não tem requisitos órfãos nem elementos relevantes por cobrir.
-- [x] As decisões de qualidade e os respetivos requisitos estão identificados.
