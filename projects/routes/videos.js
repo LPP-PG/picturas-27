@@ -10,6 +10,8 @@ const FormData = require("form-data");
 const Project = require("../models/project");
 const Video = require("../models/video");
 const VideoUpload = require("../models/videoUpload");
+const VideoSubtitle = require("../models/videoSubtitle");
+const { cancelSubtitleJob } = require("../utils/videoSubtitleJob");
 const videoAuth = require("../middleware/videoAuth");
 const videoProjectAuth = require("../middleware/videoProjectAuth");
 
@@ -62,11 +64,41 @@ router.get("/:user/capacity", videoAuth, async (req, res) => {
   }
 });
 
+// Cancelar todos os pedidos de legendas ativos do utilizador
+router.post("/:user/subtitles/cancel-active", videoAuth, async (req, res) => {
+  try {
+    const jobs = await VideoSubtitle.find({
+      user_id: req.videoUser._id,
+      state: { $in: ["queued", "processing"] },
+    }).lean();
+
+    for (const job of jobs) {
+      await cancelSubtitleJob(job);
+    }
+
+    res.set("Cache-Control", "no-store");
+    res.json({ cancelled: jobs.length });
+  } catch (error) {
+    console.error("Error cancelling active subtitles:", error);
+
+    res.status(503).json({
+      error: "Could not cancel subtitle generation.",
+    });
+  }
+});
+
 router.use(
   "/:user/:project/trim",
   videoAuth,
   videoProjectAuth,
   require("./videoTrim"),
+);
+
+router.use(
+  "/:user/:project/subtitles",
+  videoAuth,
+  videoProjectAuth,
+  require("./videoSubtitles"),
 );
 
 router.use(

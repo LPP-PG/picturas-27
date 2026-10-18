@@ -109,6 +109,33 @@ router.get(
   },
 );
 
+// Cancelar todos os pedidos de legendas ativos (antes das rotas /:user/:project)
+router.post(
+  "/:user/subtitles/cancel-active",
+  auth.checkToken,
+  requireVideoOwner,
+  async (req, res) => {
+    try {
+      const response = await axios.post(
+        `https://projects:9001/videos/${encodeURIComponent(req.params.user)}/subtitles/cancel-active`,
+        {},
+        {
+          httpsAgent,
+          headers: {
+            Authorization: req.headers.authorization,
+          },
+          timeout: 120000,
+        },
+      );
+
+      res.set("Cache-Control", "no-store");
+      res.status(response.status).json(response.data);
+    } catch (error) {
+      sendError(res, error);
+    }
+  },
+);
+
 controlRoute(
   "get",
   "/:user/:project/capacity",
@@ -171,6 +198,38 @@ controlRoute(
   "delete",
   "/:user/:project/filters/:filterId",
   (req) => `/filters/${encodeURIComponent(req.params.filterId)}`,
+);
+
+// Rotas para as legendas dos vídeos
+controlRoute(
+  "post",
+  "/:user/:project/subtitles",
+  () => "/subtitles",
+);
+
+controlRoute(
+  "get",
+  "/:user/:project/subtitles",
+  (req) =>
+    `/subtitles?video_id=${encodeURIComponent(req.query.video_id ?? "")}`,
+);
+
+controlRoute(
+  "get",
+  "/:user/:project/subtitles/vtt/:videoId",
+  (req) => `/subtitles/vtt/${encodeURIComponent(req.params.videoId)}`,
+);
+
+controlRoute(
+  "get",
+  "/:user/:project/subtitles/:subtitleId",
+  (req) => `/subtitles/${encodeURIComponent(req.params.subtitleId)}`,
+);
+
+controlRoute(
+  "delete",
+  "/:user/:project/subtitles/:subtitleId",
+  (req) => `/subtitles/${encodeURIComponent(req.params.subtitleId)}`,
 );
 
 controlRoute(

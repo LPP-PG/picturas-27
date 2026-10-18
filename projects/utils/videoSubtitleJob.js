@@ -421,9 +421,11 @@ async function cancelSubtitleJob(job) {
 }
 
 // Pedidos interrompidos por um reinício passam a falhados
-async function recoverInterruptedSubtitleJobs() {
+// (só os criados antes do arranque deste processo)
+async function recoverInterruptedSubtitleJobs(startedBefore) {
   const jobs = await VideoSubtitle.find({
     state: { $in: ["queued", "processing"] },
+    createdAt: { $lt: startedBefore },
   });
 
   for (const job of jobs) {
