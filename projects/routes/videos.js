@@ -68,6 +68,14 @@ router.use(
   videoProjectAuth,
   require("./videoTrim"),
 );
+
+router.use(
+  "/:user/:project/filters",
+  videoAuth,
+  videoProjectAuth,
+  require("./videoFilters"),
+);
+
 router.use(
   "/:user/:project",
   videoAuth,
