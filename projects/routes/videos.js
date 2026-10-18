@@ -135,6 +135,9 @@ async function publicVideo(userId, video) {
     duration_seconds: video.duration_seconds,
     size_bytes: video.size_bytes,
     original_video_id: video.original_video_id,
+    has_audio: video.has_audio ?? null,
+    has_subtitles: Boolean(video.subtitles_key),
+    subtitles_language: video.subtitles_language ?? null,
     thumbnail_time_seconds: video.thumbnail_time_seconds ?? null,
     video_url:
       results[0].status === "fulfilled" ? results[0].value : null,
@@ -594,6 +597,7 @@ router.post(
         format,
         duration_seconds: metadata.duration_seconds,
         size_bytes: file.size,
+        has_audio: metadata.has_audio,
       });
 
       checkCancellation(signal);

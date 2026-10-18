@@ -243,6 +243,7 @@ async function processTrim(jobId, authorization, userType) {
       duration_seconds: metadata.duration_seconds,
       size_bytes: outputSize,
       original_video_id: current.source_video_id,
+      has_audio: source.has_audio ?? null,
     });
     await Project.updateOne(
       { _id: current.project_id, user_id: current.user_id },
