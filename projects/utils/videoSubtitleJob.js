@@ -28,8 +28,7 @@ const httpsAgent = new https.Agent({
 const errorMessages = {
   no_audio: "No audio track was found in this video.",
   no_speech: "No speech could be identified in this video.",
-  language_undetermined:
-    "The spoken language could not be detected. Please choose the language manually and try again.",
+  not_english: "This video does not appear to be in English.",
   storage: "Insufficient storage space in the account.",
   failed: "Could not generate subtitles. Please try again.",
 };
@@ -287,14 +286,11 @@ async function processSubtitleJob(jobId, authorization) {
     // Reconhecer a fala.
     const duration = metadata.duration_seconds;
     const rawSegments = [];
-    let detectedLanguage = null;
 
     await transcribe(audioPath, job.language, {
       signal: controller.signal,
       onInfo: (info) => {
         if (!info.language) return;
-
-        detectedLanguage = info.language;
 
         void VideoSubtitle.updateOne(
           { _id: jobId },
@@ -361,7 +357,7 @@ async function processSubtitleJob(jobId, authorization) {
     // Ligar as novas legendas ao vídeo.
     const previous = await Video.findOneAndUpdate(
       { _id: job.video_id, user_id: job.user_id, project_id: job.project_id },
-      { $set: { subtitles_key: newKey, subtitles_language: detectedLanguage || job.language } },
+      { $set: { subtitles_key: newKey, subtitles_language: job.language } },
       { new: false },
     ).lean();
 

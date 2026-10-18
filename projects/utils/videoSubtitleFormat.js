@@ -1,8 +1,9 @@
-const SUPPORTED_LANGUAGES = ["pt", "en", "es", "fr"];
+// Só é suportado o inglês (RN4 das legendas)
+const SUPPORTED_LANGUAGES = ["en"];
 
-// Idioma válido: um dos suportados ou "auto" (deteção automática)
+// Idioma válido: um dos suportados
 function isValidLanguage(value) {
-  return value === "auto" || SUPPORTED_LANGUAGES.includes(value);
+  return SUPPORTED_LANGUAGES.includes(value);
 }
 
 // Limpar e ajustar segmentos ao vídeo: descartar inválidos e cortar o fim à duração

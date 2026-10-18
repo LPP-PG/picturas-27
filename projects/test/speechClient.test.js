@@ -42,11 +42,11 @@ test("caracteres multibyte partidos entre chunks", async () => {
 test("evento error rejeita com o código", async () => {
   const stream = Readable.from([
     '{"type":"info","language":null,"probability":0.1}\n{"type":"error",',
-    '"code":"language_undetermined"}\n',
+    '"code":"not_english"}\n',
   ]);
 
   await assert.rejects(parseSpeechStream(stream), {
-    code: "language_undetermined",
+    code: "not_english",
   });
 });
 

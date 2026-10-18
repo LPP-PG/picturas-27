@@ -3,9 +3,9 @@ const assert = require("node:assert/strict");
 const f = require("../utils/videoSubtitleFormat");
 
 test("languages", () => {
-  assert.ok(f.isValidLanguage("auto"));
-  assert.ok(f.isValidLanguage("pt"));
-  assert.equal(f.isValidLanguage("de"), false);
+  assert.ok(f.isValidLanguage("en"));
+  assert.equal(f.isValidLanguage("auto"), false);
+  assert.equal(f.isValidLanguage("pt"), false);
 });
 
 test("normalizeSegments clamps, drops and trims (RN6)", () => {

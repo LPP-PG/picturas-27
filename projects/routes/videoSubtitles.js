@@ -85,7 +85,7 @@ router.post("/", async (req, res) => {
   let operationReserved = false;
 
   try {
-    const { video_id, language } = req.body || {};
+    const { video_id, language = "en" } = req.body || {};
 
     // Verificar se o identificador do vídeo é válido
     if (!mongoose.isObjectIdOrHexString(video_id)) {
