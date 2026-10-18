@@ -7,8 +7,8 @@
 | :-- | :-- |
 | **Grupo / Equipa** | Grupo 5 PL1 |
 | **Autores** | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
-| **Data** | 2026-10-17 |
-| **Versão do documento** | v2.0 |
+| **Data** | 2026-10-18 |
+| **Versão do documento** | v2.1 |
 | **Unidade Curricular** | Requisitos e Arquiteturas de Software — MEI, Universidade do Minho |
 
 ---
@@ -97,7 +97,7 @@ A aplicação de filtros permite transformar o aspeto de um vídeo diretamente n
 | RN1 | Os vídeos de entrada pertencem a projetos de vídeo e cumprem os formatos MP4/MOV e limites de duração/tamanho verificados no upload (UC-VID-004, RN3 e RN4). Filtros não constitui um novo carregamento. |
 | RN2 | Só os perfis Registado e Premium podem usar a ferramenta, em projetos próprios (UC-VID-004, RN2). |
 | RN3 | Aplicar um filtro consome **1 operação** na quota diária partilhada com imagens, apenas se o pedido chegar a **Concluído**. Registado: 5/dia; Premium: sem limite diário. Para Registado, a disponibilidade dessa operação é reservada ao aceitar o pedido (sem consumo definitivo), libertada na falha/cancelamento e convertida em consumo na conclusão, para impedir ultrapassar o limite com pedidos concorrentes. A validação da quota nas operações de imagem e vídeo considera operações concluídas e reservas ativas da conta. Criar/carregar/visualizar vídeos e pré-visualizar filtros não consome operações (UC-VID-004, RN12). |
-| RN4 | O filtro não altera o original. O resultado é um **novo vídeo no mesmo projeto**, com nome derivado de `<nome original>_<nome do filtro>` e sufixo numérico se necessário. O resultado só fica disponível para edição após estar integralmente guardado, com miniatura e associado ao projeto (UC-VID-004, RN8–RN9). |
+| RN4 | O filtro não altera o original. O resultado é um **novo vídeo no mesmo projeto**, com nome derivado de `<nome original>_<nome do filtro>` e sufixo numérico se necessário. O resultado só fica disponível para edição após estar integralmente guardado, com miniatura e associado ao projeto (UC-VID-004, RN8–RN9). Um vídeo resultante pode ser selecionado para receber outro filtro num novo pedido independente, preservando as versões anteriores. Cada pedido está sujeito às respetivas quotas e limites de armazenamento.|
 | RN5 | Em cada pedido é aplicado **um único filtro a todos os fotogramas**. Apenas a componente visual é transformada. Se existir faixa de áudio principal, o conteúdo sonoro e a sincronização são mantidos; se não existir, o resultado mantém-se sem áudio e a operação é válida. |
 | RN6 | Estados dos pedidos: **A aguardar**, **A processar**, **Concluído**, **Falhou** e **Cancelado**. Só os dois primeiros estados admitem cancelamento. |
 | RN7 | O limite de processamentos ativos é global à conta e partilhado entre Recorte, Filtros e Legendas: Registado, **1**; Premium, **3**. É independente dos carregamentos simultâneos definidos em UC-VID-004, RN10. |
@@ -135,7 +135,7 @@ Para definir os efeitos sem depender já de um programa específico, considere o
 | **ID** | **Assunção** |
 | :-- | :-- |
 | A1 | O vídeo está acessível ao processamento e já terminou o carregamento, conforme UC-VID-004, RN9. |
-| A2 | Um pedido aplica um único filtro ao vídeo completo; não se combinam efeitos nem se escolhe um intervalo temporal nesta versão. |
+| A2 | Cada pedido aplica um único filtro ao vídeo completo. É possível aplicar posteriormente outro filtro ao vídeo resultante, através de um novo pedido independente. Não existe combinação automática de efeitos num único pedido nem seleção de intervalo temporal nesta versão. |
 | A3 | Se o vídeo tiver faixa de áudio principal, esta mantém o conteúdo e a sincronização. Na ausência de áudio, o processamento de filtros prossegue normalmente sem gerar uma faixa sonora artificial (FA7). |
 | A4 | A pré-visualização usa um fotograma de amostra do vídeo selecionado, potencialmente com resolução reduzida. O efeito deve corresponder visualmente ao preset do resultado, tolerando diferenças de compressão; não garante igualdade de píxel a píxel. |
 | A5 | O resultado utiliza MP4/H.264 e AAC quando existir áudio, conforme RN16. Mantém-se a duração e, quando tecnicamente compatível, a resolução e a taxa de fotogramas originais; o contentor MOV de entrada não precisa de ser conservado. |
