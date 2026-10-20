@@ -296,7 +296,7 @@ As questões seguintes dizem respeito a eventuais evoluções posteriores e não
 | RN17 | Cópia das legendas do original para o resultado | REQ-VID-LEG-044 (UC-VID-003) |
 | RN11 / RN14 | Catálogo de efeitos e parâmetros fixos | REQ-VID-FILT-012, REQ-VID-FILT-050, REQ-VID-FILT-051, REQ-VID-FILT-052 |
 
-**Decisões de qualidade introduzidas nesta versão**
+**Decisões de qualidade**
 
 | **ID** | **Decisão de qualidade** | **Justificação** | **Requisito(s) relacionado(s)** |
 | :-- | :-- | :-- | :-- |

@@ -1,4 +1,4 @@
-# 📝 Exercícios 1 e 2 — Entrega
+# Exercícios 1 e 2 — Entrega
 ### Casos de Uso e Especificação de Requisitos · Fase 1: Suporte a Vídeo no PictuRAS
 
 ---
@@ -307,7 +307,7 @@ O recorte temporal permite ao utilizador reduzir um vídeo longo ao excerto que 
 | DQ-005 | Compatibilidade de reprodução dos resultados | REQ-VID-TRIM-042 |
 | DQ-006 | Ferramentas de vídeo independentes e implantação sem passos manuais | REQ-VID-TRIM-044, REQ-VID-TRIM-045 |
 
-**Decisões de qualidade introduzidas nesta aula**
+**Decisões de qualidade**
 
 | **ID** | **Decisão de qualidade** | **Justificação** | **Requisito(s) relacionado(s)** |
 | :-- | :-- | :-- | :-- |
@@ -317,24 +317,3 @@ O recorte temporal permite ao utilizador reduzir um vídeo longo ao excerto que 
 | DQ-004 | Alvos de desempenho: confirmação do pedido em menos de 3 s no MVP e de 1 s em produção; processamento em não mais do que a duração do intervalo no MVP e em 20 % dessa duração em produção. A capacidade global de pedidos em simultâneo fica fora do MVP. | O MVP valida a funcionalidade, por isso os alvos são moderados; os de produção servem de referência para a Fase 2. A confirmação não depende da duração do vídeo porque o processamento é assíncrono (REQ-VID-TRIM-013). A capacidade global não é verificável numa só máquina e o limite de pedidos em simultâneo por conta (RN7) já a limita. | REQ-VID-TRIM-038, REQ-VID-TRIM-039 |
 | DQ-005 | Os resultados reproduzem nos mesmos navegadores que o original: no MVP, verificado nos navegadores usados pela equipa (por exemplo, Chrome e Safari); em produção, em todos os navegadores suportados. | A reprodução depende dos codecs suportados pelo navegador (UC-VID-004, A7); a paridade com o original é um critério objetivo e independente do navegador escolhido. | REQ-VID-TRIM-042 |
 | DQ-006 | As ferramentas de vídeo são independentes entre si (objetivo no MVP, obrigatório em produção) e o serviço de recorte é implantado sem instalação manual de dependências (obrigatório no MVP). | O projeto prevê várias ferramentas de vídeo (recorte, legendas e filtros), e o processamento depende de software externo que tem de ser isolado e instalável de forma repetível. | REQ-VID-TRIM-044, REQ-VID-TRIM-045 |
-
-
-**Verificações de cobertura**
-- [x] Cada requisito funcional e não funcional aparece na matriz.
-- [x] Cada requisito tem origem identificada: elemento do caso de uso, regra de negócio, caso de uso de que depende ou decisão de qualidade.
-- [x] Todos os elementos relevantes do caso de uso têm requisito associado ou justificação para não terem (pré-condições, trigger, RN2, RN9 e A11, cobertos pelo UC-VID-004, e A1, que é uma condição assumida). As questões em aberto não geram requisitos.
-- [x] Os tópicos excluídos na secção 4.1.3 estão justificados.
-- [x] O impacto no sistema existente está atualizado e ligado aos requisitos relevantes.
-
----
-
-## ✅ Lista de verificação antes de entregar
-
-- [x] As secções 0 a 3 do dossiê foram preservadas; as assunções, questões em aberto e utilização de IA foram atualizadas.
-- [x] A funcionalidade, o caso de uso e o perfil do Exercício 1 foram mantidos.
-- [x] Requisitos funcionais estão completos para o âmbito e têm critérios verificáveis.
-- [x] Requisitos de qualidade estão classificados e distinguem os alvos MVP e produção.
-- [x] Os IDs existentes foram preservados quando a intenção não mudou.
-- [x] A análise de completude não alargou o âmbito sem decisão explícita.
-- [x] A matriz de rastreabilidade não tem requisitos órfãos nem elementos relevantes por cobrir.
-- [x] As decisões de qualidade e os respetivos requisitos estão identificados.
