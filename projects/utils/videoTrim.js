@@ -9,7 +9,7 @@ const Video = require("../models/video");
 const VideoTrim = require("../models/videoTrim");
 const Project = require("../models/project");
 const { generateVideoThumbnail } = require("./videoThumbnail");
-const { userError, failureMessage } = require("./videoMessages");
+const { storageMessage, userError, failureMessage } = require("./videoMessages");
 const {
   get_image_internal_url,
   post_image,
@@ -188,7 +188,7 @@ async function processTrim(jobId, authorization, userType) {
       });
       if (outputSize - current.reserved_bytes > capacity.account_available_bytes ||
           outputSize - current.reserved_bytes > capacity.project_available_bytes) {
-        throw userError("Insufficient storage space.");
+        throw userError(storageMessage(outputSize - current.reserved_bytes, capacity));
       }
     }
     await VideoTrim.updateOne({ _id: job._id }, { $set: { progress: 65 } });

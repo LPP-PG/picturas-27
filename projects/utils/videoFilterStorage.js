@@ -13,7 +13,7 @@ const {
   get_image_internal_url,
 } = require("./imageStorage");
 const { getUploadCapacity } = require("./videoReservations");
-const { userError } = require("./videoMessages");
+const { storageMessage, userError } = require("./videoMessages");
 
 // Ler as legendas do vídeo original, se existirem (RN16 das legendas).
 // Uma falha aqui não impede o filtro: o resultado fica sem legendas.
@@ -97,7 +97,7 @@ async function saveFilteredVideo({
     extraBytes > capacity.account_available_bytes ||
     extraBytes > capacity.project_available_bytes
     ) {
-    throw userError("Insufficient storage space.");
+    throw userError(storageMessage(extraBytes, capacity));
     }
 
     // Copiar as legendas só se couberem no espaço livre.

@@ -15,6 +15,7 @@ const {
   releaseUploadReservation,
 } = require("../utils/videoReservations");
 const { processTrim, cancelTrimJob } = require("../utils/videoTrim");
+const { storageMessage } = require("../utils/videoMessages");
 
 const router = express.Router();
 const usersService = "https://users:10001";
@@ -116,7 +117,7 @@ router.post("/", async (req, res) => {
       authorization: req.headers.authorization,
     });
     if (estimate > capacity.account_available_bytes || estimate > capacity.project_available_bytes) {
-      const error = new Error("Insufficient storage space.");
+      const error = new Error(storageMessage(estimate, capacity));
       error.status = 409;
       throw error;
     }

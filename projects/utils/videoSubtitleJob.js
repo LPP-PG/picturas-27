@@ -19,6 +19,7 @@ const { getUploadCapacity } = require("./videoReservations");
 const { readVideoMetadata } = require("./videoMetadata");
 const { normalizeSegments, toWebVtt } = require("./videoSubtitleFormat");
 const { transcribe } = require("./speechClient");
+const { videoMessages } = require("./videoMessages");
 
 const usersService = "https://users:10001";
 const httpsAgent = new https.Agent({
@@ -29,13 +30,13 @@ const errorMessages = {
   no_audio: "No audio track was found in this video.",
   no_speech: "No speech could be identified in this video.",
   not_english: "This video does not appear to be in English.",
-  storage: "Insufficient storage space in the account.",
+  storage: videoMessages.storage_account,
   failed: "Could not generate subtitles. Please try again.",
 };
 
 const storageMessages = {
-  project: "Insufficient storage space in the project.",
-  account: "Insufficient storage space in the account.",
+  project: videoMessages.storage_project,
+  account: videoMessages.storage_account,
 };
 
 function codedError(code, message = errorMessages[code]) {

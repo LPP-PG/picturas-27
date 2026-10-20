@@ -16,6 +16,7 @@ const {
 const axios = require("axios");
 const https = require("node:https");
 const { processFilterJob, cancelFilterJob } = require("../utils/videoFilterJob");
+const { storageMessage } = require("../utils/videoMessages");
 
 const usersHttpsAgent = new https.Agent({
   rejectUnauthorized: false,
@@ -100,7 +101,7 @@ if (
   estimatedBytes > capacity.project_available_bytes
 ) {
   return res.status(409).json({
-    error: "Insufficient storage space.",
+    error: storageMessage(estimatedBytes, capacity),
   });
 }
 

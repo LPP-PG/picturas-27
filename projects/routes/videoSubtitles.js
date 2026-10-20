@@ -17,6 +17,7 @@ const {
 } = require("../utils/videoSubtitleFormat");
 const { checkSpeechService } = require("../utils/speechClient");
 const { get_image_internal_url } = require("../utils/imageStorage");
+const { videoMessages } = require("../utils/videoMessages");
 const {
   processSubtitleJob,
   cancelSubtitleJob,
@@ -32,8 +33,8 @@ const messages = {
   no_audio: "No audio track was found in this video.",
   quota: "You have reached the daily operations limit. It resets at midnight.",
   limit: "The simultaneous video-processing limit was reached.",
-  storage_project: "Insufficient storage space in the project.",
-  storage_account: "Insufficient storage space in the account.",
+  storage_project: videoMessages.storage_project,
+  storage_account: videoMessages.storage_account,
   service:
     "The subtitle service is temporarily unavailable. Please try again later.",
   duplicate: "Subtitles are already being generated for this video.",
