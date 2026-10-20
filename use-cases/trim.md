@@ -128,16 +128,16 @@ O recorte temporal permite ao utilizador reduzir um vídeo longo ao excerto que 
 
 | **ID** | **Questão** |
 | :-- | :-- |
-| Q2 | O recorte deve conseguir ser encadeado com outras ferramentas de vídeo (por exemplo, recortar e depois aplicar um filtro) num único pedido, ou só é possível usá-lo isoladamente no MVP? |
-| Q3 | O recorte deve estar disponível no processamento em lote (vários vídeos do mesmo projeto, mesmo intervalo)? Se sim, conta como 1 operação ou como N? |
-| Q4 | Faz falta pré-visualizar o resultado antes de iniciar o processamento? |
-| Q5 | Um recorte que demora muito deve ser cancelado automaticamente ao fim de um tempo máximo? |
-| Q6 | Devem ser preservadas legendas e faixas de áudio adicionais no resultado? |
+| Q2 | O recorte deve conseguir ser encadeado com outras ferramentas de vídeo (por exemplo, recortar e depois aplicar um filtro) num único pedido, ou só é possível usá-lo isoladamente no MVP? **Decidida (RNG-14):** no MVP o recorte é uma operação isolada; aplicar outra ferramenta ao resultado é um novo pedido. O encadeamento automático fica para uma fase posterior. |
+| Q3 | O recorte deve estar disponível no processamento em lote (vários vídeos do mesmo projeto, mesmo intervalo)? Se sim, conta como 1 operação ou como N? **Decidida (RNG-14):** não há processamento em lote no MVP. A contagem de operações em lote fica para quando essa funcionalidade for especificada. |
+| Q4 | Faz falta pré-visualizar o resultado antes de iniciar o processamento? **Adiada para uma fase posterior:** no MVP o intervalo é escolhido com o leitor do vídeo original e não há pré-visualização do resultado. |
+| Q5 | Um recorte que demora muito deve ser cancelado automaticamente ao fim de um tempo máximo? **Adiada para uma fase posterior:** no MVP não há tempo máximo. O utilizador pode cancelar o pedido (REQ-VID-STATUS-003) e o limite por conta (RNG-08) impede a acumulação de pedidos. |
+| Q6 | Devem ser preservadas legendas e faixas de áudio adicionais no resultado? **Decidida para o MVP:** o resultado mantém o áudio principal (REQ-VID-TRIM-043) e não herda as legendas do original (UC-VID-003, Q15). As faixas de áudio adicionais e as legendas ficam como alvo de produção. |
 | Q7 | Deve a operação ser reservada na quota no momento da confirmação? Com a regra anterior, a operação só é contabilizada no fim: um utilizador Registado pode iniciar o pedido com 4 operações gastas, fazer uma operação sobre uma imagem enquanto o vídeo é processado e terminar o dia com 6 operações. **Decidida:** a operação é reservada ao criar o pedido e devolvida em Falhou ou Cancelado (RN4), como nos Filtros e nas Legendas |
 | Q8 | Terminar a sessão deve mesmo cancelar o recorte em curso (FA6), ou o processamento deve continuar e o resultado ficar disponível no próximo início de sessão, tal como acontece ao fechar o separador (FA2)? **Decidida:** terminar a sessão cancela os pedidos ativos (FA6), como nos Filtros (UC-VID-002, FA5) e nas Legendas (UC-VID-003, FA6). |
-| Q11 | A estimativa da reserva de espaço (A7: proporcional ao intervalo, com margem de 1,5) é adequada, sobretudo quando há conversão de formato? Como contabilizar o espaço da miniatura do resultado (UC-VID-004, Q1 e Q7)? |
-| Q12 | Como se elimina, move ou renomeia um vídeo ou um projeto de vídeo, e como isso interage com um recorte em curso (UC-VID-004, Q6)? |
-| Q13 | Que codecs de reprodução são garantidos no MVP e deve existir uma cópia de reprodução compatível (UC-VID-004, Q5)? Condiciona o critério do REQ-VID-TRIM-042 |
+| Q11 | A estimativa da reserva de espaço (A7: proporcional ao intervalo, com margem de 1,5) é adequada, sobretudo quando há conversão de formato? Como contabilizar o espaço da miniatura do resultado (UC-VID-004, Q1 e Q7)? **Parcialmente decidida:** a miniatura do resultado não conta para a quota (UC-VID-004, RN7). A adequação da margem de 1,5 fica por avaliar com os testes de recorte com conversão de formato. |
+| Q12 | Como se elimina, move ou renomeia um vídeo ou um projeto de vídeo, e como isso interage com um recorte em curso (UC-VID-004, Q6)? **Decidida:** a eliminação de vídeos e projetos está definida no UC-VID-004 (RN16 e RN19) e é impedida com um recorte ativo (REQ-VID-STATUS-013). Mover e renomear continuam em aberto no UC-VID-004 (Q6). |
+| Q13 | Que codecs de reprodução são garantidos no MVP e deve existir uma cópia de reprodução compatível (UC-VID-004, Q5)? Condiciona o critério do REQ-VID-TRIM-042 **Adiada para uma fase posterior, como no UC-VID-004 (Q5):** no MVP não há cópia de reprodução e a compatibilidade é verificada nos navegadores usados nos testes (REQ-VID-TRIM-042). |
 
 ---
 

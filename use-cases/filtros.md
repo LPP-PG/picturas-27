@@ -154,17 +154,17 @@ Para definir os efeitos sem depender já de um programa específico, considere o
 
 ### 2.8 Questões em Aberto
 
-As questões seguintes dizem respeito a eventuais evoluções posteriores e não condicionam o âmbito definido para o MVP.
+As questões seguintes dizem respeito a eventuais evoluções posteriores e não condicionam o âmbito definido para o MVP. Cada questão indica a respetiva resolução.
 
 | **ID** | **Questão para evolução futura** |
 | :-- | :-- |
-| Q1 | Acrescentar outros efeitos para além dos seis filtros do catálogo? |
-| Q2 | Permitir combinar vários filtros num único pedido? |
-| Q3 | Disponibilizar ajuste de intensidade e parâmetros dos efeitos? |
-| Q4 | Permitir aplicar filtros apenas a um intervalo temporal do vídeo? |
-| Q5 | Suportar processamento em lote de vários vídeos? |
-| Q6 | Substituir a pré-visualização por fotograma por uma amostra animada? |
-| Q13 | Disponibilizar encadeamento automático de várias ferramentas de vídeo? |
+| Q1 | Acrescentar outros efeitos para além dos seis filtros do catálogo? **Adiada para uma fase posterior:** o catálogo do MVP é o de RN11. |
+| Q2 | Permitir combinar vários filtros num único pedido? **Decidida (RNG-14):** um pedido aplica um único filtro; aplicar outro ao resultado é um novo pedido. |
+| Q3 | Disponibilizar ajuste de intensidade e parâmetros dos efeitos? **Adiada para uma fase posterior:** no MVP os efeitos usam parâmetros fixos (RN14). |
+| Q4 | Permitir aplicar filtros apenas a um intervalo temporal do vídeo? **Adiada para uma fase posterior:** no MVP o filtro aplica-se ao vídeo completo (A2). |
+| Q5 | Suportar processamento em lote de vários vídeos? **Decidida (RNG-14):** não há processamento em lote no MVP. |
+| Q6 | Substituir a pré-visualização por fotograma por uma amostra animada? **Adiada para uma fase posterior:** no MVP a pré-visualização é um fotograma de amostra (RN15). |
+| Q13 | Disponibilizar encadeamento automático de várias ferramentas de vídeo? **Decidida (RNG-14):** não há encadeamento automático de ferramentas no MVP. |
 
 ---
 
