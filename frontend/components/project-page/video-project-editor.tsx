@@ -12,7 +12,7 @@ import {
   fetchProjectVideos,
   startVideoTrim,
   startVideoFilter,
-  fetchVideoFilter,
+  fetchLatestVideoFilter,
   cancelVideoFilter,
   startVideoSubtitles,
   fetchLatestVideoSubtitles,
@@ -23,7 +23,6 @@ import {
   type ProjectVideo,
   type VideoTrimJob,
   type VideoFilterName,
-  type VideoFilterJob,
 } from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
@@ -95,7 +94,6 @@ export default function VideoProjectEditor({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] =
     useState<VideoFilterName>("grayscale");
-  const [filterJob, setFilterJob] = useState<VideoFilterJob | null>(null);
   const [subtitlesOpen, setSubtitlesOpen] = useState(false);
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
   const subtitleTrackRef = useRef<HTMLTrackElement | null>(null);
@@ -155,28 +153,28 @@ export default function VideoProjectEditor({
     },
 
     onSuccess: (job) => {
-      setFilterJob(job);
+      queryClient.setQueryData(
+        ["videoFilter", session.user._id, projectId, job.source_video_id],
+        job,
+      );
     },
   });
+  const { reset: resetStartFilter } = startFilter;
 
+  // O pedido mais recente do vídeo vem do servidor, para continuar visível ao regressar
   const filterStatus = useQuery({
-    queryKey: [
-      "videoFilter",
-      session.user._id,
-      projectId,
-      filterJob?._id,
-    ],
+    queryKey: ["videoFilter", session.user._id, projectId, selected?._id],
 
     queryFn: ({ signal }) =>
-      fetchVideoFilter({
+      fetchLatestVideoFilter({
         uid: session.user._id,
         pid: projectId,
         token: session.token,
-        filterId: filterJob!._id,
+        videoId: selected!._id,
         signal,
       }),
 
-    enabled: Boolean(filterJob?._id),
+    enabled: Boolean(selected?._id),
 
     refetchInterval: (query) => {
       const state = query.state.data?.state;
@@ -187,11 +185,11 @@ export default function VideoProjectEditor({
     },
   });
 
-  const currentFilterJob = filterStatus.data ?? filterJob;
+  const currentFilterJob = filterStatus.data ?? null;
 
   const cancelFilter = useMutation({
     mutationFn: async () => {
-      if (!filterJob) {
+      if (!currentFilterJob) {
         throw new Error("No active filter request.");
       }
 
@@ -199,19 +197,18 @@ export default function VideoProjectEditor({
         uid: session.user._id,
         pid: projectId,
         token: session.token,
-        filterId: filterJob._id,
+        filterId: currentFilterJob._id,
       });
     },
 
     onSuccess: (job) => {
-      setFilterJob(job);
-
       queryClient.setQueryData(
-        ["videoFilter", session.user._id, projectId, job._id],
+        ["videoFilter", session.user._id, projectId, job.source_video_id],
         job,
       );
     },
   });
+  const { reset: resetCancelFilter } = cancelFilter;
 
   useEffect(() => {
   if (filterStatus.data?.state === "completed") {
@@ -433,7 +430,15 @@ export default function VideoProjectEditor({
   useEffect(() => {
     resetStartSubtitles();
     resetCancelSubtitles();
-  }, [selected?._id, resetStartSubtitles, resetCancelSubtitles]);
+    resetStartFilter();
+    resetCancelFilter();
+  }, [
+    selected?._id,
+    resetStartSubtitles,
+    resetCancelSubtitles,
+    resetStartFilter,
+    resetCancelFilter,
+  ]);
 
   function generateSubtitles() {
     if (!selected || startSubtitles.isPending || subtitleActive) return;

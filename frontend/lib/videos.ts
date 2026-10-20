@@ -381,19 +381,21 @@ export async function startVideoFilter({
   return response.data;
 }
 
-export async function fetchVideoFilter({
+// Consultar o pedido de filtro mais recente de um vídeo
+export async function fetchLatestVideoFilter({
   uid,
   pid,
   token,
-  filterId,
+  videoId,
   signal,
 }: ProjectVideoRequest & {
-  filterId: string;
-}): Promise<VideoFilterJob> {
-  const response = await api.get<VideoFilterJob>(
-    `${projectVideosUrl(uid, pid)}/filters/${encodeURIComponent(filterId)}`,
+  videoId: string;
+}): Promise<VideoFilterJob | null> {
+  const response = await api.get<VideoFilterJob | null>(
+    `${projectVideosUrl(uid, pid)}/filters`,
     {
       headers: authHeaders(token),
+      params: { video_id: videoId },
       signal,
     },
   );

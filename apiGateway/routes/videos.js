@@ -190,6 +190,13 @@ controlRoute(
 
 controlRoute(
   "get",
+  "/:user/:project/filters",
+  (req) =>
+    `/filters?video_id=${encodeURIComponent(req.query.video_id ?? "")}`,
+);
+
+controlRoute(
+  "get",
   "/:user/:project/filters/:filterId",
   (req) => `/filters/${encodeURIComponent(req.params.filterId)}`,
 );

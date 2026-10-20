@@ -21,6 +21,20 @@ const usersHttpsAgent = new https.Agent({
   rejectUnauthorized: false,
 });
 
+// Dados de um pedido de filtro enviados ao frontend
+function publicJob(job) {
+  return {
+    _id: job._id,
+    source_video_id: job.source_video_id,
+    result_video_id: job.result_video_id,
+    filter_name: job.filter_name,
+    state: job.state,
+    progress: job.progress,
+    cancel_requested: job.cancel_requested,
+    error: job.error,
+  };
+}
+
  // Iniciar a aplicação de um filtro
 router.post("/", async (req, res) => {
     let job = null;
@@ -135,15 +149,7 @@ if (
     });
 
     // Informar o frontend de que o pedido foi aceite.
-    res.status(202).json({
-      _id: job._id,
-      source_video_id: job.source_video_id,
-      result_video_id: job.result_video_id,
-      filter_name: job.filter_name,
-      state: job.state,
-      progress: job.progress,
-      error: job.error,
-    });
+    res.status(202).json(publicJob(job));
 
     // Iniciar o processamento em segundo plano.
     setImmediate(() => {
@@ -196,6 +202,34 @@ if (
 });
 
 
+// Consultar o pedido de filtro mais recente de um vídeo
+router.get("/", async (req, res) => {
+  try {
+    const videoId = req.query.video_id;
+
+    if (!mongoose.isObjectIdOrHexString(videoId)) {
+      return res.status(400).json({ error: "Invalid video ID." });
+    }
+
+    const job = await VideoFilter.findOne({
+      user_id: req.videoUser._id,
+      project_id: req.videoProject._id,
+      source_video_id: videoId,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.set("Cache-Control", "no-store");
+    res.json(job ? publicJob(job) : null);
+  } catch (error) {
+    console.error("Error fetching video filter:", error);
+
+    res.status(500).json({
+      error: "Could not retrieve video filter status.",
+    });
+  }
+});
+
 // Consultar o estado de um pedido de filtro
 router.get("/:filterId", async (req, res) => {
   try {
@@ -219,15 +253,7 @@ router.get("/:filterId", async (req, res) => {
 
     res.set("Cache-Control", "no-store");
 
-    res.json({
-      _id: job._id,
-      source_video_id: job.source_video_id,
-      result_video_id: job.result_video_id,
-      filter_name: job.filter_name,
-      state: job.state,
-      progress: job.progress,
-      error: job.error,
-    });
+    res.json(publicJob(job));
   } catch (error) {
     console.error("Error fetching video filter:", error);
 
@@ -262,13 +288,7 @@ router.delete("/:filterId", async (req, res) => {
 
     const current = await cancelFilterJob(job);
 
-    return res.status(202).json({
-      _id: current._id,
-      state: current.state,
-      progress: current.progress,
-      cancel_requested: current.cancel_requested,
-      error: current.error,
-    });
+    return res.status(202).json(publicJob(current));
   } catch (error) {
     console.error("Error cancelling video filter:", error);
 
