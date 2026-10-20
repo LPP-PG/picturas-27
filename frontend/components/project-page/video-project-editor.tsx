@@ -13,10 +13,12 @@ import {
   startVideoTrim,
   startVideoFilter,
   fetchLatestVideoFilter,
+  fetchVideoFilter,
   cancelVideoFilter,
   fetchVideoFilterPreview,
   startVideoSubtitles,
   fetchLatestVideoSubtitles,
+  fetchVideoSubtitles,
   cancelVideoSubtitles,
   fetchSubtitlesVtt,
   type SubtitleLanguage,
@@ -24,6 +26,7 @@ import {
   type ProjectVideo,
   type VideoTrimJob,
   type VideoFilterName,
+  type VideoFilterJob,
 } from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,7 @@ import { api } from "@/lib/axios";
 import { deleteProject, type Project } from "@/lib/projects";
 import { useVideoTrim } from "@/providers/video-trim-provider";
 import { useToast } from "@/hooks/use-toast";
+import { useVideoJobToasts } from "@/hooks/use-video-job-toasts";
 import { ToastAction } from "@/components/ui/toast";
 import {
   Dialog,
@@ -63,15 +67,6 @@ const SUBTITLE_LANGUAGE_NAMES: Record<string, string> = {
 
 const REPLACE_SUBTITLES_MESSAGE =
   "This video already has subtitles. They will be replaced only if the new generation completes. Continue?";
-
-// Nomes dos estados dos pedidos, iguais em todas as ferramentas de vídeo
-const JOB_STATE_LABELS: Record<VideoSubtitleJob["state"], string> = {
-  queued: "Queued",
-  processing: "Processing",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
-};
 
 function errorMessage(
   error: unknown,
@@ -115,11 +110,6 @@ export default function VideoProjectEditor({
   const [deleteVideo, setDeleteVideo] = useState<ProjectVideo | null>(null);
   const [blockedDeleteVideo, setBlockedDeleteVideo] =
     useState<ProjectVideo | null>(null);
-  // Pedidos de legendas vistos ativos e já notificados (um aviso por pedido)
-  const activeSubtitleIdsRef = useRef(new Set<string>());
-  const notifiedSubtitleIdsRef = useRef(new Set<string>());
-  // Pedidos de filtros vistos ativos neste ecrã
-  const activeFilterIdsRef = useRef(new Set<string>());
 
   const videos = useQuery({
     queryKey: [
@@ -178,6 +168,73 @@ export default function VideoProjectEditor({
   });
 
 
+  // Notificações de progresso dos filtros, como no Recorte
+  const filterJobs = useVideoJobToasts<VideoFilterJob>({
+    queryKey: ["videoFilterJob", session.user._id],
+    name: "Video filter",
+    processingTitle: "Applying video filter",
+    fetchJob: ({ id, projectId: pid }, signal) =>
+      fetchVideoFilter({
+        uid: session.user._id,
+        pid,
+        token: session.token,
+        filterId: id,
+        signal,
+      }),
+    cancelJob: ({ id, projectId: pid }) =>
+      cancelVideoFilter({
+        uid: session.user._id,
+        pid,
+        token: session.token,
+        filterId: id,
+      }),
+    onFinished: (job, pid) => {
+      // Pedido terminado: a operação foi consumida ou devolvida
+      window.dispatchEvent(new Event("session-updated"));
+      void queryClient.invalidateQueries({
+        queryKey: ["videoFilter", session.user._id, pid, job.source_video_id],
+      });
+
+      if (job.state === "completed") {
+        void queryClient.invalidateQueries({
+          queryKey: ["projectVideos", session.user._id, pid],
+        });
+        toast({
+          title: "Video filter completed",
+          description: "The filtered video is now available in the project.",
+          duration: 6000,
+          action: (
+            <ToastAction
+              altText="Open filtered video"
+              onClick={() =>
+                router.push(
+                  `/dashboard/${pid}?video=${encodeURIComponent(job.result_video_id)}`,
+                )
+              }
+            >
+              Open video
+            </ToastAction>
+          ),
+        });
+      } else if (job.state === "failed") {
+        toast({
+          title: "Video filter failed",
+          description:
+            job.error ||
+            "The video filter could not be applied. Please try again.",
+          variant: "destructive",
+          duration: 6000,
+        });
+      } else {
+        toast({
+          title: "Video filter cancelled",
+          description: "The video filter request was cancelled.",
+          duration: 6000,
+        });
+      }
+    },
+  });
+  const { track: trackFilter } = filterJobs;
 
   const startFilter = useMutation({
     mutationFn: async () => {
@@ -199,13 +256,15 @@ export default function VideoProjectEditor({
         ["videoFilter", session.user._id, projectId, job.source_video_id],
         job,
       );
+      trackFilter(job, projectId);
       // A operação fica reservada: atualizar o contador
       window.dispatchEvent(new Event("session-updated"));
     },
   });
   const { reset: resetStartFilter } = startFilter;
 
-  // O pedido mais recente do vídeo vem do servidor, para continuar visível ao regressar
+  // O pedido mais recente do vídeo vem do servidor, para continuar a seguir
+  // um pedido ativo ao regressar ao projeto
   const filterStatus = useQuery({
     queryKey: ["videoFilter", session.user._id, projectId, selected?._id],
 
@@ -219,14 +278,6 @@ export default function VideoProjectEditor({
       }),
 
     enabled: Boolean(selected?._id),
-
-    refetchInterval: (query) => {
-      const state = query.state.data?.state;
-
-      return state === "queued" || state === "processing"
-        ? 1000
-        : false;
-    },
   });
 
   const currentFilterJob = filterStatus.data ?? null;
@@ -234,93 +285,67 @@ export default function VideoProjectEditor({
     currentFilterJob?.state === "queued" ||
     currentFilterJob?.state === "processing";
 
-  const cancelFilter = useMutation({
-    mutationFn: async () => {
-      if (!currentFilterJob) {
-        throw new Error("No active filter request.");
-      }
+  useEffect(() => {
+    if (currentFilterJob) trackFilter(currentFilterJob, projectId);
+  }, [currentFilterJob, projectId, trackFilter]);
 
-      return cancelVideoFilter({
+  // Notificações de progresso das legendas, como no Recorte
+  const subtitleJobs = useVideoJobToasts<VideoSubtitleJob>({
+    queryKey: ["videoSubtitleJob", session.user._id],
+    name: "Subtitle generation",
+    processingTitle: "Generating subtitles",
+    fetchJob: ({ id, projectId: pid }, signal) =>
+      fetchVideoSubtitles({
         uid: session.user._id,
-        pid: projectId,
+        pid,
         token: session.token,
-        filterId: currentFilterJob._id,
+        subtitleId: id,
+        signal,
+      }),
+    cancelJob: ({ id, projectId: pid }) =>
+      cancelVideoSubtitles({
+        uid: session.user._id,
+        pid,
+        token: session.token,
+        subtitleId: id,
+      }),
+    onFinished: (job, pid) => {
+      // Pedido terminado: a operação foi consumida ou devolvida
+      window.dispatchEvent(new Event("session-updated"));
+      void queryClient.invalidateQueries({
+        queryKey: ["videoSubtitles", session.user._id, pid, job.video_id],
       });
-    },
 
-    onSuccess: (job) => {
-      queryClient.setQueryData(
-        ["videoFilter", session.user._id, projectId, job.source_video_id],
-        job,
-      );
+      if (job.state === "completed") {
+        void queryClient.invalidateQueries({
+          queryKey: ["subtitlesVtt", session.user._id, pid, job.video_id],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["projectVideos", session.user._id, pid],
+        });
+        toast({
+          title: "Subtitles ready",
+          description: "The subtitles were added to the video.",
+          duration: 6000,
+        });
+      } else if (job.state === "failed") {
+        toast({
+          title: "Subtitle generation failed",
+          description:
+            job.error || "Could not generate subtitles. Please try again.",
+          variant: "destructive",
+          duration: 6000,
+        });
+      } else {
+        toast({
+          title: "Subtitle generation cancelled",
+          description: "The subtitle request was cancelled.",
+          duration: 6000,
+        });
+      }
     },
   });
-  const { reset: resetCancelFilter } = cancelFilter;
-
-  useEffect(() => {
-    if (!currentFilterJob) return;
-
-    if (
-      currentFilterJob.state === "queued" ||
-      currentFilterJob.state === "processing"
-    ) {
-      activeFilterIdsRef.current.add(currentFilterJob._id);
-      return;
-    }
-
-    // Só tratar pedidos que foram vistos ativos neste ecrã (um aviso por pedido)
-    if (!activeFilterIdsRef.current.delete(currentFilterJob._id)) return;
-
-    // Pedido terminado: a operação foi consumida ou devolvida
-    window.dispatchEvent(new Event("session-updated"));
-
-    if (currentFilterJob.state === "completed") {
-      const resultId = currentFilterJob.result_video_id;
-
-      void queryClient.invalidateQueries({
-        queryKey: [
-          "projectVideos",
-          session.user._id,
-          projectId,
-          session.token,
-        ],
-      });
-      toast({
-        title: "Video filter completed",
-        description: "The filtered video is now available in the project.",
-        duration: 6000,
-        action: (
-          <ToastAction
-            altText="Open filtered video"
-            onClick={() =>
-              router.push(
-                `/dashboard/${projectId}?video=${encodeURIComponent(resultId)}`,
-              )
-            }
-          >
-            Open video
-          </ToastAction>
-        ),
-      });
-    } else if (currentFilterJob.state === "failed") {
-      toast({
-        title: "Video filter failed",
-        description:
-          currentFilterJob.error ||
-          "The video filter could not be applied. Please try again.",
-        variant: "destructive",
-        duration: 6000,
-      });
-    }
-  }, [
-    currentFilterJob,
-    queryClient,
-    router,
-    toast,
-    session.user._id,
-    projectId,
-    session.token,
-  ]);
+  const { track: trackSubtitles } = subtitleJobs;
 
   const subtitlesKey = [
     "videoSubtitles",
@@ -350,6 +375,7 @@ export default function VideoProjectEditor({
         ["videoSubtitles", session.user._id, projectId, job.video_id],
         job,
       );
+      trackSubtitles(job, projectId);
       // A operação fica reservada: atualizar o contador
       window.dispatchEvent(new Event("session-updated"));
     },
@@ -376,102 +402,15 @@ export default function VideoProjectEditor({
       }),
 
     enabled: Boolean(selected?._id),
-
-    refetchInterval: (query) => {
-      const state = query.state.data?.state;
-
-      return state === "queued" || state === "processing"
-        ? 1000
-        : false;
-    },
   });
 
   const subtitleJob = subtitleStatus.data ?? null;
   const subtitleActive =
     subtitleJob?.state === "queued" || subtitleJob?.state === "processing";
 
-  const cancelSubtitles = useMutation({
-    mutationFn: async () => {
-      if (!subtitleJob) {
-        throw new Error("No active subtitle request.");
-      }
-
-      return cancelVideoSubtitles({
-        uid: session.user._id,
-        pid: projectId,
-        token: session.token,
-        subtitleId: subtitleJob._id,
-      });
-    },
-
-    onSuccess: (job) => {
-      queryClient.setQueryData(
-        ["videoSubtitles", session.user._id, projectId, job.video_id],
-        job,
-      );
-    },
-  });
-
-  const { reset: resetCancelSubtitles } = cancelSubtitles;
-
   useEffect(() => {
-    if (!subtitleJob) return;
-
-    if (subtitleJob.state === "queued" || subtitleJob.state === "processing") {
-      activeSubtitleIdsRef.current.add(subtitleJob._id);
-      return;
-    }
-
-    // Só tratar pedidos que foram vistos ativos neste ecrã
-    if (!activeSubtitleIdsRef.current.has(subtitleJob._id)) return;
-
-    // Pedido terminado: a operação foi consumida ou devolvida
-    activeSubtitleIdsRef.current.delete(subtitleJob._id);
-    window.dispatchEvent(new Event("session-updated"));
-
-    if (
-      subtitleJob.state === "completed" &&
-      !notifiedSubtitleIdsRef.current.has(subtitleJob._id)
-    ) {
-      notifiedSubtitleIdsRef.current.add(subtitleJob._id);
-      toast({
-        title: "Subtitles ready",
-        description: "The subtitles were added to the video.",
-        duration: 6000,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: [
-          "subtitlesVtt",
-          session.user._id,
-          projectId,
-          subtitleJob.video_id,
-        ],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: [
-          "projectVideos",
-          session.user._id,
-          projectId,
-          session.token,
-        ],
-      });
-    } else if (subtitleJob.state === "failed") {
-      toast({
-        title: "Subtitle generation failed",
-        description:
-          subtitleJob.error || "Could not generate subtitles. Please try again.",
-        variant: "destructive",
-        duration: 6000,
-      });
-    }
-  }, [
-    subtitleJob,
-    toast,
-    queryClient,
-    session.user._id,
-    projectId,
-    session.token,
-  ]);
+    if (subtitleJob) trackSubtitles(subtitleJob, projectId);
+  }, [subtitleJob, projectId, trackSubtitles]);
 
   // As legendas só são pedidas quando o vídeo as tem
   const subtitlesVtt = useQuery({
@@ -529,16 +468,8 @@ export default function VideoProjectEditor({
 
   useEffect(() => {
     resetStartSubtitles();
-    resetCancelSubtitles();
     resetStartFilter();
-    resetCancelFilter();
-  }, [
-    selected?._id,
-    resetStartSubtitles,
-    resetCancelSubtitles,
-    resetStartFilter,
-    resetCancelFilter,
-  ]);
+  }, [selected?._id, resetStartSubtitles, resetStartFilter]);
 
   function generateSubtitles() {
     if (!selected || startSubtitles.isPending || subtitleActive) return;
@@ -1097,43 +1028,6 @@ export default function VideoProjectEditor({
             {errorMessage(startFilter.error, "Could not start video filter.")}
           </p>
         )}
-
-
-        {currentFilterJob && (
-          <div className="rounded border p-3 text-sm">
-            <p>Status: {JOB_STATE_LABELS[currentFilterJob.state]}</p>
-
-            {filterActive && <p>Progress: {currentFilterJob.progress}%</p>}
-
-            {filterActive && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={cancelFilter.isPending}
-                onClick={() => cancelFilter.mutate()}
-              >
-                {cancelFilter.isPending ? "Cancelling…" : "Cancel"}
-              </Button>
-            )}
-
-            {currentFilterJob.state === "failed" && (
-              <p role="alert" className="text-red-500">
-                {currentFilterJob.error ||
-                  "The video filter could not be applied. Please try again."}
-              </p>
-            )}
-
-            {cancelFilter.isError && (
-              <p role="alert" className="text-red-500">
-                {errorMessage(
-                  cancelFilter.error,
-                  "Could not cancel video filter.",
-                )}
-              </p>
-            )}
-          </div>
-        )}
-
       </div>
     )}
 
@@ -1166,41 +1060,6 @@ export default function VideoProjectEditor({
               "Could not start subtitle generation.",
             )}
           </p>
-        )}
-
-        {subtitleJob && (
-          <div className="rounded border p-3 text-sm">
-            <p>Status: {JOB_STATE_LABELS[subtitleJob.state]}</p>
-
-            {subtitleActive && <p>Progress: {subtitleJob.progress}%</p>}
-
-            {subtitleActive && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={cancelSubtitles.isPending}
-                onClick={() => cancelSubtitles.mutate()}
-              >
-                {cancelSubtitles.isPending ? "Cancelling…" : "Cancel"}
-              </Button>
-            )}
-
-            {subtitleJob.state === "failed" && (
-              <p role="alert" className="text-red-500">
-                {subtitleJob.error ||
-                  "Could not generate subtitles. Please try again."}
-              </p>
-            )}
-
-            {cancelSubtitles.isError && (
-              <p role="alert" className="text-red-500">
-                {errorMessage(
-                  cancelSubtitles.error,
-                  "Could not cancel subtitle generation.",
-                )}
-              </p>
-            )}
-          </div>
         )}
       </div>
     )}

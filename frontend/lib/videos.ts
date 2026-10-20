@@ -431,6 +431,26 @@ export async function fetchLatestVideoFilter({
   return response.data;
 }
 
+export async function fetchVideoFilter({
+  uid,
+  pid,
+  token,
+  filterId,
+  signal,
+}: ProjectVideoRequest & {
+  filterId: string;
+}): Promise<VideoFilterJob> {
+  const response = await api.get<VideoFilterJob>(
+    `${projectVideosUrl(uid, pid)}/filters/${encodeURIComponent(filterId)}`,
+    {
+      headers: authHeaders(token),
+      signal,
+    },
+  );
+
+  return response.data;
+}
+
 export async function cancelVideoFilter({
   uid,
   pid,
