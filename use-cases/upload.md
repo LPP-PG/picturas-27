@@ -9,7 +9,7 @@
 | **Grupo / Equipa** | Grupo 5 PL1 |
 | **Autores** | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
 | **Data** | 2026-10-20 |
-| **Versão do documento** | v2.0 |
+| **Versão do documento** | v2.1 |
 | **Unidade Curricular** | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho |
 
 ---
@@ -36,16 +36,16 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | **Secção** | **Detalhes** |
 | :-- | :-- |
 | **ID do Caso de Uso** | UC-VID-004 |
-| **Nome** | Criar um projeto de vídeo |
-| **Versão** | v1.1 |
+| **Nome** | Criar e gerir vídeos de um projeto de vídeo |
+| **Versão** | v1.2 |
 | **Autor** | Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto |
 | **Data** | 2026-10-15 |
-| **Objetivo** | Criar um projeto com um ou vários vídeos, acompanhar o carregamento e abrir o projeto para visualizar um vídeo selecionado e aceder às ferramentas de vídeo. |
-| **Âmbito** | New Project, validação e carregamento de vídeos, armazenamento, miniaturas, lista Your projects e visualização no editor. Não inclui executar recortes, filtros ou geração de legendas. |
+| **Objetivo** | Criar um projeto de vídeo ou acrescentar vídeos a um projeto próprio, acompanhar os carregamentos, visualizar o conteúdo e gerir a sua eliminação sem confundir estas ações com a execução de ferramentas de edição. |
+| **Âmbito** | Criação por New Project, carregamento e validação, armazenamento, miniaturas, Your projects e leitor; adição a projeto existente, eliminação de vídeos e deteção de duplicados no carregamento. A execução de Recorte, Filtros e Legendas pertence aos respetivos casos de uso. |
 | **Ator Principal** | Utilizador Registado. O Utilizador Premium segue o mesmo fluxo com limites diferentes. |
 | **Stakeholders e Interesses** | **Utilizador:** quer carregar vários vídeos no mesmo projeto, conhecer os limites antes de enviar, ver o progresso e abrir os vídeos sem perder os ficheiros já guardados.<br>**Dono do sistema:** quer controlar o armazenamento e os carregamentos simultâneos por perfil.<br>**Equipa de desenvolvimento:** quer integrar vídeo na criação e abertura de projetos e disponibilizar uma base comum às três ferramentas. |
-| **Pré-condições** | Sessão iniciada numa conta Registada ou Premium; o utilizador tem pelo menos um ficheiro de vídeo disponível no seu dispositivo. Não é necessário ter operações diárias restantes. |
-| **Trigger** | O utilizador seleciona New Project para criar um projeto de vídeo. |
+| **Pré-condições** | Sessão iniciada de Registado ou Premium. Para criar ou acrescentar conteúdo, existe pelo menos um ficheiro local; para gerir conteúdo existente, o projeto pertence ao utilizador. Não é necessária quota de operações de edição disponível. |
+| **Trigger** | O utilizador seleciona New Project; num projeto existente, pode iniciar o fluxo de adição por Add videos (FA8). |
 
 ### 2.2 Fluxo Principal
 
@@ -74,6 +74,9 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | FA5 – Miniatura inicial preta | No passo 7, o fotograma inicial está quase todo preto → O sistema tenta os instantes posteriores definidos em RN8. Se todos os fotogramas extraídos forem pretos, usa o primeiro fotograma extraído com sucesso. |
 | FA6 – Mais ficheiros do que vagas disponíveis | No passo 4, a seleção contém mais ficheiros do que o limite de transferências simultâneas → Os restantes aguardam no navegador. Se outras transferências da conta ocuparem todas as vagas, o sistema informa o utilizador e permite aguardar ou cancelar os ficheiros pendentes. Não inicia transferências acima do limite. |
 | FA7 – Repetir após uma falha | Um ficheiro termina em Falhou → O utilizador seleciona Tentar novamente; o sistema volta a validar e reservar espaço antes de repetir apenas esse ficheiro. Se necessário, solicita nova seleção do ficheiro local. |
+| FA8 – Acrescentar vídeos | No editor, o proprietário escolhe Add videos. O sistema abre o formulário para o projeto existente e repete seleção, validação, reserva e envio, sem criar outro projeto. Uma falha não remove o conteúdo anterior. |
+| FA9 – Eliminar um vídeo | O proprietário escolhe Delete video. Com mais de um vídeo, confirma a eliminação do selecionado; o sistema mantém o projeto e os restantes e seleciona outro. Se cancelar, nada é eliminado. |
+| FA10 – Eliminar o último vídeo | A confirmação informa que serão eliminados o vídeo e o projeto. Só após confirmação válida o sistema elimina o projeto e agenda a limpeza dos recursos, regressando ao dashboard. Uma alteração concorrente do projeto invalida a confirmação e exige nova avaliação. |
 
 ### 2.4 Exceções
 
@@ -86,6 +89,9 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | E5 – Acesso por Anónimo, por outro utilizador ou sem sessão válida | Recusa a criação de projetos de vídeo ou o acesso a conteúdo de que o utilizador não é proprietário. Mantém o acesso às funcionalidades de imagem permitido pelo perfil. |
 | E6 – Pré-visualização não suportada pelo navegador | Informa que a pré-visualização não está disponível. A falha local não rejeita por si só o ficheiro; a aceitação depende da validação no servidor. Se a reprodução do vídeo guardado também falhar, mantém o projeto e apresenta a causa possível. |
 | E7 – Encerramento abrupto ou interrupção sem cancelamento confirmado | Não disponibiliza ficheiros incompletos para edição. Recupera reservas e vagas abandonadas segundo A5, sem remover vídeos já concluídos. |
+| E8 – Conteúdo duplicado no projeto | Rejeita apenas a tentativa duplicada, informa o motivo, preserva o vídeo existente e limpa dados e reservas da tentativa. A rejeição também se aplica a uploads iguais concorrentes. |
+| E9 – Eliminação impedida ou confirmação desatualizada | Não elimina conteúdo se houver processamento dependente ativo, se o projeto tiver mudado de forma a invalidar a confirmação, ou se o utilizador não tiver autorização. Informa a causa e permite atualizar o estado antes de repetir. |
+| E10 – Limpeza de uma eliminação temporariamente indisponível | Não anuncia a recuperação de espaço antes da limpeza efetiva. Mantém informação suficiente para repetir a limpeza, sem voltar a disponibilizar um recurso já retirado do projeto. |
 
 ### 2.5 Pós-condições
 
@@ -93,6 +99,8 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | :-- | :-- |
 | Garantia de Sucesso | Existe um projeto de vídeo em Your projects com pelo menos um vídeo integralmente guardado e associado, com miniatura automática e conteúdo original inalterado. O utilizador consegue selecionar vídeos e aceder ao leitor e às ferramentas de vídeo. O espaço ocupado respeita os limites; não é consumida qualquer operação diária. |
 | Garantia Mínima | Não é apresentado um projeto vazio resultante de um carregamento sem sucesso; nenhum ficheiro incompleto fica disponível para edição. Os vídeos anteriormente concluídos permanecem guardados. Os ficheiros pendentes falhados ou cancelados não mantêm reservas de espaço nem vagas de carregamento; a quota de operações permanece inalterada. |
+
+**Pós-condições das extensões:** FA8 preserva a identidade do projeto e os vídeos anteriores; FA9 mantém os restantes vídeos; FA10 elimina o projeto apenas após a confirmação que o inclui. A rejeição de um duplicado não altera o vídeo existente. Falhas de limpeza mantêm uma obrigação pendente, sem se afirmar que o espaço já foi recuperado.
 
 ### 2.6 Regras de Negócio e Restrições
 
@@ -104,7 +112,7 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | RN4 | Por vídeo: Registado, duração positiva ≤ 60 s e tamanho positivo ≤ 100 MB; Premium, duração positiva ≤ 600 s e tamanho positivo ≤ 1 GB. MB e GB são decimais: 1 MB = 1 000 000 bytes e 1 GB = 1 000 000 000 bytes. |
 | RN5 | Não existe limite fixo de quantidade de vídeos por projeto. O espaço ocupado no projeto não pode exceder 500 MB para Registado ou 10 GB para Premium. |
 | RN6 | O armazenamento total da conta não pode exceder 2 GB para Registado ou 50 GB para Premium. O cálculo é global, incluindo conteúdos já guardados noutros projetos. |
-| RN7 | Vídeos originais e resultados editados contam para o armazenamento do projeto e da conta. A aceitação de novos ficheiros considera o espaço ocupado e reservado. A reserva dos ficheiros aceites é feita antes do envio, convertida em ocupação após conclusão e libertada em caso de falha ou cancelamento. Miniaturas e legendas também ocupam armazenamento; a forma exata de contabilização desses derivados fica em Q1. |
+| RN7 | Originais, resultados editados e legendas persistentes contam para a ocupação do projeto e da conta. As miniaturas de vídeo não descontam da quota, por decisão posterior à v1.1. O upload considera ocupação e reservas antes do envio, converte a reserva em ocupação na conclusão e liberta-a na falha ou cancelamento. Recorte e Filtros reservam espaço estimado dos resultados; Legendas verifica o espaço na confirmação e ao guardar, sem reserva antecipada (UC-VID-003/A12). O espaço temporário e a garantia de limites em gravações concorrentes de derivados continuam por verificar. |
 | RN8 | Para vídeos com duração superior a 0,1 s, tenta-se extrair uma miniatura aos 0,1 s. Se estiver quase toda preta, tentam-se 1 s, 2 s, …, 10 s, apenas quando o instante é inferior à duração. Para vídeos com duração ≤ 0,1 s, usa-se o primeiro fotograma disponível. Se todos os candidatos extraídos forem pretos, usa-se o primeiro extraído com sucesso. Não existe escolha manual de capa neste caso de uso. O critério de classificação de preto fica em Q2. |
 | RN9 | O original não é alterado pelo carregamento nem pela geração da miniatura. Um vídeo só fica disponível para edição depois de ter sido recebido, validado e guardado com a miniatura e associado ao projeto. |
 | RN10 | Os carregamentos simultâneos são contados por conta, mesmo em projetos ou separadores diferentes: Registado, no máximo 1; Premium, no máximo 3. Este limite é independente dos limites de processamento das ferramentas. |
@@ -112,6 +120,11 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | RN12 | Carregar, pré-visualizar, visualizar ou cancelar o carregamento de vídeos não consome operações diárias, mesmo que a quota de edição esteja esgotada. |
 | RN13 | O nome do projeto tem de conter pelo menos um caráter que não seja espaço. O projeto aparece na lista depois de pelo menos um vídeo atingir Concluído. Falhas e cancelamentos posteriores não apagam vídeos já concluídos. |
 | RN14 | A seleção de um vídeo dentro do projeto determina o vídeo apresentado no leitor e o alvo das ferramentas. A disponibilidade de cada operação depende das regras do respetivo caso de uso. Não existe processamento em lote neste caso. |
+| RN15 | Add videos acrescenta vídeos ao projeto existente, mantendo a sua identidade e os vídeos já concluídos, e aplica as mesmas validações e limites do carregamento inicial. |
+| RN16 | A eliminação individual exige confirmação, remove o vídeo e os derivados associados e liberta a ocupação correspondente após a limpeza. Se restarem vídeos, o editor seleciona outro. Ao eliminar o último, a confirmação inclui explicitamente a eliminação do projeto; cancelá-la preserva ambos. |
+| RN17 | Um upload com conteúdo exatamente igual ao de um vídeo no mesmo projeto é rejeitado, mesmo com outro nome. Nomes iguais não bastam para identificar duplicados. A política não se aplica automaticamente a resultados de ferramentas. |
+| RN18 | Recorte, Filtros e Legendas são apresentados na lateral e atuam sobre o vídeo selecionado. No formulário de upload, a ação de escolher outra pré-visualização só aparece quando há mais de um vídeo selecionado; o único vídeo pode continuar a ser pré-visualizado automaticamente. |
+| RN19 | A eliminação de um vídeo ou projeto com pedidos de edição ativos associados é impedida, segundo as regras de Recorte, Filtros e Legendas. Esta é uma obrigação de integração, não uma afirmação de que o bloqueio já foi verificado em todas as ferramentas. |
 
 ### 2.7 Assunções
 
@@ -132,12 +145,12 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 
 | **ID** | **Questão** |
 | :-- | :-- |
-| Q1 | Como contabilizar e reservar o espaço de miniaturas e legendas, incluindo o espaço adicional necessário para preparar derivados, mantendo os limites de RN5 e RN6? **Parcialmente decidida:** as legendas contam para o espaço sem reserva antecipada, com verificação na confirmação e ao guardar (UC-VID-003, A12). A contabilização das miniaturas continua por decidir. |
+| Q1 | **Parcialmente decidida:** miniaturas de vídeo excluídas da quota; legendas persistentes contabilizadas sem reserva antecipada, com verificação na confirmação e ao guardar (UC-VID-003/A12). Permanecem por definir o tratamento de espaço temporário dos derivados e por verificar os limites em gravações concorrentes. |
 | Q2 | Que percentagem de píxeis escuros e que limiar de luminosidade definem um fotograma quase todo preto? |
 | Q3 | Qual é o prazo de inatividade para recuperar carregamentos abandonados e libertar reservas e vagas, e qual o tempo máximo de validação/preparação de cada vídeo? |
-| Q4 | Devem existir retoma de uploads após falhas e deteção de ficheiros duplicados? Como tratar nomes de vídeos repetidos? **Parcialmente decidida:** um vídeo com o mesmo conteúdo de outro já existente no projeto é recusado (comparação do resumo SHA-256), e a retoma de um ficheiro falhado é manual, através de Tentar novamente (FA7). A retoma automática e os nomes repetidos continuam por decidir. |
+| Q4 | **Parcialmente decidida:** uploads de conteúdo exatamente igual no mesmo projeto são recusados, mesmo com nome diferente; nomes iguais com conteúdo diferente não constituem duplicados. Existe nova tentativa manual (FA7). A retoma automática de bytes após interrupção continua por decidir. |
 | Q5 | Quais os codecs de reprodução garantidos no MVP? Deve existir uma cópia de reprodução compatível quando o original não é suportado pelo navegador? |
-| Q6 | Adicionar vídeos a um projeto existente terá um caso de uso separado ou uma extensão deste? Renomear, eliminar, mover e partilhar projetos de vídeo também requerem definição própria. **Parcialmente decidida:** é possível eliminar um vídeo ou um projeto de vídeo, exceto enquanto existir um pedido de Recorte, Filtros ou Legendas ativo (UC-VID-001, RN5; UC-VID-002, RN13; UC-VID-003, RN15). A partilha não faz parte do MVP (RN2). Adicionar vídeos a um projeto existente, renomear e mover continuam por decidir. |
+| Q6 | **Parcialmente decidida:** Add videos integra este caso de uso; a eliminação individual e a eliminação do último vídeo com o projeto exigem confirmação. A eliminação é impedida com processamento dependente ativo. A partilha de vídeo não faz parte do MVP (RN2). Renomear e mover continuam por definir. |
 | Q7 | Os limites de processamento dos casos de Recorte, Filtros e Legendas são globais por conta ou independentes por ferramenta? Como reservar espaço para os respetivos resultados? **Decidida:** o limite é global à conta e partilhado pelas três ferramentas: 1 pedido para Registado e 3 para Premium (UC-VID-001, RN7; UC-VID-002, RN7; UC-VID-003, RN11). O espaço dos resultados é tratado em cada caso de uso: o Recorte e os Filtros reservam uma estimativa (UC-VID-001, A7; UC-VID-002, A11) e as Legendas verificam o espaço na confirmação e ao guardar (UC-VID-003, A12). |
 | Q8 | Confirmar os limites existentes de quantidade de projetos por perfil e a mensagem a apresentar quando forem atingidos. |
 | Q9 | Devem existir limites de resolução e de taxa de fotogramas, ou uma lista de codecs aceites no carregamento, além do formato, da duração e do tamanho? |
@@ -155,8 +168,10 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 ## 4. Especificação de Requisitos do Sistema (ERS)
 
 **Caso de Uso:** UC-VID-004 — Criar um projeto de vídeo
-**Versão do dossiê:** v2.0
+**Versão do dossiê:** v2.1
 **Baseline do Exercício 1:** dossiê v1.1 (UC-VID-004 v1.1); requisitos derivados REQ-VID-UPLOAD-001 a REQ-VID-UPLOAD-041
+
+Os IDs REQ-VID-UPLOAD-001 a REQ-VID-UPLOAD-041 e as suas prioridades de origem são preservados. Os novos IDs 042–050 documentam as decisões posteriores de adição, eliminação, duplicados e apresentação; não são renumerações dos requisitos anteriores. Os requisitos especificam o comportamento esperado; a implementação e a verificação são registadas separadamente no relatório.
 
 ### 4.1 Requisitos da ERS
 
@@ -195,21 +210,30 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | REQ-VID-UPLOAD-039 | O sistema deve permitir repetir o carregamento de um ficheiro falhado após nova validação dos limites e reserva de espaço. | Deveria ter | Mantido | NOVO | UC-VID-004: FA7, E4 | Permite recuperar de falhas sem repetir toda a seleção (FA7). | Dado um ficheiro falhado, quando escolhe Tentar novamente, então o sistema revalida e só repete esse ficheiro se tiver espaço e elegibilidade. |
 | REQ-VID-UPLOAD-040 | O sistema deve manter inalterada a quota de operações durante carregamento, pré-visualização, visualização e cancelamento de vídeos. | Deve ter | Mantido | NOVO | UC-VID-004: Pré-condições, Passo 9, RN12, Pós-condição de sucesso, Garantia mínima | Carregar e ver vídeos não são operações de edição (RN12). | Dada uma conta com quota esgotada, quando carrega e visualiza um vídeo elegível, então consegue concluir e a quota permanece igual. |
 | REQ-VID-UPLOAD-041 | O sistema deve informar a indisponibilidade da pré-visualização ou reprodução sem rejeitar um vídeo válido apenas por incompatibilidade do navegador. | Deveria ter | Mantido | NOVO | UC-VID-004: E6, A7 | Um vídeo válido não deve ser rejeitado por uma limitação do navegador (A7). | Dado um vídeo válido cujo codec não é suportado no navegador, quando tenta pré-visualizar ou reproduzir, então é informado e o projeto válido não é eliminado. |
+| REQ-VID-UPLOAD-042 | O sistema deve permitir acrescentar vídeos a um projeto de vídeo existente, preservando a identidade do projeto e o conteúdo anteriormente concluído. | Deve ter | Novo | NOVO | UC-VID-004: FA8 / RN15 | Evita criar um projeto por cada nova seleção. | Dado um projeto com um vídeo, quando acrescenta outro por Add videos, então ambos pertencem ao mesmo projeto e não é criado outro projeto. |
+| REQ-VID-UPLOAD-043 | O sistema deve solicitar confirmação antes de eliminar individualmente um vídeo de um projeto. | Deve ter | Novo | NOVO | UC-VID-004: FA9 / RN16 | Evita eliminações inadvertidas. | Dado um projeto com dois vídeos, quando cancela a confirmação de Delete video, então ambos permanecem; quando confirma, então apenas o selecionado é retirado. |
+| REQ-VID-UPLOAD-044 | O sistema deve eliminar os recursos associados a um vídeo eliminado e recuperar a ocupação correspondente após limpeza efetiva, repetindo a limpeza se houver falha transitória. | Deve ter | Novo | NOVO | UC-VID-004: FA9 / E10 / RN16 | Evita recursos órfãos e contabilização de espaço libertado antes da limpeza. | Dado um vídeo com miniatura e legendas, quando é eliminado, então os recursos são limpos; se o armazenamento falhar, a limpeza fica pendente e é repetida sem apagar outros vídeos. |
+| REQ-VID-UPLOAD-045 | O sistema deve informar que a eliminação do último vídeo também elimina o projeto e executar ambas apenas após confirmação válida. | Deve ter | Novo | NOVO | UC-VID-004: FA10 / E9 / RN16 | Evita a eliminação implícita do projeto. | Dado um projeto com um vídeo, quando escolhe eliminar, então o aviso inclui vídeo e projeto; cancelar preserva ambos e confirmar elimina o projeto e regressa ao dashboard. |
+| REQ-VID-UPLOAD-046 | O sistema deve selecionar outro vídeo disponível após eliminar o vídeo ativo quando o projeto ainda contém vídeos. | Deve ter | Novo | NOVO | UC-VID-004: FA9 / RN16 | Mantém o leitor num estado utilizável. | Dado um projeto com dois vídeos, quando elimina o ativo, então o outro passa a estar selecionado. |
+| REQ-VID-UPLOAD-047 | O sistema deve rejeitar novos uploads de conteúdo exatamente igual ao de um vídeo no mesmo projeto, incluindo uploads concorrentes, preservando o vídeo existente. | Deve ter | Novo | NOVO | UC-VID-004: E8 / RN17 | Evita ocupar armazenamento com cópias involuntárias. | Dado um vídeo guardado, quando envia os mesmos bytes com outro nome para o mesmo projeto, então a tentativa é rejeitada; duas tentativas iguais concorrentes não acrescentam duas cópias. |
+| REQ-VID-UPLOAD-048 | O sistema deve permitir nomes de vídeo iguais quando o conteúdo dos ficheiros é diferente. | Deve ter | Novo | NOVO | UC-VID-004: RN17 | O nome não identifica de forma suficiente o conteúdo. | Dados dois vídeos diferentes com o mesmo nome e dentro dos limites, quando são carregados, então o nome repetido não é causa de rejeição. |
+| REQ-VID-UPLOAD-049 | O sistema deve apresentar Recorte, Filtros e Legendas na lateral do editor de vídeo, associadas ao vídeo ativo. | Deve ter | Novo | NOVO | UC-VID-004: Passo 11 / RN18 | Mantém as ferramentas acessíveis junto ao leitor. | Dado um projeto de vídeo, quando o abre e troca o vídeo ativo, então as três ferramentas permanecem na lateral e referem-se ao novo alvo. |
+| REQ-VID-UPLOAD-050 | O sistema deve ocultar a ação de escolher outra pré-visualização no formulário quando existe apenas um vídeo selecionado. | Deve ter | Novo | NOVO | UC-VID-004: Passo 3 / RN18 | Evita uma ação redundante sem remover a pré-visualização automática. | Dado um único vídeo selecionado, quando o formulário é apresentado, então não existe botão Preview por ficheiro; com dois vídeos, a ação permite alternar a pré-visualização. |
 
 #### 4.1.2 Requisitos Não Funcionais e de Qualidade
 
-| **ID** | **Requisito** | **Característica ISO/IEC 25010** | **Alvo MVP** | **Alvo produção** | **Evolução** | **Origem (UC / DQ)** | **Critério de aceitação / verificação** |
-| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| REQ-VID-UPLOAD-009 | O sistema deve recusar projetos de vídeo a utilizadores Anónimos ou sem sessão válida. | Segurança | Obrigatório | Obrigatório (igual: o controlo de acesso não é negociável no MVP) | Mantido | UC-VID-004: Pré-condições, E5, RN2 | Dada uma chamada de criação por Anónimo ou sem autenticação válida, quando é recebida, então é recusada no servidor. |
-| REQ-VID-UPLOAD-010 | O sistema deve restringir o acesso ao projeto de vídeo e aos seus vídeos e miniaturas ao proprietário. | Segurança | Obrigatório | Obrigatório (igual: o controlo de acesso não é negociável no MVP) | Mantido | UC-VID-004: E5, RN2 | Dado um projeto de outro utilizador, quando se pede acesso ao projeto ou aos seus ficheiros, então o servidor recusa o acesso. |
-| REQ-VID-UPLOAD-011 | O sistema deve aceitar apenas ficheiros de vídeo MP4 ou MOV com conteúdo real validado no servidor. | Compatibilidade | MP4 e MOV com conteúdo validado no servidor | Igual; a lista de codecs aceites fica por decidir (Q9) | Mantido | UC-VID-004: Passo 6, E2, RN3, A3 | Dado um ficheiro de texto renomeado para .mp4, quando é enviado, então é rejeitado; um MP4 ou MOV válido segue a validação restante. |
-| REQ-VID-UPLOAD-012 | O sistema deve aplicar aos vídeos do perfil Registado os limites de 60 s de duração e 100 MB de tamanho, com duração e tamanho positivos e unidades decimais. | Eficiência de Desempenho (Capacidade) | 60 s e 100 MB por vídeo | Iguais, ajustáveis à configuração dos planos (A1) | Mantido | UC-VID-004: Passo 3, Passo 4, Passo 6, E2, RN4, A1 | Dado um Registado, quando são testados os valores limite (60 s e 100 MB), valores acima deles e zero, então aceita apenas ficheiros positivos dentro de ambos os limites. |
-| REQ-VID-UPLOAD-013 | O sistema deve aplicar aos vídeos do perfil Premium os limites de 600 s de duração e 1 GB de tamanho, com duração e tamanho positivos e unidades decimais. | Eficiência de Desempenho (Capacidade) | 600 s e 1 GB por vídeo | Iguais, ajustáveis à configuração dos planos (A1) | Mantido | UC-VID-004: Passo 3, Passo 4, Passo 6, E2, RN4, A1 | Dado um Premium, quando são testados os valores limite (600 s e 1 GB), valores acima deles e zero, então aceita apenas ficheiros positivos dentro de ambos os limites. |
-| REQ-VID-UPLOAD-016 | O sistema deve limitar o espaço ocupado e reservado por projeto a 500 MB para Registado e 10 GB para Premium. | Eficiência de Desempenho (Capacidade) | 500 MB (Registado) e 10 GB (Premium) por projeto | Iguais, ajustáveis à configuração dos planos (A1) | Mantido | UC-VID-004: Passo 4, E3, RN5, RN7, A1 | Dado um projeto no limite considerando reservas, quando se tenta aceitar mais bytes, então a seleção é recusada. |
-| REQ-VID-UPLOAD-017 | O sistema deve limitar o espaço ocupado e reservado na conta a 2 GB para Registado e 50 GB para Premium. | Eficiência de Desempenho (Capacidade) | 2 GB (Registado) e 50 GB (Premium) por conta | Iguais, ajustáveis à configuração dos planos (A1) | Mantido | UC-VID-004: Passo 4, E3, RN6, RN7, A1 | Dada uma conta com vários projetos, quando uma seleção ultrapassa o total permitido, então é recusada mesmo que o projeto tenha espaço. |
-| REQ-VID-UPLOAD-021 | O sistema deve limitar os carregamentos ativos por conta a um para Registado e três para Premium, independentemente do projeto ou separador. | Eficiência de Desempenho (Capacidade) | 1 (Registado) e 3 (Premium) carregamentos ativos por conta | Iguais, ajustáveis à configuração dos planos (A1) | Mantido | UC-VID-004: Passo 4, FA6, RN10, A1 | Dada uma conta com todas as vagas ocupadas, quando outro separador pede uma transferência, então não ultrapassa o limite. |
-| REQ-VID-UPLOAD-027 | O sistema deve preservar o conteúdo original do vídeo durante o carregamento e a geração da miniatura. | Fiabilidade | Obrigatório: resumo criptográfico do original igual ao do ficheiro local | Obrigatório (igual: a integridade do original não é negociável) | Mantido | UC-VID-004: Passo 7, RN9, Pós-condição de sucesso | Dado o ficheiro local, quando descarrega o original guardado, então o resumo criptográfico dos bytes é igual. |
-| REQ-VID-UPLOAD-038 | O sistema deve manter os vídeos concluídos quando outros ficheiros da seleção falham ou são cancelados, sem apresentar um projeto novo vazio se nenhum concluir. | Fiabilidade | Obrigatório | Obrigatório (igual: perder vídeos concluídos não é aceitável) | Mantido | UC-VID-004: FA2, FA3, E4, RN13, Garantia mínima | Dada uma seleção com um concluído e um falhado, quando termina, então o concluído permanece; com zero concluídos, não surge projeto vazio. |
+| **ID** | **Requisito** | **Característica ISO/IEC 25010** | **Alvo MVP** | **Alvo produção** | **Prioridade** | **Evolução** | **Origem (UC / DQ)** | **Critério de aceitação / verificação** |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| REQ-VID-UPLOAD-009 | O sistema deve recusar projetos de vídeo a utilizadores Anónimos ou sem sessão válida. | Segurança | Obrigatório | Obrigatório (igual: o controlo de acesso não é negociável no MVP) | Deve ter | Mantido | UC-VID-004: Pré-condições, E5, RN2 | Dada uma chamada de criação por Anónimo ou sem autenticação válida, quando é recebida, então é recusada no servidor. |
+| REQ-VID-UPLOAD-010 | O sistema deve restringir o acesso ao projeto de vídeo e aos seus vídeos e miniaturas ao proprietário. | Segurança | Obrigatório | Obrigatório (igual: o controlo de acesso não é negociável no MVP) | Deve ter | Mantido | UC-VID-004: E5, RN2 | Dado um projeto de outro utilizador, quando se pede acesso ao projeto ou aos seus ficheiros, então o servidor recusa o acesso. |
+| REQ-VID-UPLOAD-011 | O sistema deve aceitar apenas ficheiros de vídeo MP4 ou MOV com conteúdo real validado no servidor. | Compatibilidade | MP4 e MOV com conteúdo validado no servidor | Igual; a lista de codecs aceites fica por decidir (Q9) | Deve ter | Mantido | UC-VID-004: Passo 6, E2, RN3, A3 | Dado um ficheiro de texto renomeado para .mp4, quando é enviado, então é rejeitado; um MP4 ou MOV válido segue a validação restante. |
+| REQ-VID-UPLOAD-012 | O sistema deve aplicar aos vídeos do perfil Registado os limites de 60 s de duração e 100 MB de tamanho, com duração e tamanho positivos e unidades decimais. | Eficiência de Desempenho (Capacidade) | 60 s e 100 MB por vídeo | Iguais, ajustáveis à configuração dos planos (A1) | Deve ter | Mantido | UC-VID-004: Passo 3, Passo 4, Passo 6, E2, RN4, A1 | Dado um Registado, quando são testados os valores limite (60 s e 100 MB), valores acima deles e zero, então aceita apenas ficheiros positivos dentro de ambos os limites. |
+| REQ-VID-UPLOAD-013 | O sistema deve aplicar aos vídeos do perfil Premium os limites de 600 s de duração e 1 GB de tamanho, com duração e tamanho positivos e unidades decimais. | Eficiência de Desempenho (Capacidade) | 600 s e 1 GB por vídeo | Iguais, ajustáveis à configuração dos planos (A1) | Deve ter | Mantido | UC-VID-004: Passo 3, Passo 4, Passo 6, E2, RN4, A1 | Dado um Premium, quando são testados os valores limite (600 s e 1 GB), valores acima deles e zero, então aceita apenas ficheiros positivos dentro de ambos os limites. |
+| REQ-VID-UPLOAD-016 | O sistema deve limitar o espaço ocupado e reservado por projeto a 500 MB para Registado e 10 GB para Premium. | Eficiência de Desempenho (Capacidade) | 500 MB (Registado) e 10 GB (Premium) por projeto | Iguais, ajustáveis à configuração dos planos (A1) | Deveria ter | Mantido | UC-VID-004: Passo 4, E3, RN5, RN7, A1 | Dado um projeto no limite considerando reservas, quando se tenta aceitar mais bytes, então a seleção é recusada. |
+| REQ-VID-UPLOAD-017 | O sistema deve limitar o espaço ocupado e reservado na conta a 2 GB para Registado e 50 GB para Premium. | Eficiência de Desempenho (Capacidade) | 2 GB (Registado) e 50 GB (Premium) por conta | Iguais, ajustáveis à configuração dos planos (A1) | Deve ter | Mantido | UC-VID-004: Passo 4, E3, RN6, RN7, A1 | Dada uma conta com vários projetos, quando uma seleção ultrapassa o total permitido, então é recusada mesmo que o projeto tenha espaço. |
+| REQ-VID-UPLOAD-021 | O sistema deve limitar os carregamentos ativos por conta a um para Registado e três para Premium, independentemente do projeto ou separador. | Eficiência de Desempenho (Capacidade) | 1 (Registado) e 3 (Premium) carregamentos ativos por conta | Iguais, ajustáveis à configuração dos planos (A1) | Deve ter | Mantido | UC-VID-004: Passo 4, FA6, RN10, A1 | Dada uma conta com todas as vagas ocupadas, quando outro separador pede uma transferência, então não ultrapassa o limite. |
+| REQ-VID-UPLOAD-027 | O sistema deve preservar o conteúdo original do vídeo durante o carregamento e a geração da miniatura. | Fiabilidade | Obrigatório: resumo criptográfico do original igual ao do ficheiro local | Obrigatório (igual: a integridade do original não é negociável) | Deve ter | Mantido | UC-VID-004: Passo 7, RN9, Pós-condição de sucesso | Dado o ficheiro local, quando descarrega o original guardado, então o resumo criptográfico dos bytes é igual. |
+| REQ-VID-UPLOAD-038 | O sistema deve manter os vídeos concluídos quando outros ficheiros da seleção falham ou são cancelados, sem apresentar um projeto novo vazio se nenhum concluir. | Fiabilidade | Obrigatório | Obrigatório (igual: perder vídeos concluídos não é aceitável) | Deve ter | Mantido | UC-VID-004: FA2, FA3, E4, RN13, Garantia mínima | Dada uma seleção com um concluído e um falhado, quando termina, então o concluído permanece; com zero concluídos, não surge projeto vazio. |
 
 #### 4.1.3 Verificação da completude e dos limites do âmbito
 
@@ -218,9 +242,13 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | Formato, codec, duração e dimensão do vídeo | Sim | São aceites MP4 e MOV, com o conteúdo validado no servidor (RN3), e limites de duração e tamanho por perfil (RN4). Não há limites de resolução nem de taxa de fotogramas no MVP (A8, Q9). A reprodução depende dos codecs suportados pelo navegador (A7, Q5). | REQ-VID-UPLOAD-011, 012, 013, 041 |
 | Estado, progresso, cancelamento e resultado | Sim | Cada ficheiro passa pelos estados de RN11, com progresso em bytes enviados; os quatro primeiros estados admitem cancelamento. O resultado é um projeto em Your projects com pelo menos um vídeo concluído. | REQ-VID-UPLOAD-022, 023, 024, 028, 034, 037 |
 | Falhas durante o processamento | Sim | Um ficheiro falhado passa a Falhou, com a causa; os dados incompletos, as reservas e as vagas são libertados e o utilizador pode repetir o ficheiro. Os envios abandonados são recuperados após um prazo de inatividade (A5, Q3). | REQ-VID-UPLOAD-035, 036, 038, 039 |
-| Persistência e expiração dos ficheiros | Sim (persistência); Não (expiração) | Os vídeos concluídos ficam guardados no projeto, com o original inalterado, e contam para o espaço do projeto e da conta. Este caso de uso não define expiração automática; a eliminação de vídeos e projetos fica em Q6. | REQ-VID-UPLOAD-018, 020, 027, 028 |
+| Persistência e expiração dos ficheiros | Sim (persistência); Não (expiração automática) | Os vídeos concluídos ficam no projeto até eliminação explícita; miniaturas excluídas da quota, legendas contabilizadas. Adição e eliminação passam a estar definidas em RN15 e RN16. Limpeza de uploads abandonados não é expiração de conteúdo concluído. | REQ-VID-UPLOAD-018, 020, 027, 028, 042 a 046 |
 | Perfis e contagem de operações | Sim | Só Registado e Premium criam projetos de vídeo, com limites próprios de duração, tamanho, armazenamento e carregamentos simultâneos. Carregar, pré-visualizar, visualizar e cancelar não consomem operações diárias (RN12). | REQ-VID-UPLOAD-009, 010, 012, 013, 016, 017, 021, 040 |
 | Encadeamento de ferramentas e processamento em lote | Não (exclusão explícita) | Não existe processamento em lote neste caso de uso (RN14). As ferramentas de vídeo e os seus limites pertencem aos UC-VID-001, UC-VID-002 e UC-VID-003. | N/A |
+| Adição e eliminação | Sim | Acrescentar vídeos sem criar outro projeto; confirmar eliminação; ao eliminar o último, incluir explicitamente o projeto na confirmação. | REQ-VID-UPLOAD-042 a REQ-VID-UPLOAD-046 |
+| Duplicados e nomes | Sim | Rejeitar cópias de conteúdo no upload, incluindo concorrência; permitir o mesmo nome para conteúdo diferente. | REQ-VID-UPLOAD-047, REQ-VID-UPLOAD-048 |
+| Apresentação no editor e formulário | Sim | Ferramentas na lateral; Preview por ficheiro apenas com mais de um selecionado. | REQ-VID-UPLOAD-049, REQ-VID-UPLOAD-050 |
+| Eliminação durante processamento | Sim, integração | Respeitar o bloqueio das três ferramentas; verificar tanto a eliminação individual como a do projeto. | REQ-VID-TRIM-033; REQ-VID-FILT-044; REQ-VID-LEG-042 |
 
 **Evolução:** *Mantido* = requisito preservado do Exercício 1; *Refinado* = clarificado ou tornado verificável sem mudar a intenção; *Novo* = acrescentado para completar a ERS. **NOVO/ALT** indica o impacto face ao PictuRAS existente, não a novidade face ao Exercício 1.
 
@@ -240,6 +268,9 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | Carregamento de ficheiros | Caso de uso Carregar imagens (Figura 2; sem ID no documento de base) | Alterar | Passa a incluir validação de vídeo no servidor, controlo de simultaneidade por conta, estados, progresso, cancelamento e geração de miniatura. | REQ-VID-UPLOAD-011, 014, 015, 022 a 027, 034 a 039 |
 | Limite existente de quantidade de projetos | Perfis de utilização (secção 3.1) | Manter | Continua aplicável; os valores devem ser confirmados em Q8 antes da implementação. | A2 / Q8, sem requisito numérico novo |
 | Recorte, Filtros e Legendas | Nenhum: as ferramentas de vídeo são novas (UC-VID-001 a UC-VID-003) | Estender | Utilizam o vídeo selecionado num projeto de vídeo. A execução e os limites de processamento ficam nos respetivos casos de uso. | REQ-VID-UPLOAD-029; UC-VID-001, UC-VID-002, UC-VID-003 |
+| Adição e eliminação de vídeos | Entidade Projeto (Figura 1); UC04 (edição de imagens), estendido ao editor de vídeo | Estender | Adicionar conteúdo ao projeto existente, confirmar eliminações e limpar recursos; impedir a eliminação de entradas de processamento ativo. | REQ-VID-UPLOAD-042 a REQ-VID-UPLOAD-046; requisitos de bloqueio das ferramentas |
+| Validação de conteúdo duplicado | Entidades Projeto e Imagem (Figura 1); nova regra específica de ingestão de vídeo, sem requisito de deduplicação da baseline identificado | Estender | Comparar conteúdo no âmbito do projeto sem tratar o nome como identidade. | REQ-VID-UPLOAD-047, REQ-VID-UPLOAD-048 |
+| Apresentação das ferramentas | UC04 (edição de imagens), estendido à apresentação de ferramentas de vídeo | Estender | Ferramentas na lateral e seleção de Preview condicionada ao número de ficheiros. | REQ-VID-UPLOAD-049, REQ-VID-UPLOAD-050 |
 
 ### 4.3 Matriz de Rastreabilidade Atualizada
 
@@ -298,4 +329,31 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | A8 | Sem limites de resolução nem de fotogramas por segundo no MVP | Sem requisito novo: assunção de âmbito; ver Q9. |
 | A9 | Critério de classificação NOVO/ALT e Manter/Estender/Alterar | Sem requisito: assunção de método; confirmar no código. |
 | A10 | Interface em inglês. Delimitação da apresentação; não origina um requisito autónomo | — |
-| Q1 a Q9 | Questões em aberto; Q1, Q4 e Q6 parcialmente decididas e Q7 decidida noutros casos de uso | Não originam requisitos neste caso de uso enquanto não forem resolvidas. |
+| Q1 a Q9 | Q1, Q4 e Q6 parcialmente decididas; Q7 decidida no alinhamento das ferramentas; restantes questões mantêm o respetivo estado. | Não transformar configuração de implementação ou temas pendentes em requisitos numéricos aprovados. |
+| FA8 / RN15 | Adicionar ao mesmo projeto | REQ-VID-UPLOAD-042 |
+| FA9 / RN16 | Confirmação, limpeza e seleção seguinte | REQ-VID-UPLOAD-043, REQ-VID-UPLOAD-044, REQ-VID-UPLOAD-046 |
+| FA10 / RN16 | Último vídeo e projeto | REQ-VID-UPLOAD-045 |
+| E8 / RN17 | Rejeitar conteúdo duplicado, preservar original e libertar reservas | REQ-VID-UPLOAD-047, REQ-VID-UPLOAD-035, REQ-VID-UPLOAD-038 |
+| RN17 | Nomes iguais com conteúdo diferente | REQ-VID-UPLOAD-048 |
+| RN18 | Disposição das ferramentas e Preview | REQ-VID-UPLOAD-049, REQ-VID-UPLOAD-050 |
+| E9 / RN19 | Confirmação concorrente e bloqueios de processamento | REQ-VID-UPLOAD-045; REQ-VID-TRIM-033; REQ-VID-FILT-044; REQ-VID-LEG-042 |
+| E10 | Limpeza persistente de eliminações | REQ-VID-UPLOAD-044 |
+| RN15 | Acrescentar vídeos ao mesmo projeto | REQ-VID-UPLOAD-042 |
+| RN16 | Eliminação confirmada, derivados, último vídeo e seleção seguinte | REQ-VID-UPLOAD-043 a REQ-VID-UPLOAD-046 |
+| RN19 | Impedir eliminação com processamento dependente ativo | REQ-VID-TRIM-033; REQ-VID-FILT-044; REQ-VID-LEG-042 |
+
+**Cobertura documental:** os 50 requisitos aparecem na matriz. Os 41 IDs da baseline e respetivas prioridades foram preservados. Q1–Q9 mantêm o respetivo ID e registam respostas apenas parciais quando houve decisão posterior. Verificação da implementação, testes e correspondência com IDs da solução de base não são declarados concluídos.
+
+
+**Decisões de qualidade introduzidas nesta aula**
+
+Os IDs desta tabela pertencem ao dossiê UC-VID-004. Nas tabelas conjuntas do relatório devem ser escritos UC-VID-004/DQ-nnn ou substituídos por uma referência ao registo global aprovado, preservando o mapeamento. Não se confundem com os DQ de Recorte, Filtros ou Legendas. Os alvos de produção da secção 4.1.2 são mínimos herdados, não medições nem compromissos adicionais aprovados nesta revisão.
+
+| **ID** | **Decisão de qualidade** | **Justificação** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- | :-- |
+| DQ-001 | O original guardado mantém os mesmos bytes do ficheiro enviado; a geração da miniatura não o altera. | Preserva a fonte das operações seguintes e torna a integridade verificável por comparação de resumos criptográficos. | REQ-VID-UPLOAD-027 |
+| DQ-002 | A aceitação do upload não garante reprodução em qualquer navegador. Não há conversão automática obrigatória do original no MVP. | O contentor MP4/MOV não garante suporte a todos os codecs. A aplicação informa a incompatibilidade sem eliminar um vídeo válido. | REQ-VID-UPLOAD-031, REQ-VID-UPLOAD-032, REQ-VID-UPLOAD-041 |
+| DQ-003 | Falhas e cancelamentos exigem limpeza e libertação de capacidade; uploads abandonados exigem recuperação. O prazo de inatividade e o tempo máximo de preparação permanecem em Q3. | Evita ficheiros órfãos e reservas permanentes sem transformar configuração provisória do código numa decisão aprovada. Retoma de bytes continua em Q4. | REQ-VID-UPLOAD-035, REQ-VID-UPLOAD-036 |
+| DQ-004 | A conclusão é tratada por ficheiro: uma falha ou cancelamento posterior não remove os vídeos já concluídos. Um projeto novo só aparece após o primeiro vídeo guardado. | Evita perda de trabalho numa seleção parcialmente válida ou interrompida. | REQ-VID-UPLOAD-028, REQ-VID-UPLOAD-038 |
+| DQ-005 | Miniaturas de vídeo não descontam da quota; originais, resultados e legendas persistentes contam. A reserva dos derivados e o espaço temporário continuam parcialmente em aberto. | Regista a decisão posterior à v1.1 sem fechar os detalhes ainda pendentes em Q1 e Q7. | REQ-VID-UPLOAD-016 a REQ-VID-UPLOAD-020, REQ-VID-UPLOAD-044 |
+| DQ-006 | O carregamento rejeita conteúdo exatamente igual no mesmo projeto, independentemente do nome; nomes iguais com conteúdo diferente continuam elegíveis. | Evita cópias involuntárias sem confundir nome e identidade do conteúdo. A verificação deve resistir a uploads concorrentes. | REQ-VID-UPLOAD-047, REQ-VID-UPLOAD-048 |
