@@ -447,15 +447,18 @@ async function refreshProjects() {
           const duration = await readLocalDuration(item.file);
           const maxDuration = premium ? 600 : 60;
           const tooLong = duration !== null && duration > maxDuration;
+          const unreadable = duration === null;
 
           updateVideo(item.id, {
             duration,
             checking: false,
-            ...(tooLong
+            ...((tooLong || unreadable)
               ? {
                   eligible: false,
                   state: "failed" as const,
-                  error: `The video exceeds ${maxDuration} seconds.`,
+                  error: unreadable
+                    ? "The video could not be read. Please choose a valid MP4 or MOV video."
+                    : `The video exceeds ${maxDuration} seconds.`,
                 }
               : {}),
           });
