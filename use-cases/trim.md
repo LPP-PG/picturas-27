@@ -121,7 +121,7 @@ O recorte temporal permite ao utilizador reduzir um vídeo longo ao excerto que 
 | A10 | A quota diária de 5 operações do perfil Registado é partilhada entre as operações sobre imagens e as operações sobre vídeos |
 | A11 | Todos os vídeos de um projeto de vídeo estão em MP4 ou MOV e dentro dos limites do perfil, verificados no carregamento (UC-VID-004, RN3 e RN4). O recorte não repete estas verificações |
 | A12 | A reprodução depende dos codecs suportados pelo navegador (UC-VID-004, A7). Assume-se que o resultado do recorte mantém os codecs do original, pelo que é reproduzível nos mesmos navegadores |
-| A13 | O limite de pedidos de processamento de vídeo em simultâneo é global à conta e partilhado pelas ferramentas Recorte, Filtros e Legendas, e independente dos carregamentos (UC-VID-004, RN10 e Q7). A confirmar com os casos de uso das outras ferramentas |
+| A13 | O limite de pedidos de processamento de vídeo em simultâneo é global à conta e partilhado pelas ferramentas Recorte, Filtros e Legendas, e independente dos carregamentos (UC-VID-004, RN10 e Q7). Confirmado nos casos de uso das outras ferramentas (UC-VID-002, RN7; UC-VID-003, RN11) |
 
 ### 2.8 Questões em Aberto
 

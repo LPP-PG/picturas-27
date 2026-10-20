@@ -137,7 +137,7 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | Q4 | Devem existir retoma de uploads após falhas e deteção de ficheiros duplicados? Como tratar nomes de vídeos repetidos? |
 | Q5 | Quais os codecs de reprodução garantidos no MVP? Deve existir uma cópia de reprodução compatível quando o original não é suportado pelo navegador? |
 | Q6 | Adicionar vídeos a um projeto existente terá um caso de uso separado ou uma extensão deste? Renomear, eliminar, mover e partilhar projetos de vídeo também requerem definição própria. |
-| Q7 | Os limites de processamento dos casos de Recorte, Filtros e Legendas são globais por conta ou independentes por ferramenta? Como reservar espaço para os respetivos resultados? |
+| Q7 | Os limites de processamento dos casos de Recorte, Filtros e Legendas são globais por conta ou independentes por ferramenta? Como reservar espaço para os respetivos resultados? **Decidida:** o limite é global à conta e partilhado pelas três ferramentas: 1 pedido para Registado e 3 para Premium (UC-VID-001, RN7; UC-VID-002, RN7; UC-VID-003, RN11). O espaço dos resultados é tratado em cada caso de uso: o Recorte e os Filtros reservam uma estimativa (UC-VID-001, A7; UC-VID-002, A11) e as Legendas verificam o espaço na confirmação e ao guardar (UC-VID-003, A12). |
 | Q8 | Confirmar os limites existentes de quantidade de projetos por perfil e a mensagem a apresentar quando forem atingidos. |
 | Q9 | Devem existir limites de resolução e de taxa de fotogramas, ou uma lista de codecs aceites no carregamento, além do formato, da duração e do tamanho? |
 
