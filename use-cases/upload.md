@@ -225,18 +225,20 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 
 ### 4.2 Impacto no sistema existente
 
-| **Elemento existente afetado** | **Impacto (Manter / Estender / Alterar)** | **Descrição do impacto** | **Requisito(s) relacionado(s)** |
-| :-- | :-- | :-- | :-- |
-| New Project | Alterar | O formulário existente passa a pedir o tipo de conteúdo (imagens ou vídeos), a validar o nome, a aceitar vários vídeos e a apresentar os limites e o espaço disponível. | REQ-VID-UPLOAD-001 a 008 |
-| Projetos de imagens e respetivas ferramentas | Manter | Continuam no fluxo existente; não recebem vídeos nem ferramentas de vídeo. A separação é garantida pelos requisitos das linhas New Project e Editor do projeto. | Sem requisitos diretos; ver REQ-VID-UPLOAD-002 e 033 |
-| Modelo e lista de projetos | Alterar | O projeto passa a identificar o tipo de conteúdo e a associar vários vídeos; só é listado depois de pelo menos um vídeo concluído. | REQ-VID-UPLOAD-028, 030, 038 |
-| Editor do projeto | Alterar | Passa a ter seleção por miniaturas, leitor de vídeo e catálogo de ferramentas correspondente ao tipo de conteúdo. | REQ-VID-UPLOAD-029 a 033, 041 |
-| Perfis e controlo de acesso | Alterar | Exclui o Anónimo de vídeo e passa a verificar a propriedade do projeto e dos ficheiros. Os limites por perfil de duração, tamanho e carregamentos simultâneos são novos. | REQ-VID-UPLOAD-009, 010, 012, 013, 021 |
-| Quota de operações diárias | Manter | Upload, visualização e cancelamento não são operações de edição nem exigem quota disponível. | REQ-VID-UPLOAD-040 |
-| Armazenamento da conta | Alterar | Passa a incluir vídeos e resultados, a considerar reservas em pedidos concorrentes e a aplicar novos limites por projeto. | REQ-VID-UPLOAD-016 a 020, 035, 036 |
-| Carregamento de ficheiros | Alterar | Passa a incluir validação de vídeo no servidor, controlo de simultaneidade por conta, estados, progresso, cancelamento e geração de miniatura. | REQ-VID-UPLOAD-011, 014, 015, 022 a 027, 034 a 039 |
-| Limite existente de quantidade de projetos | Manter | Continua aplicável; os valores devem ser confirmados em Q8 antes da implementação. | A2 / Q8, sem requisito numérico novo |
-| Recorte, Filtros e Legendas | Estender | Utilizam o vídeo selecionado num projeto de vídeo. A execução e os limites de processamento ficam nos respetivos casos de uso. | REQ-VID-UPLOAD-029; UC-VID-001, UC-VID-002, UC-VID-003 |
+A coluna **Elemento da baseline** indica o elemento do documento de requisitos de base (doc-ext-requisitos.pdf, PictuRAS 2025/26) afetado; R*n* são as restrições do projeto desse documento (secção 4).
+
+| **Elemento existente afetado** | **Elemento da baseline** | **Impacto (Manter / Estender / Alterar)** | **Descrição do impacto** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- | :-- | :-- |
+| New Project | Caso de uso Carregar imagens (Figura 2; sem ID no documento de base) | Alterar | O formulário existente passa a pedir o tipo de conteúdo (imagens ou vídeos), a validar o nome, a aceitar vários vídeos e a apresentar os limites e o espaço disponível. | REQ-VID-UPLOAD-001 a 008 |
+| Projetos de imagens e respetivas ferramentas | Entidades Projeto, Imagem e Ferramenta do modelo de domínio (Figura 1) | Manter | Continuam no fluxo existente; não recebem vídeos nem ferramentas de vídeo. A separação é garantida pelos requisitos das linhas New Project e Editor do projeto. | Sem requisitos diretos; ver REQ-VID-UPLOAD-002 e 033 |
+| Modelo e lista de projetos | Entidade Projeto do modelo de domínio (Figura 1) | Alterar | O projeto passa a identificar o tipo de conteúdo e a associar vários vídeos; só é listado depois de pelo menos um vídeo concluído. | REQ-VID-UPLOAD-028, 030, 038 |
+| Editor do projeto | UC04 (edição de imagens) | Alterar | Passa a ter seleção por miniaturas, leitor de vídeo e catálogo de ferramentas correspondente ao tipo de conteúdo. | REQ-VID-UPLOAD-029 a 033, 041 |
+| Perfis e controlo de acesso | Perfis de utilização (secção 3.1); RNF44 (segurança e privacidade dos dados) | Alterar | Exclui o Anónimo de vídeo e passa a verificar a propriedade do projeto e dos ficheiros. Os limites por perfil de duração, tamanho e carregamentos simultâneos são novos. | REQ-VID-UPLOAD-009, 010, 012, 013, 021 |
+| Quota de operações diárias | Perfil Registado com operações diárias limitadas (secção 3.1); RNF48 (exibir limite diário de operações) | Manter | Upload, visualização e cancelamento não são operações de edição nem exigem quota disponível. | REQ-VID-UPLOAD-040 |
+| Armazenamento da conta | R2 (limite de armazenamento por utilizador); RNF45 (armazenamento local e cloud) | Alterar | Passa a incluir vídeos e resultados, a considerar reservas em pedidos concorrentes e a aplicar novos limites por projeto. | REQ-VID-UPLOAD-016 a 020, 035, 036 |
+| Carregamento de ficheiros | Caso de uso Carregar imagens (Figura 2; sem ID no documento de base) | Alterar | Passa a incluir validação de vídeo no servidor, controlo de simultaneidade por conta, estados, progresso, cancelamento e geração de miniatura. | REQ-VID-UPLOAD-011, 014, 015, 022 a 027, 034 a 039 |
+| Limite existente de quantidade de projetos | Perfis de utilização (secção 3.1) | Manter | Continua aplicável; os valores devem ser confirmados em Q8 antes da implementação. | A2 / Q8, sem requisito numérico novo |
+| Recorte, Filtros e Legendas | Nenhum: as ferramentas de vídeo são novas (UC-VID-001 a UC-VID-003) | Estender | Utilizam o vídeo selecionado num projeto de vídeo. A execução e os limites de processamento ficam nos respetivos casos de uso. | REQ-VID-UPLOAD-029; UC-VID-001, UC-VID-002, UC-VID-003 |
 
 ### 4.3 Matriz de Rastreabilidade Atualizada
 
