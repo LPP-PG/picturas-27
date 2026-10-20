@@ -15,7 +15,7 @@ const {
   releaseUploadReservation,
 } = require("../utils/videoReservations");
 const { processTrim, cancelTrimJob } = require("../utils/videoTrim");
-const { storageMessage } = require("../utils/videoMessages");
+const { videoMessages, storageMessage } = require("../utils/videoMessages");
 
 const router = express.Router();
 const usersService = "https://users:10001";
@@ -101,7 +101,7 @@ router.post("/", async (req, res) => {
     // Verificar o limite global de processamentos de vídeo
     const activeCount = await countActiveVideoJobs(req.videoUser._id);
     if (activeCount >= maxActiveVideoJobs(req.videoUser.type)) {
-      const error = new Error("The simultaneous video-processing limit was reached.");
+      const error = new Error(videoMessages.limit);
       error.status = 429;
       throw error;
     }
@@ -130,7 +130,7 @@ router.post("/", async (req, res) => {
       operationReserved = true;
     } catch (error) {
       if (error.response?.status === 701) {
-        const quotaError = new Error("No daily operations are available.");
+        const quotaError = new Error(videoMessages.quota);
         quotaError.status = 429;
         throw quotaError;
       }

@@ -16,7 +16,7 @@ const {
 const axios = require("axios");
 const https = require("node:https");
 const { processFilterJob, cancelFilterJob } = require("../utils/videoFilterJob");
-const { storageMessage } = require("../utils/videoMessages");
+const { videoMessages, storageMessage } = require("../utils/videoMessages");
 
 const usersHttpsAgent = new https.Agent({
   rejectUnauthorized: false,
@@ -78,7 +78,7 @@ const activeCount = await countActiveVideoJobs(req.videoUser._id);
 
 if (activeCount >= maxActiveVideoJobs(req.videoUser.type)) {
   return res.status(429).json({
-    error: "The simultaneous video-processing limit was reached.",
+    error: videoMessages.limit,
   });
 }
 
@@ -119,7 +119,7 @@ if (
     } catch (error) {
       if (error.response?.status === 701) {
         return res.status(429).json({
-          error: "No daily operations are available.",
+          error: videoMessages.quota,
         });
       }
 

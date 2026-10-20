@@ -1,6 +1,8 @@
 // Mensagens e erros partilhados pelas ferramentas de vídeo (Recorte, Filtros e Legendas)
 
 const videoMessages = {
+  quota: "You have reached the daily operations limit. It resets at midnight (UTC).",
+  limit: "The simultaneous video-processing limit was reached.",
   storage_project: "Insufficient storage space in the project.",
   storage_account: "Insufficient storage space in the account.",
 };

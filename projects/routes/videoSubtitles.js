@@ -31,8 +31,8 @@ const usersHttpsAgent = new https.Agent({
 
 const messages = {
   no_audio: "No audio track was found in this video.",
-  quota: "You have reached the daily operations limit. It resets at midnight.",
-  limit: "The simultaneous video-processing limit was reached.",
+  quota: videoMessages.quota,
+  limit: videoMessages.limit,
   storage_project: videoMessages.storage_project,
   storage_account: videoMessages.storage_account,
   service:
