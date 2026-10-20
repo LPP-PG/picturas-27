@@ -9,7 +9,7 @@
 | **Grupo / Equipa** | Grupo 5 PL1 |
 | **Autores** | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
 | **Data** | 2026-10-20 |
-| **Versão do documento** | v2.1 |
+| **Versão do documento** | v2.2 |
 | **Unidade Curricular** | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho |
 
 ---
@@ -106,25 +106,25 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 
 | **ID** | **Regra** |
 | :-- | :-- |
-| RN1 | New Project cria projetos de imagens ou de vídeos. Não é permitido misturar os dois tipos de conteúdo no mesmo projeto. Projetos de imagens usam as ferramentas existentes; projetos de vídeo apresentam Recorte, Filtros e Legendas. |
-| RN2 | Só Registado e Premium têm acesso a projetos de vídeo. Apenas o proprietário pode aceder aos vídeos, às miniaturas e ao projeto de vídeo. Partilha de vídeo não faz parte deste MVP. |
-| RN3 | São aceites MP4 e MOV. O servidor verifica o conteúdo real do ficheiro; a extensão não é suficiente para o aceitar. |
-| RN4 | Por vídeo: Registado, duração positiva ≤ 60 s e tamanho positivo ≤ 100 MB; Premium, duração positiva ≤ 600 s e tamanho positivo ≤ 1 GB. MB e GB são decimais: 1 MB = 1 000 000 bytes e 1 GB = 1 000 000 000 bytes. |
-| RN5 | Não existe limite fixo de quantidade de vídeos por projeto. O espaço ocupado no projeto não pode exceder 500 MB para Registado ou 10 GB para Premium. |
-| RN6 | O armazenamento total da conta não pode exceder 2 GB para Registado ou 50 GB para Premium. O cálculo é global, incluindo conteúdos já guardados noutros projetos. |
-| RN7 | Originais, resultados editados e legendas persistentes contam para a ocupação do projeto e da conta. As miniaturas de vídeo não descontam da quota, por decisão posterior à v1.1. O upload considera ocupação e reservas antes do envio, converte a reserva em ocupação na conclusão e liberta-a na falha ou cancelamento. Recorte e Filtros reservam espaço estimado dos resultados; Legendas verifica o espaço na confirmação e ao guardar, sem reserva antecipada (UC-VID-003/A12). O espaço temporário e a garantia de limites em gravações concorrentes de derivados continuam por verificar. |
+| RN1 | New Project cria projetos de imagens ou de vídeos. Não é permitido misturar os dois tipos de conteúdo no mesmo projeto. Projetos de imagens usam as ferramentas existentes; projetos de vídeo apresentam Recorte, Filtros e Legendas. (RNG-02) |
+| RN2 | Só Registado e Premium têm acesso a projetos de vídeo. Apenas o proprietário pode aceder aos vídeos, às miniaturas e ao projeto de vídeo. Partilha de vídeo não faz parte deste MVP. (RNG-01, RNG-03) |
+| RN3 | São aceites MP4 e MOV. O servidor verifica o conteúdo real do ficheiro; a extensão não é suficiente para o aceitar. (RNG-04) |
+| RN4 | Por vídeo: Registado, duração positiva ≤ 60 s e tamanho positivo ≤ 100 MB; Premium, duração positiva ≤ 600 s e tamanho positivo ≤ 1 GB. MB e GB são decimais: 1 MB = 1 000 000 bytes e 1 GB = 1 000 000 000 bytes. (RNG-04) |
+| RN5 | Não existe limite fixo de quantidade de vídeos por projeto. O espaço ocupado no projeto não pode exceder 500 MB para Registado ou 10 GB para Premium. (RNG-02, RNG-05) |
+| RN6 | O armazenamento total da conta não pode exceder 2 GB para Registado ou 50 GB para Premium. O cálculo é global, incluindo conteúdos já guardados noutros projetos. (RNG-05) |
+| RN7 | Originais, resultados editados e legendas persistentes contam para a ocupação do projeto e da conta. As miniaturas de vídeo não descontam da quota, por decisão posterior à v1.1. O upload considera ocupação e reservas antes do envio, converte a reserva em ocupação na conclusão e liberta-a na falha ou cancelamento. Recorte e Filtros reservam espaço estimado dos resultados; Legendas verifica o espaço na confirmação e ao guardar, sem reserva antecipada (UC-VID-003/A12). O espaço temporário e a garantia de limites em gravações concorrentes de derivados continuam por verificar. (RNG-05, RNG-06) |
 | RN8 | Para vídeos com duração superior a 0,1 s, tenta-se extrair uma miniatura aos 0,1 s. Se estiver quase toda preta, tentam-se 1 s, 2 s, …, 10 s, apenas quando o instante é inferior à duração. Para vídeos com duração ≤ 0,1 s, usa-se o primeiro fotograma disponível. Se todos os candidatos extraídos forem pretos, usa-se o primeiro extraído com sucesso. Não existe escolha manual de capa neste caso de uso. O critério de classificação de preto fica em Q2. |
-| RN9 | O original não é alterado pelo carregamento nem pela geração da miniatura. Um vídeo só fica disponível para edição depois de ter sido recebido, validado e guardado com a miniatura e associado ao projeto. |
-| RN10 | Os carregamentos simultâneos são contados por conta, mesmo em projetos ou separadores diferentes: Registado, no máximo 1; Premium, no máximo 3. Este limite é independente dos limites de processamento das ferramentas. |
-| RN11 | Os estados apresentados por ficheiro são A aguardar, A carregar, A validar, A preparar miniatura, Concluído, Falhou e Cancelado. Os quatro primeiros admitem cancelamento. A percentagem representa bytes enviados; atingir 100% não significa que a validação e gravação tenham terminado. |
-| RN12 | Carregar, pré-visualizar, visualizar ou cancelar o carregamento de vídeos não consome operações diárias, mesmo que a quota de edição esteja esgotada. |
+| RN9 | O original não é alterado pelo carregamento nem pela geração da miniatura. Um vídeo só fica disponível para edição depois de ter sido recebido, validado e guardado com a miniatura e associado ao projeto. (RNG-09) |
+| RN10 | Os carregamentos simultâneos são contados por conta, mesmo em projetos ou separadores diferentes: Registado, no máximo 1; Premium, no máximo 3. Este limite é independente dos limites de processamento das ferramentas. (RNG-08) |
+| RN11 | Os estados apresentados por ficheiro são A aguardar, A carregar, A validar, A preparar miniatura, Concluído, Falhou e Cancelado. Os quatro primeiros admitem cancelamento. A percentagem representa bytes enviados; atingir 100% não significa que a validação e gravação tenham terminado. (RNG-10) |
+| RN12 | Carregar, pré-visualizar, visualizar ou cancelar o carregamento de vídeos não consome operações diárias, mesmo que a quota de edição esteja esgotada. (RNG-07) |
 | RN13 | O nome do projeto tem de conter pelo menos um caráter que não seja espaço. O projeto aparece na lista depois de pelo menos um vídeo atingir Concluído. Falhas e cancelamentos posteriores não apagam vídeos já concluídos. |
-| RN14 | A seleção de um vídeo dentro do projeto determina o vídeo apresentado no leitor e o alvo das ferramentas. A disponibilidade de cada operação depende das regras do respetivo caso de uso. Não existe processamento em lote neste caso. |
-| RN15 | Add videos acrescenta vídeos ao projeto existente, mantendo a sua identidade e os vídeos já concluídos, e aplica as mesmas validações e limites do carregamento inicial. |
-| RN16 | A eliminação individual exige confirmação, remove o vídeo e os derivados associados e liberta a ocupação correspondente após a limpeza. Se restarem vídeos, o editor seleciona outro. Ao eliminar o último, a confirmação inclui explicitamente a eliminação do projeto; cancelá-la preserva ambos. |
-| RN17 | Um upload com conteúdo exatamente igual ao de um vídeo no mesmo projeto é rejeitado, mesmo com outro nome. Nomes iguais não bastam para identificar duplicados. A política não se aplica automaticamente a resultados de ferramentas. |
+| RN14 | A seleção de um vídeo dentro do projeto determina o vídeo apresentado no leitor e o alvo das ferramentas. A disponibilidade de cada operação depende das regras do respetivo caso de uso. Não existe processamento em lote neste caso. (RNG-02, RNG-14) |
+| RN15 | Add videos acrescenta vídeos ao projeto existente, mantendo a sua identidade e os vídeos já concluídos, e aplica as mesmas validações e limites do carregamento inicial. (RNG-13) |
+| RN16 | A eliminação individual exige confirmação, remove o vídeo e os derivados associados e liberta a ocupação correspondente após a limpeza. Se restarem vídeos, o editor seleciona outro. Ao eliminar o último, a confirmação inclui explicitamente a eliminação do projeto; cancelá-la preserva ambos. (RNG-12) |
+| RN17 | Um upload com conteúdo exatamente igual ao de um vídeo no mesmo projeto é rejeitado, mesmo com outro nome. Nomes iguais não bastam para identificar duplicados. A política não se aplica automaticamente a resultados de ferramentas. (RNG-13) |
 | RN18 | Recorte, Filtros e Legendas são apresentados na lateral e atuam sobre o vídeo selecionado. No formulário de upload, a ação de escolher outra pré-visualização só aparece quando há mais de um vídeo selecionado; o único vídeo pode continuar a ser pré-visualizado automaticamente. |
-| RN19 | A eliminação de um vídeo ou projeto com pedidos de edição ativos associados é impedida, segundo as regras de Recorte, Filtros e Legendas. Esta é uma obrigação de integração, não uma afirmação de que o bloqueio já foi verificado em todas as ferramentas. |
+| RN19 | A eliminação de um vídeo ou projeto com pedidos de edição ativos associados é impedida, segundo as regras de Recorte, Filtros e Legendas. Esta é uma obrigação de integração, não uma afirmação de que o bloqueio já foi verificado em todas as ferramentas. (RNG-12) |
 
 ### 2.7 Assunções
 
@@ -168,7 +168,7 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 ## 4. Especificação de Requisitos do Sistema (ERS)
 
 **Caso de Uso:** UC-VID-004 — Criar um projeto de vídeo
-**Versão do dossiê:** v2.1
+**Versão do dossiê:** v2.2
 **Baseline do Exercício 1:** dossiê v1.1 (UC-VID-004 v1.1); requisitos derivados REQ-VID-UPLOAD-001 a REQ-VID-UPLOAD-041
 
 Os IDs REQ-VID-UPLOAD-001 a REQ-VID-UPLOAD-041 e as suas prioridades de origem são preservados. Os novos IDs 042–050 documentam as decisões posteriores de adição, eliminação, duplicados e apresentação; não são renumerações dos requisitos anteriores. Os requisitos especificam o comportamento esperado; a implementação e a verificação são registadas separadamente no relatório.
@@ -248,7 +248,7 @@ Os IDs REQ-VID-UPLOAD-001 a REQ-VID-UPLOAD-041 e as suas prioridades de origem s
 | Adição e eliminação | Sim | Acrescentar vídeos sem criar outro projeto; confirmar eliminação; ao eliminar o último, incluir explicitamente o projeto na confirmação. | REQ-VID-UPLOAD-042 a REQ-VID-UPLOAD-046 |
 | Duplicados e nomes | Sim | Rejeitar cópias de conteúdo no upload, incluindo concorrência; permitir o mesmo nome para conteúdo diferente. | REQ-VID-UPLOAD-047, REQ-VID-UPLOAD-048 |
 | Apresentação no editor e formulário | Sim | Ferramentas na lateral; Preview por ficheiro apenas com mais de um selecionado. | REQ-VID-UPLOAD-049, REQ-VID-UPLOAD-050 |
-| Eliminação durante processamento | Sim, integração | Respeitar o bloqueio das três ferramentas; verificar tanto a eliminação individual como a do projeto. | REQ-VID-TRIM-033; REQ-VID-FILT-044; REQ-VID-LEG-042 |
+| Eliminação durante processamento | Sim, integração | Respeitar o bloqueio das três ferramentas; verificar tanto a eliminação individual como a do projeto. | REQ-VID-STATUS-013 |
 
 **Evolução:** *Mantido* = requisito preservado do Exercício 1; *Refinado* = clarificado ou tornado verificável sem mudar a intenção; *Novo* = acrescentado para completar a ERS. **NOVO/ALT** indica o impacto face ao PictuRAS existente, não a novidade face ao Exercício 1.
 
@@ -336,16 +336,13 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | E8 / RN17 | Rejeitar conteúdo duplicado, preservar original e libertar reservas | REQ-VID-UPLOAD-047, REQ-VID-UPLOAD-035, REQ-VID-UPLOAD-038 |
 | RN17 | Nomes iguais com conteúdo diferente | REQ-VID-UPLOAD-048 |
 | RN18 | Disposição das ferramentas e Preview | REQ-VID-UPLOAD-049, REQ-VID-UPLOAD-050 |
-| E9 / RN19 | Confirmação concorrente e bloqueios de processamento | REQ-VID-UPLOAD-045; REQ-VID-TRIM-033; REQ-VID-FILT-044; REQ-VID-LEG-042 |
+| E9 / RN19 | Confirmação concorrente e bloqueios de processamento | REQ-VID-UPLOAD-045; REQ-VID-STATUS-013 |
 | E10 | Limpeza persistente de eliminações | REQ-VID-UPLOAD-044 |
 | RN15 | Acrescentar vídeos ao mesmo projeto | REQ-VID-UPLOAD-042 |
 | RN16 | Eliminação confirmada, derivados, último vídeo e seleção seguinte | REQ-VID-UPLOAD-043 a REQ-VID-UPLOAD-046 |
-| RN19 | Impedir eliminação com processamento dependente ativo | REQ-VID-TRIM-033; REQ-VID-FILT-044; REQ-VID-LEG-042 |
+| RN19 | Impedir eliminação com processamento dependente ativo | REQ-VID-STATUS-013 |
 
-**Cobertura documental:** os 50 requisitos aparecem na matriz. Os 41 IDs da baseline e respetivas prioridades foram preservados. Q1–Q9 mantêm o respetivo ID e registam respostas apenas parciais quando houve decisão posterior. Verificação da implementação, testes e correspondência com IDs da solução de base não são declarados concluídos.
-
-
-**Decisões de qualidade introduzidas nesta aula**
+**Decisões de qualidade**
 
 Os IDs desta tabela pertencem ao dossiê UC-VID-004. Nas tabelas conjuntas do relatório devem ser escritos UC-VID-004/DQ-nnn ou substituídos por uma referência ao registo global aprovado, preservando o mapeamento. Não se confundem com os DQ de Recorte, Filtros ou Legendas. Os alvos de produção da secção 4.1.2 são mínimos herdados, não medições nem compromissos adicionais aprovados nesta revisão.
 
