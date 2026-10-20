@@ -258,39 +258,39 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | Passo 2 | Apresenta o ecrã de recorte | REQ-VID-TRIM-004, REQ-VID-TRIM-005 |
 | Passo 3 | Define os instantes; validação em tempo real | REQ-VID-TRIM-006, REQ-VID-TRIM-007, REQ-VID-TRIM-008 |
 | Passo 4 | Escolhe o formato de saída | REQ-VID-TRIM-005, REQ-VID-TRIM-010 |
-| Passo 5 | Confirma; revalidação; reserva da operação e do espaço; cria o pedido A aguardar | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006, REQ-VID-STATUS-001, REQ-VID-STATUS-008, REQ-VID-STATUS-009, REQ-VID-STATUS-021; REQ-VID-TRIM-040 |
+| Passo 5 | Confirma; revalidação; reserva da operação e do espaço; cria o pedido A aguardar | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006, REQ-VID-STATUS-001, REQ-VID-STATUS-008, REQ-VID-STATUS-021; REQ-VID-TRIM-040 |
 | Passo 6 | Inicia o processamento; estado A processar e progresso | REQ-VID-STATUS-015, REQ-VID-STATUS-016; REQ-VID-TRIM-039 |
 | Passo 7 | Acompanha o progresso; processamento em segundo plano | REQ-VID-STATUS-015, REQ-VID-STATUS-016; REQ-VID-TRIM-015, REQ-VID-TRIM-041 |
 | Passo 8 | Conclui; miniatura; grava no projeto; estado Concluído | REQ-VID-TRIM-016, REQ-VID-TRIM-036, REQ-VID-TRIM-039 |
-| Passo 9 | Contabiliza a operação; notifica a conclusão | REQ-VID-STATUS-014, REQ-VID-STATUS-008, REQ-VID-STATUS-009 |
+| Passo 9 | Contabiliza a operação; notifica a conclusão | REQ-VID-STATUS-014, REQ-VID-STATUS-008 |
 | Passo 10 | Seleciona o resultado; original inalterado | REQ-VID-TRIM-016, REQ-VID-TRIM-042; REQ-VID-STATUS-019 |
-| FA1 – Cancelar o processamento | Cancelamento A aguardar ou A processar; reserva libertada | REQ-VID-STATUS-019, REQ-VID-STATUS-008, REQ-VID-STATUS-009, REQ-VID-STATUS-003, REQ-VID-STATUS-018 |
+| FA1 – Cancelar o processamento | Cancelamento A aguardar ou A processar; reserva libertada | REQ-VID-STATUS-019, REQ-VID-STATUS-009, REQ-VID-STATUS-003, REQ-VID-STATUS-018 |
 | FA2 – Utilizador abandona o ecrã | Processamento continua; estado visível ao regressar | REQ-VID-STATUS-015; REQ-VID-TRIM-015, REQ-VID-TRIM-041 |
 | FA3 – Intervalo igual à duração total | Impede o recorte e explica o motivo | REQ-VID-TRIM-009 |
 | FA4 – Formato de saída diferente | Conversão para o formato escolhido | REQ-VID-TRIM-010 |
-| FA5 – Limite de pedidos em simultâneo | Rejeita o novo pedido | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006; REQ-VID-TRIM-040 |
-| FA6 – Utilizador termina a sessão | Cancela os pedidos ativos; reserva libertada | REQ-VID-STATUS-019, REQ-VID-STATUS-008, REQ-VID-STATUS-009, REQ-VID-STATUS-004, REQ-VID-STATUS-018, REQ-VID-STATUS-017 |
-| E1 – Quota diária esgotada | Mensagem e reposição; não abre o ecrã ou não cria o pedido | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006; REQ-VID-TRIM-040 |
+| FA5 – Limite de pedidos em simultâneo | Rejeita o novo pedido | REQ-VID-STATUS-005, REQ-VID-STATUS-006, REQ-VID-STATUS-007 |
+| FA6 – Utilizador termina a sessão | Cancela os pedidos ativos; reserva libertada | REQ-VID-STATUS-019, REQ-VID-STATUS-009, REQ-VID-STATUS-004, REQ-VID-STATUS-018, REQ-VID-STATUS-017 |
+| E1 – Quota diária esgotada | Mensagem e reposição; não abre o ecrã ou não cria o pedido | REQ-VID-STATUS-011 |
 | E2 – Intervalo inválido | Assinala o campo; botão desativado | REQ-VID-TRIM-007 |
-| E3 – Espaço insuficiente na confirmação | Não cria o pedido; indica o limite atingido | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006; REQ-VID-TRIM-040 |
+| E3 – Espaço insuficiente na confirmação | Não cria o pedido; indica o limite atingido | REQ-VID-TRIM-040 |
 | E4 – Processamento falha a meio | Falhou; mensagem; dados parciais e reserva libertados | REQ-VID-TRIM-031; REQ-VID-STATUS-018 |
 | E5 – Serviço indisponível | Mensagem; não cria o pedido | REQ-VID-STATUS-012 |
 | E6 – Falha de armazenamento ao gravar | Falhou; mensagem de espaço insuficiente | REQ-VID-TRIM-031; REQ-VID-STATUS-018 |
-| Pós-condição de sucesso | Novo vídeo com miniatura no projeto; original inalterado; Concluído; 1 operação contabilizada | REQ-VID-TRIM-015, REQ-VID-TRIM-016, REQ-VID-TRIM-036; REQ-VID-STATUS-019, REQ-VID-STATUS-008, REQ-VID-STATUS-009 |
-| Pós-condição mínima | Original inalterado; sem dados parciais; Falhou ou Cancelado; sem reserva nem quota consumidas; mensagem com a causa | REQ-VID-STATUS-019, REQ-VID-STATUS-008, REQ-VID-STATUS-009, REQ-VID-STATUS-003, REQ-VID-STATUS-004, REQ-VID-STATUS-012, REQ-VID-STATUS-018; REQ-VID-TRIM-031 |
+| Pós-condição de sucesso | Novo vídeo com miniatura no projeto; original inalterado; Concluído; 1 operação contabilizada | REQ-VID-TRIM-015, REQ-VID-TRIM-016, REQ-VID-TRIM-036; REQ-VID-STATUS-019, REQ-VID-STATUS-008 |
+| Pós-condição mínima | Original inalterado; sem dados parciais; Falhou ou Cancelado; sem reserva nem quota consumidas; mensagem com a causa | REQ-VID-STATUS-019, REQ-VID-STATUS-009, REQ-VID-STATUS-003, REQ-VID-STATUS-004, REQ-VID-STATUS-012, REQ-VID-STATUS-018; REQ-VID-TRIM-031 |
 | RN1 | Formatos MP4 e MOV de entrada e de saída | REQ-VID-TRIM-005, REQ-VID-TRIM-010, REQ-VID-TRIM-042 |
 | RN2 | Acesso e limites por perfil. Sem requisito neste caso de uso: coberto por UC-VID-004 (REQ-VID-UPLOAD-009, 012 e 013) | — |
 | RN3 | Instantes de 1 s; intervalo válido; sem intervalo total | REQ-VID-TRIM-007, REQ-VID-TRIM-008, REQ-VID-TRIM-009 |
-| RN4 | Quota diária partilhada: 1 operação reservada ao criar o pedido e devolvida em falha ou cancelamento, dupla verificação | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006, REQ-VID-STATUS-008, REQ-VID-STATUS-009, REQ-VID-STATUS-010; REQ-VID-TRIM-040 |
+| RN4 | Quota diária partilhada: 1 operação reservada ao criar o pedido e devolvida em falha ou cancelamento, dupla verificação | REQ-VID-STATUS-011, REQ-VID-STATUS-008, REQ-VID-STATUS-009, REQ-VID-STATUS-010 |
 | RN5 | Resultado como novo vídeo do projeto, com miniatura; original intacto e não eliminável com recorte ativo | REQ-VID-TRIM-016, REQ-VID-TRIM-036; REQ-VID-STATUS-019, REQ-VID-STATUS-013 |
 | RN6 | Estados do pedido; só A aguardar e A processar admitem cancelamento | REQ-VID-STATUS-001, REQ-VID-STATUS-003; REQ-VID-TRIM-015 |
-| RN7 | Pedidos de processamento de vídeo em simultâneo por perfil, globais à conta | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006; REQ-VID-TRIM-040 |
+| RN7 | Pedidos de processamento de vídeo em simultâneo por perfil, globais à conta | REQ-VID-STATUS-005, REQ-VID-STATUS-006, REQ-VID-STATUS-007 |
 | RN8 | Processamento assíncrono; estado e progresso | REQ-VID-STATUS-015, REQ-VID-STATUS-016 |
 | RN9 | Vídeo só recortável depois de disponível para edição. Sem requisito neste caso de uso: coberto por UC-VID-004 (REQ-VID-UPLOAD-029) | — |
 | RN10 | Pedidos e resultados só do proprietário (RGPD) | REQ-VID-STATUS-020 |
 | A1 | Assunção: vídeo integralmente armazenado e acessível ao serviço. Sem requisito: condição assumida do ambiente | — |
 | A2 | Assunção: valores de RN3, RN7 e tolerância de ±1 s razoáveis para um MVP | REQ-VID-TRIM-008, REQ-VID-TRIM-016; REQ-VID-STATUS-005, REQ-VID-STATUS-006 |
-| A3 | Assunção: a conversão de formato não custa operação adicional | REQ-VID-TRIM-010; REQ-VID-STATUS-008, REQ-VID-STATUS-009 |
+| A3 | Assunção: a conversão de formato não custa operação adicional | REQ-VID-TRIM-010; REQ-VID-STATUS-008 |
 | A4 | Assunção: o recorte mantém resolução, taxa de fotogramas e áudio do original | REQ-VID-TRIM-043 |
 | A5 | Assunção: notificação de conclusão apenas dentro da aplicação | REQ-VID-STATUS-014 |
 | A6 | Assunção: armazenamento do projeto e da conta segundo UC-VID-004 (RN5 a RN7) | REQ-VID-TRIM-040 |
@@ -300,7 +300,7 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | A10 | Assunção: quota diária partilhada entre imagens e vídeos | REQ-VID-STATUS-010 |
 | A11 | Assunção: vídeos já validados no carregamento. Sem requisito neste caso de uso: coberto por UC-VID-004 (REQ-VID-UPLOAD-011 a 013) | — |
 | A12 | Assunção: o resultado mantém os codecs do original | REQ-VID-TRIM-042 |
-| A13 | Assunção: limite de pedidos de processamento de vídeo em simultâneo global à conta | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006; REQ-VID-TRIM-040 |
+| A13 | Assunção: limite de pedidos de processamento de vídeo em simultâneo global à conta | REQ-VID-STATUS-005, REQ-VID-STATUS-006 |
 | A14 | Interface em inglês. Delimitação da apresentação; não origina um requisito autónomo | — |
 | UC-VID-004 – RN7 | Reserva e ocupação de espaço, incluindo resultados editados | REQ-VID-STATUS-018; REQ-VID-TRIM-040 |
 | UC-VID-004 – RN8 | Miniatura automática de cada vídeo | REQ-VID-TRIM-036 |

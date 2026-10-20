@@ -290,7 +290,7 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | Passo 10 / Pós-condições | Reprodução, original intacto | REQ-VID-FILT-035; REQ-VID-STATUS-019 |
 | FA2 / RN6 | Cancelamento manual | REQ-VID-STATUS-003, REQ-VID-STATUS-018 |
 | FA5 | Cancelamento no logout | REQ-VID-STATUS-004, REQ-VID-STATUS-018, REQ-VID-STATUS-017 |
-| E1 | Quota esgotada | REQ-VID-STATUS-011, REQ-VID-STATUS-005, REQ-VID-STATUS-006, REQ-VID-STATUS-020; REQ-VID-FILT-043 |
+| E1 | Quota esgotada | REQ-VID-STATUS-011 |
 | E3 / E6 / RN12 | Espaço insuficiente e limpeza | REQ-VID-FILT-039, REQ-VID-FILT-043; REQ-VID-STATUS-018 |
 | E4 | Falha durante processamento | REQ-VID-FILT-039; REQ-VID-STATUS-018, REQ-VID-STATUS-019 |
 | E7 | Vídeo indisponível ou acesso indevido | REQ-VID-FILT-003, REQ-VID-FILT-004; REQ-VID-STATUS-020 |
