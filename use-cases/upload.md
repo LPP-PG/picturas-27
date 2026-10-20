@@ -131,12 +131,12 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 
 | **ID** | **Questão** |
 | :-- | :-- |
-| Q1 | Como contabilizar e reservar o espaço de miniaturas e legendas, incluindo o espaço adicional necessário para preparar derivados, mantendo os limites de RN5 e RN6? |
+| Q1 | Como contabilizar e reservar o espaço de miniaturas e legendas, incluindo o espaço adicional necessário para preparar derivados, mantendo os limites de RN5 e RN6? **Parcialmente decidida:** as legendas contam para o espaço sem reserva antecipada, com verificação na confirmação e ao guardar (UC-VID-003, A12). A contabilização das miniaturas continua por decidir. |
 | Q2 | Que percentagem de píxeis escuros e que limiar de luminosidade definem um fotograma quase todo preto? |
 | Q3 | Qual é o prazo de inatividade para recuperar carregamentos abandonados e libertar reservas e vagas, e qual o tempo máximo de validação/preparação de cada vídeo? |
-| Q4 | Devem existir retoma de uploads após falhas e deteção de ficheiros duplicados? Como tratar nomes de vídeos repetidos? |
+| Q4 | Devem existir retoma de uploads após falhas e deteção de ficheiros duplicados? Como tratar nomes de vídeos repetidos? **Parcialmente decidida:** um vídeo com o mesmo conteúdo de outro já existente no projeto é recusado (comparação do resumo SHA-256), e a retoma de um ficheiro falhado é manual, através de Tentar novamente (FA7). A retoma automática e os nomes repetidos continuam por decidir. |
 | Q5 | Quais os codecs de reprodução garantidos no MVP? Deve existir uma cópia de reprodução compatível quando o original não é suportado pelo navegador? |
-| Q6 | Adicionar vídeos a um projeto existente terá um caso de uso separado ou uma extensão deste? Renomear, eliminar, mover e partilhar projetos de vídeo também requerem definição própria. |
+| Q6 | Adicionar vídeos a um projeto existente terá um caso de uso separado ou uma extensão deste? Renomear, eliminar, mover e partilhar projetos de vídeo também requerem definição própria. **Parcialmente decidida:** é possível eliminar um vídeo ou um projeto de vídeo, exceto enquanto existir um pedido de Recorte, Filtros ou Legendas ativo (UC-VID-001, RN5; UC-VID-002, RN13; UC-VID-003, RN15). A partilha não faz parte do MVP (RN2). Adicionar vídeos a um projeto existente, renomear e mover continuam por decidir. |
 | Q7 | Os limites de processamento dos casos de Recorte, Filtros e Legendas são globais por conta ou independentes por ferramenta? Como reservar espaço para os respetivos resultados? **Decidida:** o limite é global à conta e partilhado pelas três ferramentas: 1 pedido para Registado e 3 para Premium (UC-VID-001, RN7; UC-VID-002, RN7; UC-VID-003, RN11). O espaço dos resultados é tratado em cada caso de uso: o Recorte e os Filtros reservam uma estimativa (UC-VID-001, A7; UC-VID-002, A11) e as Legendas verificam o espaço na confirmação e ao guardar (UC-VID-003, A12). |
 | Q8 | Confirmar os limites existentes de quantidade de projetos por perfil e a mensagem a apresentar quando forem atingidos. |
 | Q9 | Devem existir limites de resolução e de taxa de fotogramas, ou uma lista de codecs aceites no carregamento, além do formato, da duração e do tamanho? |
@@ -294,4 +294,4 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | A7 | Compatibilidade de reprodução | REQ-VID-UPLOAD-031, REQ-VID-UPLOAD-032, REQ-VID-UPLOAD-041 |
 | A8 | Sem limites de resolução nem de fotogramas por segundo no MVP | Sem requisito novo: assunção de âmbito; ver Q9. |
 | A9 | Critério de classificação NOVO/ALT e Manter/Estender/Alterar | Sem requisito: assunção de método; confirmar no código. |
-| Q1 a Q9 | Decisões ainda não fechadas | Não originam requisitos enquanto não forem resolvidas. |
+| Q1 a Q9 | Questões em aberto; Q1, Q4 e Q6 parcialmente decididas e Q7 decidida noutros casos de uso | Não originam requisitos neste caso de uso enquanto não forem resolvidas. |
