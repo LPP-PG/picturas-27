@@ -8,8 +8,8 @@
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | **Grupo / Equipa**      | Grupo 5 PL1                                                                                      |
 | **Autores**             | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
-| **Data**                | 2026-10-18                                                                                       |
-| **Versão do documento** | v2.0                                                                                             |
+| **Data**                | 2026-10-20                                                                                       |
+| **Versão do documento** | v2.1                                                                                             |
 | **Unidade Curricular**  | Requisitos e Arquiteturas de Software, MEI, Universidade do Minho                                |
 
 ---
@@ -35,9 +35,9 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |---|---|
 |**ID do Caso de Uso**|UC-VID-003|
 |**Nome**|Gerar legendas automáticas para um vídeo de um projeto|
-|**Versão**|v1.5|
+|**Versão**|v1.6|
 |**Autor**|Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto|
-|**Data**|2026-10-18|
+|**Data**|2026-10-20|
 |**Objetivo**|Permitir ao utilizador gerar automaticamente legendas sincronizadas com o conteúdo falado de um vídeo de um projeto de vídeo.|
 |**Âmbito**|Ferramenta Legendas do editor de projetos de vídeo, para vídeos falados em inglês: verificação do idioma, processamento da faixa de áudio, reconhecimento de fala, geração de segmentos de legenda sincronizados, armazenamento das legendas e controlo da quota de operações. Não inclui o carregamento, a listagem nem a visualização dos vídeos (UC-VID-004), nem as ferramentas Recorte e Filtros.|
 |**Ator Principal**|Utilizador Registado. O Utilizador Premium utiliza o mesmo fluxo, com limites diferentes.|
@@ -182,7 +182,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 ## 4. Especificação de Requisitos do Sistema (ERS)
 
 **Caso de Uso:** UC-VID-003 — Gerar legendas automáticas para um vídeo de um projeto  
-**Versão do dossiê:** v2.0  
+**Versão do dossiê:** v2.1  
 **Baseline do Exercício 1:** dossiê v1.0 (UC-VID-003 v1.0); requisitos derivados REQ-VID-LEG-001 a REQ-VID-LEG-040
 
 ### 4.1 Requisitos da ERS
@@ -280,21 +280,23 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 
 ### 4.2 Impacto no sistema existente
 
-| **Elemento existente afetado** | **Impacto (Manter / Estender / Alterar)** | **Descrição do impacto** | **Requisito(s) relacionado(s)** |
-| :-- | :-- | :-- | :-- |
-| Perfis e permissões | Estender | O acesso a vídeo e os limites de duração e tamanho por perfil são definidos no UC-VID-004. A geração de legendas aplica o limite de pedidos de processamento de vídeo em simultâneo por perfil, global à conta e partilhado pelas ferramentas de vídeo. | REQ-VID-LEG-015, 016 |
-| Quota diária de operações | Estender | A geração de legendas passa a consumir a quota partilhada entre imagens e vídeos: verificada na abertura e na confirmação, reservada ao criar o pedido e devolvida em falha ou cancelamento, com repetição das devoluções que falharem. O contador de operações restantes é atualizado. | REQ-VID-LEG-010, 035, 050, 054, 068 |
-| Gestão da sessão | Estender | O logout explícito cancela os pedidos ativos sem nunca impedir o fim da sessão; o processamento continua quando o utilizador apenas abandona o ecrã. | REQ-VID-LEG-022, 033, 056 |
-| Armazenamento e gestão de recursos | Estender | As legendas são guardadas separadas do vídeo e contabilizadas no espaço do projeto e da conta (UC-VID-004, RN7). O espaço é verificado na confirmação e ao guardar, o original e as legendas anteriores são preservados perante falhas ou cancelamentos e as legendas são eliminadas com o vídeo ou o projeto. | REQ-VID-LEG-029, 030, 031, 034, 039, 041, 043, 051, 052 |
-| Controlo de acesso e privacidade | Estender | O acesso aos pedidos, ao áudio processado e às legendas é exclusivo do proprietário; as legendas só são obtidas pela API autenticada. O acesso aos vídeos e aos projetos segue o UC-VID-004. | REQ-VID-LEG-040, 064 |
-| Editor do projeto de vídeo | Estender | A ferramenta Legendas passa a fazer parte do catálogo do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), apenas para inglês, com acompanhamento dos pedidos, notificação de conclusão e reprodução com legendas ativas por omissão. | REQ-VID-LEG-002, 011, 017, 021, 037, 038, 053, 055, 057, 070 |
-| Projetos de vídeo e gestão de vídeos | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo, e não são aceites pedidos para vídeos já retirados do projeto. O resultado de um filtro recebe uma cópia das legendas do original (RN16). | REQ-VID-LEG-030, 042, 044, 046 |
-| Processamento de operações e gestão de pedidos | Estender | Novo tipo de pedido assíncrono, com estados, progresso, um pedido ativo por vídeo, cancelamento, tratamento de falhas sem retoma no MVP e recuperação após um reinício. Aplicam-se alvos de tempo de confirmação e de processamento (DQ-002). | REQ-VID-LEG-018, 020, 021, 022, 032, 045, 049, 061, 062, 063, 069 |
-| Restrição de desempenho das operações com IA (R5) | Manter | Não é alterada a restrição existente. O alvo MVP de processamento das legendas fica fixado em REQ-VID-LEG-062; a relação com o limite de 60 s da R5 para vídeos Premium longos permanece em aberto em Q12. | REQ-VID-LEG-062 |
-| Implantação e execução dos serviços | Estender | Passa a existir um serviço de reconhecimento de fala em contentor próprio, com o modelo guardado num volume, e o serviço de projetos passa a usar o FFmpeg para extrair o áudio. Nenhum dos dois exige instalação manual. | REQ-VID-LEG-067 |
-| Modelo de ferramentas de processamento | Estender | As Legendas são acrescentadas como ferramenta de vídeo independente; a única peça partilhada com o Recorte e os Filtros é a contagem de pedidos em simultâneo. | REQ-VID-LEG-066 |
-| Exportação e formatos de saída | Estender | Passa a ser produzido um novo tipo de ficheiro, as legendas WebVTT, apresentadas no leitor. A exportação das legendas para o utilizador não faz parte do MVP (Q5). | REQ-VID-LEG-052, 065 |
-| Encadeamento de ferramentas e processamento em lote | Manter | A geração de legendas é uma operação isolada; não há alterações ao encadeamento nem ao processamento em lote. | Sem requisitos diretos (4.1.3) |
+A coluna **Elemento da baseline** indica o elemento do documento de requisitos de base (doc-ext-requisitos.pdf, PictuRAS 2025/26) afetado; R*n* são as restrições do projeto desse documento (secção 4).
+
+| **Elemento existente afetado** | **Elemento da baseline** | **Impacto (Manter / Estender / Alterar)** | **Descrição do impacto** | **Requisito(s) relacionado(s)** |
+| :-- | :-- | :-- | :-- | :-- |
+| Perfis e permissões | Perfis de utilização (secção 3.1) | Estender | O acesso a vídeo e os limites de duração e tamanho por perfil são definidos no UC-VID-004. A geração de legendas aplica o limite de pedidos de processamento de vídeo em simultâneo por perfil, global à conta e partilhado pelas ferramentas de vídeo. | REQ-VID-LEG-015, 016 |
+| Quota diária de operações | Perfil Registado com operações diárias limitadas (secção 3.1); RNF48 (exibir limite diário de operações) | Estender | A geração de legendas passa a consumir a quota partilhada entre imagens e vídeos: verificada na abertura e na confirmação, reservada ao criar o pedido e devolvida em falha ou cancelamento, com repetição das devoluções que falharem. O contador de operações restantes é atualizado. | REQ-VID-LEG-010, 035, 050, 054, 068 |
+| Gestão da sessão | Caso de uso Login (Figura 2; sem ID no documento de base) | Estender | O logout explícito cancela os pedidos ativos sem nunca impedir o fim da sessão; o processamento continua quando o utilizador apenas abandona o ecrã. | REQ-VID-LEG-022, 033, 056 |
+| Armazenamento e gestão de recursos | R2 (limite de armazenamento por utilizador); RNF45 (armazenamento local e cloud) | Estender | As legendas são guardadas separadas do vídeo e contabilizadas no espaço do projeto e da conta (UC-VID-004, RN7). O espaço é verificado na confirmação e ao guardar, o original e as legendas anteriores são preservados perante falhas ou cancelamentos e as legendas são eliminadas com o vídeo ou o projeto. | REQ-VID-LEG-029, 030, 031, 034, 039, 041, 043, 051, 052 |
+| Controlo de acesso e privacidade | RNF44 (segurança e privacidade dos dados); R3 (RGPD) | Estender | O acesso aos pedidos, ao áudio processado e às legendas é exclusivo do proprietário; as legendas só são obtidas pela API autenticada. O acesso aos vídeos e aos projetos segue o UC-VID-004. | REQ-VID-LEG-040, 064 |
+| Editor do projeto de vídeo | Nenhum: o editor de vídeo é novo (UC-VID-004); o equivalente para imagens é o UC04 | Estender | A ferramenta Legendas passa a fazer parte do catálogo do editor de projetos de vídeo (UC-VID-004, REQ-VID-UPLOAD-033), apenas para inglês, com acompanhamento dos pedidos, notificação de conclusão e reprodução com legendas ativas por omissão. | REQ-VID-LEG-002, 011, 017, 021, 037, 038, 053, 055, 057, 070 |
+| Projetos de vídeo e gestão de vídeos | Entidade Projeto do modelo de domínio (Figura 1) | Estender | As legendas ficam associadas a um vídeo de um projeto de vídeo (A9; UC-VID-004, A6). Nem o vídeo nem o projeto podem ser eliminados enquanto existir um pedido de legendas ativo, e não são aceites pedidos para vídeos já retirados do projeto. O resultado de um filtro recebe uma cópia das legendas do original (RN16). | REQ-VID-LEG-030, 042, 044, 046 |
+| Processamento de operações e gestão de pedidos | R5 (controlo de tarefas em fila) | Estender | Novo tipo de pedido assíncrono, com estados, progresso, um pedido ativo por vídeo, cancelamento, tratamento de falhas sem retoma no MVP e recuperação após um reinício. Aplicam-se alvos de tempo de confirmação e de processamento (DQ-002). | REQ-VID-LEG-018, 020, 021, 022, 032, 045, 049, 061, 062, 063, 069 |
+| Restrição de desempenho das operações com IA (R5) | R5; RNF43 (filtros com IA em menos de 1 minuto) | Manter | Não é alterada a restrição existente. O alvo MVP de processamento das legendas fica fixado em REQ-VID-LEG-062; a relação com o limite de 60 s da R5 para vídeos Premium longos permanece em aberto em Q12. | REQ-VID-LEG-062 |
+| Implantação e execução dos serviços | R7 (compatibilidade com a arquitetura base) | Estender | Passa a existir um serviço de reconhecimento de fala em contentor próprio, com o modelo guardado num volume, e o serviço de projetos passa a usar o FFmpeg para extrair o áudio. Nenhum dos dois exige instalação manual. | REQ-VID-LEG-067 |
+| Modelo de ferramentas de processamento | Entidade Ferramenta, Básica e Avançada, do modelo de domínio (Figura 1) | Estender | As Legendas são acrescentadas como ferramenta de vídeo independente; a única peça partilhada com o Recorte e os Filtros é a contagem de pedidos em simultâneo. | REQ-VID-LEG-066 |
+| Exportação e formatos de saída | R4 (compatibilidade com navegadores modernos) | Estender | Passa a ser produzido um novo tipo de ficheiro, as legendas WebVTT, apresentadas no leitor. A exportação das legendas para o utilizador não faz parte do MVP (Q5). | REQ-VID-LEG-052, 065 |
+| Encadeamento de ferramentas e processamento em lote | Caso de uso Aplicar encadeamento de ferramentas a conjunto de imagens (Figura 2; sem ID no documento de base) | Manter | A geração de legendas é uma operação isolada; não há alterações ao encadeamento nem ao processamento em lote. | Sem requisitos diretos (4.1.3) |
 
 ### 4.3 Matriz de Rastreabilidade Atualizada
 
