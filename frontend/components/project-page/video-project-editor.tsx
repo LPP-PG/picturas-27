@@ -160,6 +160,8 @@ export default function VideoProjectEditor({
         ["videoFilter", session.user._id, projectId, job.source_video_id],
         job,
       );
+      // A operação fica reservada: atualizar o contador
+      window.dispatchEvent(new Event("session-updated"));
     },
   });
   const { reset: resetStartFilter } = startFilter;
@@ -226,6 +228,9 @@ export default function VideoProjectEditor({
 
     // Só tratar pedidos que foram vistos ativos neste ecrã (um aviso por pedido)
     if (!activeFilterIdsRef.current.delete(currentFilterJob._id)) return;
+
+    // Pedido terminado: a operação foi consumida ou devolvida
+    window.dispatchEvent(new Event("session-updated"));
 
     if (currentFilterJob.state === "completed") {
       const resultId = currentFilterJob.result_video_id;

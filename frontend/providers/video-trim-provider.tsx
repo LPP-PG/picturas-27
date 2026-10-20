@@ -132,6 +132,8 @@ export function VideoTrimProvider({
       toastRefs.current.delete(trim.job._id);
       renderedToastStates.current.delete(trim.job._id);
       removeTrim(trim.job._id);
+      // A operação foi devolvida: atualizar o contador
+      window.dispatchEvent(new Event("session-updated"));
       toast({
         title: "Video trim cancelled",
         description: "The video trim request was cancelled.",
@@ -203,6 +205,8 @@ export function VideoTrimProvider({
       ) {
         notifiedIds.current.add(job._id);
         renderedToastStates.current.delete(job._id);
+        // Pedido terminado: a operação foi consumida ou devolvida
+        window.dispatchEvent(new Event("session-updated"));
         activeToast?.dismiss();
         toastRefs.current.delete(job._id);
         if (job.state === "completed") {
@@ -242,7 +246,6 @@ export function VideoTrimProvider({
               </ToastAction>
             ),
           });
-          window.dispatchEvent(new Event("session-updated"));
         } else {
           toast({
             title:
@@ -318,6 +321,8 @@ export function VideoTrimProvider({
     });
     toastRefs.current.set(job._id, notification);
     renderedToastStates.current.set(job._id, `queued:${job.progress}`);
+    // A operação fica reservada: atualizar o contador
+    window.dispatchEvent(new Event("session-updated"));
   }, [cancelTrim, toast]);
 
   const value = useMemo(
