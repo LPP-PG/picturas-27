@@ -298,7 +298,7 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | DQ-001 | Frequência de atualização do progresso | REQ-VID-STATUS-016 |
 | DQ-002 | Sem retoma automática; limpeza segura | REQ-VID-STATUS-018 |
 | DQ-003 | Persistência do resultado até eliminação | REQ-VID-FILT-029, REQ-VID-FILT-035 |
-| DQ-004 | Tempo de confirmação do pedido | REQ-VID-STATUS-021 |
+| DQ-004 | Tempo de confirmação do pedido; capacidade global fora do MVP | REQ-VID-STATUS-021, REQ-VID-STATUS-024 |
 | DQ-005 | Áudio e compatibilidade do resultado | REQ-VID-FILT-028, REQ-VID-FILT-047 |
 | DQ-006 | Isolamento da ferramenta e implantação | REQ-VID-STATUS-022, REQ-VID-STATUS-023 |
 | RN17 | Cópia das legendas do original para o resultado | REQ-VID-LEG-044 (UC-VID-003) |
@@ -311,7 +311,7 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | DQ-001 | Atualização do progresso a cada ≤ 5 s no MVP e ≤ 2 s em produção. | Tornar verificável a atualização do estado e do progresso sem exigir atualização contínua. | REQ-VID-STATUS-016 |
 | DQ-002 | MVP sem retoma automática após erro, mas com estado Falhou e sem dados parciais; produção com recuperação transitória. | Escopo realista para a Fase 1. | REQ-VID-STATUS-018 |
 | DQ-003 | Resultados persistem até eliminação pelo utilizador, sem expiração automática no MVP. | Reutilizar a gestão de projetos e permitir edição posterior. | REQ-VID-FILT-029, REQ-VID-FILT-035 |
-| DQ-004 | Confirmar pedido em menos de 3 s no MVP e menos de 1 s em produção. | Separar aceitação de pedido do processamento demorado. | REQ-VID-STATUS-021 |
+| DQ-004 | Confirmar pedido em menos de 3 s no MVP e menos de 1 s em produção. A capacidade global de pedidos fica fora do MVP e é um alvo de produção. | Separar aceitação de pedido do processamento demorado. | REQ-VID-STATUS-021, REQ-VID-STATUS-024 |
 | DQ-005 | Preservar áudio e reproduzir o resultado nos navegadores de referência. | Evitar resultados visualmente corretos mas inutilizáveis. | REQ-VID-FILT-028, REQ-VID-FILT-047 |
 | DQ-006 | Isolar a transformação de filtros da infraestrutura e empacotar dependências. | Adicionar ferramentas sem reescrever filtros; repetibilidade de implantação. | REQ-VID-STATUS-022, REQ-VID-STATUS-023 |
 
