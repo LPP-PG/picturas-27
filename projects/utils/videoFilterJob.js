@@ -193,4 +193,56 @@ async function processFilterJob(jobId, authorization) {
   }
 }
 
-module.exports = { processFilterJob };
+// Cancelar um pedido de filtro ativo (usado na rota de cancelamento e no logout)
+async function cancelFilterJob(job) {
+  const marked = await VideoFilter.findOneAndUpdate(
+    { _id: job._id, state: { $in: ["queued", "processing"] } },
+    { $set: { cancel_requested: true } },
+    { new: true },
+  );
+
+  // Se ainda estiver em fila, cancelar já; se estiver a processar,
+  // o serviço FFmpeg deteta o pedido de cancelamento e interrompe o trabalho.
+  if (marked?.state === "queued") {
+    const cancelled = await VideoFilter.findOneAndUpdate(
+      { _id: marked._id, state: "queued", cancel_requested: true },
+      {
+        $set: {
+          state: "cancelled",
+          progress: 0,
+          reserved_bytes: 0,
+          error: "Video filter cancelled.",
+          finished_at: new Date(),
+        },
+      },
+      { new: true },
+    );
+
+    if (cancelled) {
+      // Libertar o espaço reservado para o resultado.
+      await releaseUploadReservation(cancelled.user_id, cancelled._id);
+
+      // Devolver a operação diária reservada.
+      if (cancelled.operation_reserved) {
+        try {
+          await axios.post(
+            `${usersService}/${cancelled.user_id}/process/refund/1`,
+            {},
+            { httpsAgent, timeout: 10000 },
+          );
+
+          await VideoFilter.updateOne(
+            { _id: cancelled._id },
+            { $set: { operation_reserved: false } },
+          );
+        } catch (refundError) {
+          console.error("Error refunding cancelled filter:", refundError.message);
+        }
+      }
+    }
+  }
+
+  return VideoFilter.findById(job._id);
+}
+
+module.exports = { processFilterJob, cancelFilterJob };

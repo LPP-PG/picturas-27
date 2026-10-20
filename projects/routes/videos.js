@@ -11,7 +11,11 @@ const Project = require("../models/project");
 const Video = require("../models/video");
 const VideoUpload = require("../models/videoUpload");
 const VideoSubtitle = require("../models/videoSubtitle");
+const VideoTrim = require("../models/videoTrim");
+const VideoFilter = require("../models/videoFilter");
 const { cancelSubtitleJob } = require("../utils/videoSubtitleJob");
+const { cancelTrimJob } = require("../utils/videoTrim");
+const { cancelFilterJob } = require("../utils/videoFilterJob");
 const videoAuth = require("../middleware/videoAuth");
 const videoProjectAuth = require("../middleware/videoProjectAuth");
 
@@ -64,33 +68,40 @@ router.get("/:user/capacity", videoAuth, async (req, res) => {
   }
 });
 
-// Cancelar todos os pedidos de legendas ativos do utilizador
-router.post("/:user/subtitles/cancel-active", videoAuth, async (req, res) => {
+// Cancelar todos os pedidos de vídeo ativos do utilizador (Recorte, Filtros e Legendas)
+router.post("/:user/jobs/cancel-active", videoAuth, async (req, res) => {
   try {
-    const jobs = await VideoSubtitle.find({
+    const query = {
       user_id: req.videoUser._id,
       state: { $in: ["queued", "processing"] },
-    }).lean();
+    };
+    const kinds = [
+      [VideoTrim, cancelTrimJob],
+      [VideoFilter, cancelFilterJob],
+      [VideoSubtitle, cancelSubtitleJob],
+    ];
 
     let cancelled = 0;
 
-    for (const job of jobs) {
-      // Uma falha não impede o cancelamento dos restantes
-      try {
-        await cancelSubtitleJob(job);
-        cancelled += 1;
-      } catch (error) {
-        console.error("Error cancelling subtitle job:", error);
+    for (const [Model, cancelJob] of kinds) {
+      for (const job of await Model.find(query).lean()) {
+        // Uma falha não impede o cancelamento dos restantes
+        try {
+          await cancelJob(job);
+          cancelled += 1;
+        } catch (error) {
+          console.error("Error cancelling video job:", error);
+        }
       }
     }
 
     res.set("Cache-Control", "no-store");
     res.json({ cancelled });
   } catch (error) {
-    console.error("Error cancelling active subtitles:", error);
+    console.error("Error cancelling active video jobs:", error);
 
     res.status(503).json({
-      error: "Could not cancel subtitle generation.",
+      error: "Could not cancel the active video requests.",
     });
   }
 });

@@ -14,7 +14,10 @@ const {
   post_image,
   delete_image,
 } = require("./imageStorage");
-const { getUploadCapacity } = require("./videoReservations");
+const {
+  getUploadCapacity,
+  releaseUploadReservation,
+} = require("./videoReservations");
 
 const usersService = "https://users:10001";
 const usersHttpsAgent = new (require("node:https").Agent)({
@@ -300,4 +303,37 @@ async function processTrim(jobId, authorization, userType) {
   }
 }
 
-module.exports = { processTrim };
+// Cancelar um pedido de recorte ativo (usado na rota de cancelamento e no logout)
+async function cancelTrimJob(job) {
+  const marked = await VideoTrim.findOneAndUpdate(
+    { _id: job._id, state: { $in: ["queued", "processing"] } },
+    { $set: { cancel_requested: true } },
+    { new: true },
+  );
+
+  // Se ainda estiver em fila, cancelar já; se estiver a processar, o trabalho deteta o pedido.
+  if (marked?.state === "queued") {
+    await VideoTrim.updateOne(
+      { _id: marked._id },
+      { $set: { state: "cancelled", reserved_bytes: 0, finished_at: new Date(), error: "Video trim cancelled." } },
+    );
+    await releaseUploadReservation(marked.user_id, marked._id);
+    if (marked.operation_reserved) {
+      await axios.post(
+        `${usersService}/${marked.user_id}/process/refund/1`,
+        {},
+        { httpsAgent: usersHttpsAgent, timeout: 10000 },
+      ).catch((error) => {
+        console.error("Erro ao devolver operação cancelada:", error.message);
+      });
+      await VideoTrim.updateOne(
+        { _id: marked._id },
+        { $set: { operation_reserved: false } },
+      );
+    }
+  }
+
+  return VideoTrim.findById(job._id);
+}
+
+module.exports = { processTrim, cancelTrimJob };

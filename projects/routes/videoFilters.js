@@ -15,7 +15,7 @@ const {
 } = require("../utils/videoReservations");
 const axios = require("axios");
 const https = require("node:https");
-const { processFilterJob } = require("../utils/videoFilterJob");
+const { processFilterJob, cancelFilterJob } = require("../utils/videoFilterJob");
 
 const usersHttpsAgent = new https.Agent({
   rejectUnauthorized: false,
@@ -247,16 +247,12 @@ router.delete("/:filterId", async (req, res) => {
     }
 
     // Só é possível cancelar pedidos em fila ou em processamento.
-    const job = await VideoFilter.findOneAndUpdate(
-      {
-        _id: req.params.filterId,
-        user_id: req.videoUser._id,
-        project_id: req.videoProject._id,
-        state: { $in: ["queued", "processing"] },
-      },
-      { $set: { cancel_requested: true } },
-      { new: true },
-    );
+    const job = await VideoFilter.findOne({
+      _id: req.params.filterId,
+      user_id: req.videoUser._id,
+      project_id: req.videoProject._id,
+      state: { $in: ["queued", "processing"] },
+    });
 
     if (!job) {
       return res.status(404).json({
@@ -264,62 +260,7 @@ router.delete("/:filterId", async (req, res) => {
       });
     }
 
-    // Se ainda estiver em fila, cancelar imediatamente.
-    if (job.state === "queued") {
-      const cancelled = await VideoFilter.findOneAndUpdate(
-        {
-          _id: job._id,
-          state: "queued",
-          cancel_requested: true,
-        },
-        {
-          $set: {
-            state: "cancelled",
-            progress: 0,
-            reserved_bytes: 0,
-            error: "Video filter cancelled.",
-            finished_at: new Date(),
-          },
-        },
-        { new: true },
-      );
-
-      if (cancelled) {
-        // Libertar o espaço reservado para o resultado.
-        await releaseUploadReservation(
-          cancelled.user_id,
-          cancelled._id,
-        );
-
-        // Devolver a operação diária reservada.
-        if (cancelled.operation_reserved) {
-          try {
-            await axios.post(
-              `https://users:10001/${cancelled.user_id}/process/refund/1`,
-              {},
-              {
-                httpsAgent: usersHttpsAgent,
-                timeout: 10000,
-              },
-            );
-
-            await VideoFilter.updateOne(
-              { _id: cancelled._id },
-              { $set: { operation_reserved: false } },
-            );
-          } catch (refundError) {
-            console.error(
-              "Error refunding cancelled filter:",
-              refundError.message,
-            );
-          }
-        }
-      }
-    }
-
-    // Se estiver a processar, o serviço FFmpeg deteta
-    // o pedido de cancelamento e interrompe o trabalho.
-    const current = await VideoFilter.findById(job._id);
+    const current = await cancelFilterJob(job);
 
     return res.status(202).json({
       _id: current._id,

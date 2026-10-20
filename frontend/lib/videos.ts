@@ -532,13 +532,13 @@ export async function fetchSubtitlesVtt({
   return response.data;
 }
 
-// Cancelar todos os pedidos de legendas ativos da conta (usado no logout)
-export async function cancelActiveSubtitles({
+// Cancelar todos os pedidos de vídeo ativos da conta (usado no logout)
+export async function cancelActiveVideoJobs({
   uid,
   token,
 }: AccountRequest): Promise<{ cancelled: number }> {
   const response = await api.post<{ cancelled: number }>(
-    `/videos/${encodeURIComponent(uid)}/subtitles/cancel-active`,
+    `/videos/${encodeURIComponent(uid)}/jobs/cancel-active`,
     {},
     // Timeout curto para não atrasar o logout
     { headers: authHeaders(token), timeout: 5000 },
