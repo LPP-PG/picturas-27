@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -152,6 +153,7 @@ const [mediaType, setMediaType] = useState<"image" | "video">(
   const [capacity, setCapacity] = useState<VideoCapacity | null>(null);
   const [capacityError, setCapacityError] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [skipIneligibleOpen, setSkipIneligibleOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   const videosRef = useRef<SelectedVideo[]>([]);
@@ -777,7 +779,7 @@ async function refreshProjects() {
     );
   }
 
-  async function handleCreate() {
+  async function handleCreate(skipIneligible = false) {
     if (busy || !name.trim()) return;
     setError("");
 
@@ -822,13 +824,9 @@ async function refreshProjects() {
       (item) => !item.eligible,
     );
 
-    if (
-      rejected.length > 0 &&
-      !window.confirm(
-        `${rejected.length} file(s) are not eligible. ` +
-          `Upload only the ${pending.length} eligible files?`,
-      )
-    ) {
+    // Pedir confirmação antes de ignorar os ficheiros não elegíveis
+    if (rejected.length > 0 && !skipIneligible) {
+      setSkipIneligibleOpen(true);
       return;
     }
 
@@ -854,6 +852,11 @@ async function refreshProjects() {
       await refreshCapacity();
     }
   }
+
+  const ineligibleCount = videos.filter((item) => !item.eligible).length;
+  const eligibleCount = videos.filter(
+    (item) => item.state === "waiting" && item.eligible && !item.checking,
+  ).length;
 
   const hasCompleted = videos.some(
     (item) => item.state === "completed",
@@ -1249,6 +1252,33 @@ async function refreshProjects() {
                   : "Create project"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={skipIneligibleOpen}
+        onOpenChange={setSkipIneligibleOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Some files are not eligible</DialogTitle>
+            <DialogDescription>
+              {ineligibleCount} file(s) cannot be uploaded and will be skipped.
+              Upload only the {eligibleCount} eligible file(s)?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setSkipIneligibleOpen(false);
+                void handleCreate(true);
+              }}
+            >
+              Upload eligible files
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

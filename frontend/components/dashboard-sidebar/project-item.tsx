@@ -1,3 +1,4 @@
+import axios from "axios";
 import Link from "next/link";
 import {
   SidebarMenuAction,
@@ -42,6 +43,8 @@ export default function ProjectItem({ p }: { p: Project }) {
   const [open, setOpen] = useState<boolean>(false);
   const [option, setOption] = useState<"rename" | "delete">("rename");
   const [newName, setNewName] = useState<string>(p.name);
+  // Projeto com pedidos de vídeo em curso: não pode ser eliminado
+  const [blockedOpen, setBlockedOpen] = useState(false);
 
   const session = useSession();
   const qc = useQueryClient();
@@ -68,15 +71,24 @@ export default function ProjectItem({ p }: { p: Project }) {
 
   useEffect(() => {
     if (deleteProject.isError) {
-      const { title, description } = getErrorMessage(
-        "project-delete",
-        deleteProject.error,
-      );
-      toast({
-        title,
-        description,
-        variant: "destructive",
-      });
+      const error = deleteProject.error;
+
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.data?.error_code === "busy_delete"
+      ) {
+        setBlockedOpen(true);
+      } else {
+        const { title, description } = getErrorMessage(
+          "project-delete",
+          error,
+        );
+        toast({
+          title,
+          description,
+          variant: "destructive",
+        });
+      }
       deleteProject.reset();
     }
 
@@ -185,6 +197,21 @@ export default function ProjectItem({ p }: { p: Project }) {
             >
               {option === "rename" ? "Save" : "Permanently Delete"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={blockedOpen} onOpenChange={setBlockedOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Project cannot be deleted</DialogTitle>
+            <DialogDescription>
+              This project cannot be removed because one or more video
+              processing requests are in progress. Cancel the active requests
+              and try again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setBlockedOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

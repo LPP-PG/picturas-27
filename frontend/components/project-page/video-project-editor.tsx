@@ -65,8 +65,14 @@ const SUBTITLE_LANGUAGE_NAMES: Record<string, string> = {
   fr: "French",
 };
 
-const REPLACE_SUBTITLES_MESSAGE =
-  "This video already has subtitles. They will be replaced only if the new generation completes. Continue?";
+
+// O vídeo está a ser usado por um pedido: o aviso aparece num diálogo
+function isBusyDeleteError(error: unknown): boolean {
+  return (
+    axios.isAxiosError(error) &&
+    error.response?.data?.error_code === "busy_delete"
+  );
+}
 
 function errorMessage(
   error: unknown,
@@ -108,6 +114,7 @@ export default function VideoProjectEditor({
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
   const manualSelectionRef = useRef<string | null>(null);
   const [deleteVideo, setDeleteVideo] = useState<ProjectVideo | null>(null);
+  const [replaceSubtitlesOpen, setReplaceSubtitlesOpen] = useState(false);
   const [blockedDeleteVideo, setBlockedDeleteVideo] =
     useState<ProjectVideo | null>(null);
 
@@ -471,12 +478,16 @@ export default function VideoProjectEditor({
     resetStartFilter();
   }, [selected?._id, resetStartSubtitles, resetStartFilter]);
 
-  function generateSubtitles() {
+  function generateSubtitles(confirmed = false) {
     if (!selected || startSubtitles.isPending || subtitleActive) return;
-    if (selected.has_subtitles && !window.confirm(REPLACE_SUBTITLES_MESSAGE)) {
+
+    // Pedir confirmação antes de substituir legendas existentes
+    if (selected.has_subtitles && !confirmed) {
+      setReplaceSubtitlesOpen(true);
       return;
     }
 
+    setReplaceSubtitlesOpen(false);
     startSubtitles.mutate({
       videoId: selected._id,
       language: "en",
@@ -552,10 +563,7 @@ export default function VideoProjectEditor({
       await queryClient.invalidateQueries();
     },
     onError: (error, deletedVideo) => {
-      if (
-        axios.isAxiosError(error) &&
-        error.response?.data?.error_code === "busy_delete"
-      ) {
+      if (isBusyDeleteError(error)) {
         setDeleteVideo(null);
         setBlockedDeleteVideo(deletedVideo);
       }
@@ -696,6 +704,28 @@ export default function VideoProjectEditor({
           </div>
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={replaceSubtitlesOpen}
+        onOpenChange={setReplaceSubtitlesOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Replace subtitles?</DialogTitle>
+            <DialogDescription>
+              This video already has subtitles. They will be replaced only if
+              the new generation completes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button
+              disabled={startSubtitles.isPending}
+              onClick={() => generateSubtitles(true)}
+            >
+              Generate subtitles
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <header className="flex items-center gap-3 border-b p-4">
         <SidebarTrigger
           variant="outline"
@@ -720,7 +750,7 @@ export default function VideoProjectEditor({
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        {deletion.isError && (
+        {deletion.isError && !isBusyDeleteError(deletion.error) && (
           <p role="alert" className="mb-4 text-sm text-red-500">
             {errorMessage(
               deletion.error,
@@ -1045,7 +1075,7 @@ export default function VideoProjectEditor({
             type="button"
             size="sm"
             disabled={startSubtitles.isPending || subtitleActive}
-            onClick={generateSubtitles}
+            onClick={() => generateSubtitles()}
           >
             {startSubtitles.isPending ? "Starting…" : "Generate subtitles"}
           </Button>
