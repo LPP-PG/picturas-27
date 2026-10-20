@@ -122,6 +122,7 @@ O recorte temporal permite ao utilizador reduzir um vídeo longo ao excerto que 
 | A11 | Todos os vídeos de um projeto de vídeo estão em MP4 ou MOV e dentro dos limites do perfil, verificados no carregamento (UC-VID-004, RN3 e RN4). O recorte não repete estas verificações |
 | A12 | A reprodução depende dos codecs suportados pelo navegador (UC-VID-004, A7). Assume-se que o resultado do recorte mantém os codecs do original, pelo que é reproduzível nos mesmos navegadores |
 | A13 | O limite de pedidos de processamento de vídeo em simultâneo é global à conta e partilhado pelas ferramentas Recorte, Filtros e Legendas, e independente dos carregamentos (UC-VID-004, RN10 e Q7). Confirmado nos casos de uso das outras ferramentas (UC-VID-002, RN7; UC-VID-003, RN11) |
+| A14 | A interface é apresentada em inglês; as mensagens e os nomes de botões, ferramentas, filtros e estados indicados neste documento são o seu equivalente em português. |
 
 ### 2.8 Questões em Aberto
 
@@ -299,6 +300,7 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | A11 | Assunção: vídeos já validados no carregamento. Sem requisito neste caso de uso: coberto por UC-VID-004 (REQ-VID-UPLOAD-011 a 013) | — |
 | A12 | Assunção: o resultado mantém os codecs do original | REQ-VID-TRIM-042 |
 | A13 | Assunção: limite de pedidos de processamento de vídeo em simultâneo global à conta | REQ-VID-TRIM-011, REQ-VID-TRIM-025, REQ-VID-TRIM-026 |
+| A14 | Interface em inglês. Delimitação da apresentação; não origina um requisito autónomo | — |
 | UC-VID-004 – RN7 | Reserva e ocupação de espaço, incluindo resultados editados | REQ-VID-TRIM-037, REQ-VID-TRIM-040 |
 | UC-VID-004 – RN8 | Miniatura automática de cada vídeo | REQ-VID-TRIM-036 |
 | UC-VID-004 – RN9 | Vídeo só disponível depois de guardado, com miniatura, e associado ao projeto | REQ-VID-TRIM-036 |

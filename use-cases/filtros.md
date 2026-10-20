@@ -150,6 +150,7 @@ Para definir os efeitos sem depender já de um programa específico, considere o
 | A13 | Os vídeos filtrados permanecem no projeto até serem eliminados pelo utilizador, sem expiração automática no MVP. |
 | A14 | Os efeitos Inversão de cores, Contraste elevado e Desfoque suave são funcionalidades adicionais («Deveria ter»), podendo ser desenvolvidas depois dos três efeitos essenciais; o editor só apresenta os filtros disponíveis. |
 | A15 | Cada filtro corresponde ao *preset* fixo e reproduzível definido em RN14. A compressão com perdas pode criar pequenas diferenças entre os fotogramas produzidos e os fotogramas de referência, sem alterar a natureza do efeito. |
+| A16 | A interface é apresentada em inglês; as mensagens e os nomes de botões, ferramentas, filtros e estados indicados neste documento são o seu equivalente em português. |
 
 ### 2.8 Questões em Aberto
 

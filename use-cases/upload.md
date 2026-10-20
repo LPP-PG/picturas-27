@@ -126,6 +126,7 @@ Esta base é necessária para Recorte, Filtros e Legendas. O carregamento não c
 | A7 | A reprodução depende dos codecs suportados pelo navegador. Aceitar um contentor MP4 ou MOV não garante que todos os seus codecs sejam reproduzíveis; este caso não impõe conversão automática do original. |
 | A8 | No MVP não se impõem limites de resolução nem de taxa de fotogramas aos vídeos carregados, para além dos limites de duração e tamanho de RN4. Os codecs só condicionam a reprodução (A7). |
 | A9 | A classificação dos requisitos como NOVO ou ALT (4.1) e do impacto como Manter, Estender ou Alterar (4.2) parte da documentação existente do PictuRAS (projetos, New Project, armazenamento e perfis) e deve ser confirmada no código antes da implementação. ALT indica que o requisito modifica um comportamento ou uma regra que já existe. |
+| A10 | A interface é apresentada em inglês; as mensagens e os nomes de botões, ferramentas, filtros e estados indicados neste documento são o seu equivalente em português. |
 
 ### 2.8 Questões em Aberto
 
@@ -296,4 +297,5 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | A7 | Compatibilidade de reprodução | REQ-VID-UPLOAD-031, REQ-VID-UPLOAD-032, REQ-VID-UPLOAD-041 |
 | A8 | Sem limites de resolução nem de fotogramas por segundo no MVP | Sem requisito novo: assunção de âmbito; ver Q9. |
 | A9 | Critério de classificação NOVO/ALT e Manter/Estender/Alterar | Sem requisito: assunção de método; confirmar no código. |
+| A10 | Interface em inglês. Delimitação da apresentação; não origina um requisito autónomo | — |
 | Q1 a Q9 | Questões em aberto; Q1, Q4 e Q6 parcialmente decididas e Q7 decidida noutros casos de uso | Não originam requisitos neste caso de uso enquanto não forem resolvidas. |
