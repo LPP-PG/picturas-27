@@ -7,8 +7,8 @@
 | :-- | :-- |
 | **Grupo / Equipa** | Grupo 5 PL1 |
 | **Autores** | Eduarda Ferreira PG65368; Luana Vilaverde PG65367; Daniel Rodrigues PG63934; Lucas Pinto PG63997 |
-| **Data** | 2026-10-18 |
-| **Versão do documento** | v2.1 |
+| **Data** | 2026-10-20 |
+| **Versão do documento** | v2.2 |
 | **Unidade Curricular** | Requisitos e Arquiteturas de Software — MEI, Universidade do Minho |
 
 ---
@@ -34,9 +34,9 @@ A aplicação de filtros permite transformar o aspeto de um vídeo diretamente n
 | :-- | :-- |
 | **ID do Caso de Uso** | UC-VID-002 |
 | **Nome** | Aplicar um filtro a um vídeo de um projeto |
-| **Versão** | v2.0 |
+| **Versão** | v2.1 |
 | **Autor** | Eduarda Ferreira; Luana Vilaverde; Daniel Rodrigues; Lucas Pinto |
-| **Data** | 2026-10-17 |
+| **Data** | 2026-10-20 |
 | **Objetivo** | Obter, no mesmo projeto, um novo vídeo com um filtro visual aplicado a todos os fotogramas, sem modificar o original. |
 | **Âmbito** | Ferramenta Filtros do editor de projetos de vídeo: seleção do efeito, pré-visualização, confirmação, processamento em segundo plano, reserva de armazenamento, criação do resultado e quota de operações. O carregamento, a listagem e o leitor dos vídeos são responsabilidade do UC-VID-004. |
 | **Ator Principal** | Utilizador Registado. O Premium segue o mesmo fluxo com os limites do seu perfil. |
@@ -55,7 +55,7 @@ A aplicação de filtros permite transformar o aspeto de um vídeo diretamente n
 | 5 | — | Cria o pedido no estado **A aguardar**. |
 | 6 | — | Inicia o processamento, altera o estado para **A processar** e mostra progresso em percentagem. |
 | 7 | Acompanha o pedido e pode utilizar outras páginas ou projetos. | Mantém o processamento em segundo plano e atualiza o progresso e o estado. |
-| 8 | — | Aplica o filtro a todos os fotogramas; preserva e mantém sincronizada a faixa de áudio principal, **quando existe**. Em vídeos sem áudio, gera normalmente um resultado sem áudio. Gera a miniatura, guarda o novo vídeo no **mesmo projeto** e converte a reserva em espaço ocupado. |
+| 8 | — | Aplica o filtro a todos os fotogramas; preserva e mantém sincronizada a faixa de áudio principal, **quando existe**. Em vídeos sem áudio, gera normalmente um resultado sem áudio. Gera a miniatura, copia as legendas do original quando existem (RN17), guarda o novo vídeo no **mesmo projeto** e converte a reserva em espaço ocupado. |
 | 9 | — | Altera o pedido para **Concluído**, contabiliza uma operação na quota diária quando aplicável e notifica o utilizador na aplicação. |
 | 10 | Seleciona a miniatura do resultado. | Apresenta o vídeo filtrado no leitor do projeto; o original permanece inalterado. |
 
@@ -87,7 +87,7 @@ A aplicação de filtros permite transformar o aspeto de um vídeo diretamente n
 
 | **Tipo** | **Resultado** |
 | :-- | :-- |
-| Garantia de Sucesso | O mesmo projeto contém um **novo vídeo** com o filtro escolhido aplicado e miniatura gerada; o áudio principal é preservado e sincronizado **se existir**. O original está intacto; o pedido está **Concluído**, o espaço efetivo é contabilizado no projeto/conta e é cobrada uma operação quando aplicável. |
+| Garantia de Sucesso | O mesmo projeto contém um **novo vídeo** com o filtro escolhido aplicado e miniatura gerada; o áudio principal é preservado e sincronizado **se existir**, e as legendas do original são copiadas quando existem e cabem no espaço livre (RN17). O original está intacto; o pedido está **Concluído**, o espaço efetivo é contabilizado no projeto/conta e é cobrada uma operação quando aplicável. |
 | Garantia Mínima | O original e os vídeos anteriormente concluídos permanecem inalterados; não há resultado parcial acessível no projeto. Se o pedido falhou ou foi cancelado, reservas são libertadas e a quota não é consumida; é apresentada a causa quando aplicável. |
 
 ### 2.6 Regras de Negócio e Restrições
@@ -110,6 +110,7 @@ A aplicação de filtros permite transformar o aspeto de um vídeo diretamente n
 | RN14 | **Especificação dos presets:** operações sobre valores RGB normalizados no intervalo [0, 1], com corte final a esse intervalo quando necessário, conforme a tabela seguinte. A implementação pode usar diferentes ferramentas de processamento desde que reproduza um efeito visual equivalente. |
 | RN15 | A pré-visualização representa o filtro escolhido num **fotograma de amostra** do vídeo do projeto, sem criar um novo vídeo nem consumir uma operação da quota. Pode ter resolução reduzida; o resultado final usa o vídeo completo. Deve ser visualmente coerente com o efeito aplicado (A4), embora diferenças de compressão sejam admissíveis. |
 | RN16 | O resultado é disponibilizado em **MP4**, com vídeo **H.264** e, quando existe faixa de áudio principal, áudio **AAC**. Mantém a duração, a resolução e a taxa de fotogramas da entrada sempre que forem compatíveis com a codificação de saída; o vídeo resultante deve reproduzir-se nos navegadores de referência do projeto. |
+| RN17 | Quando o vídeo original tem legendas (UC-VID-003), o resultado do filtro recebe uma cópia dessas legendas, no mesmo idioma e com os mesmos instantes, porque o filtro não altera a duração do vídeo. A cópia é independente das legendas do original e conta para o espaço do projeto e da conta. Se a cópia falhar ou não houver espaço livre suficiente, o resultado é guardado sem legendas e o pedido de filtro não falha por isso (UC-VID-003, RN16). |
 
 **Catálogo de filtros e presets (RN11 e RN14)**
 
@@ -178,7 +179,7 @@ As questões seguintes dizem respeito a eventuais evoluções posteriores e não
 ## 4. Especificação de Requisitos do Sistema (ERS)
 
 **Caso de Uso:** UC-VID-002 — Aplicar um filtro a um vídeo de um projeto  
-**Versão do dossiê:** v2.0  
+**Versão do dossiê:** v2.2  
 **Baseline do Exercício 1:** `filtros.md` v1.0 (IDs `REQ-VID-FILT-001` a `REQ-VID-FILT-042`). São preservados os IDs cuja intenção não mudou; os retirados não são reutilizados. Novos IDs `043`–`053` documentam aspetos complementares. Os efeitos adicionais correspondem a `050`–`052`.
 
 ### 4.1 Requisitos da ERS
@@ -261,6 +262,7 @@ As questões seguintes dizem respeito a eventuais evoluções posteriores e não
 | Gestão de pedidos de processamento | Estender | Novo tipo de pedido assíncrono; estados, progresso, simultaneidade global com Recorte e Legendas, cancelamento. | REQ-VID-FILT-017, REQ-VID-FILT-018, REQ-VID-FILT-019, REQ-VID-FILT-020, REQ-VID-FILT-021, REQ-VID-FILT-022, REQ-VID-FILT-023, REQ-VID-FILT-024, REQ-VID-FILT-025, REQ-VID-FILT-026, REQ-VID-FILT-036, REQ-VID-FILT-037, REQ-VID-FILT-038, REQ-VID-FILT-039, REQ-VID-FILT-040 |
 | Armazenamento e miniaturas | Estender | Reserva espaço no projeto e conta; resultado conta para limites definidos em UC-VID-004 e gera miniatura. | REQ-VID-FILT-031, REQ-VID-FILT-040, REQ-VID-FILT-043, REQ-VID-FILT-045 |
 | Ferramentas de imagem / serviços existentes | Estender | A nova ferramenta de vídeo poderá reutilizar tecnologia existente, sem obrigar a modificar as ferramentas de imagem. Os três efeitos essenciais e os três adicionais partilham um mecanismo de transformação baseado nos presets RN14. | REQ-VID-FILT-012, REQ-VID-FILT-027, REQ-VID-FILT-048, REQ-VID-FILT-049, REQ-VID-FILT-050 a REQ-VID-FILT-052 |
+| Legendas dos vídeos (UC-VID-003) | Estender | O resultado de um filtro recebe uma cópia das legendas do original, quando existem e há espaço livre; sem legendas, ou se a cópia falhar, o resultado é guardado sem elas (RN17). | REQ-VID-LEG-044 (UC-VID-003) |
 | Projetos de imagens, lote e encadeamento | Manter | Projetos de imagens continuam isolados; sem lote nem encadeamento automático de filtros neste âmbito. | RN1, RN5; UC-VID-004 RN1, RN14 |
 
 ### 4.3 Matriz de Rastreabilidade Atualizada
@@ -291,6 +293,7 @@ As questões seguintes dizem respeito a eventuais evoluções posteriores e não
 | DQ-004 | Tempo de confirmação do pedido | REQ-VID-FILT-046 |
 | DQ-005 | Áudio e compatibilidade do resultado | REQ-VID-FILT-028, REQ-VID-FILT-047 |
 | DQ-006 | Isolamento da ferramenta e implantação | REQ-VID-FILT-048, REQ-VID-FILT-049 |
+| RN17 | Cópia das legendas do original para o resultado | REQ-VID-LEG-044 (UC-VID-003) |
 | RN11 / RN14 | Catálogo de efeitos e parâmetros fixos | REQ-VID-FILT-012, REQ-VID-FILT-050, REQ-VID-FILT-051, REQ-VID-FILT-052 |
 
 **Decisões de qualidade introduzidas nesta versão**
