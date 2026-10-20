@@ -103,7 +103,7 @@ function runFfmpeg(
       clearInterval(cancelTimer);
       if (code === 0) return resolve();
       if (shouldCancel()) {
-        const error = new Error("Recorte cancelado.");
+        const error = new Error("Video trim cancelled.");
         error.name = "AbortError";
         return reject(error);
       }
