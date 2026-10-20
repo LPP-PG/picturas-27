@@ -9,6 +9,7 @@ const Video = require("../models/video");
 const VideoTrim = require("../models/videoTrim");
 const Project = require("../models/project");
 const { generateVideoThumbnail } = require("./videoThumbnail");
+const { userError, failureMessage } = require("./videoMessages");
 const {
   get_image_internal_url,
   post_image,
@@ -138,7 +139,7 @@ async function processTrim(jobId, authorization, userType) {
       user_id: current.user_id,
       project_id: current.project_id,
     });
-    if (!source) throw new Error("The original video is no longer available.");
+    if (!source) throw userError("The original video is no longer available.");
 
     sourcePath = path.join(require("node:os").tmpdir(), `${job._id}.trim-source`);
     outputPath = path.join(
@@ -187,7 +188,7 @@ async function processTrim(jobId, authorization, userType) {
       });
       if (outputSize - current.reserved_bytes > capacity.account_available_bytes ||
           outputSize - current.reserved_bytes > capacity.project_available_bytes) {
-        throw new Error("Insufficient storage space.");
+        throw userError("Insufficient storage space.");
       }
     }
     await VideoTrim.updateOne({ _id: job._id }, { $set: { progress: 65 } });
@@ -267,6 +268,7 @@ async function processTrim(jobId, authorization, userType) {
     );
   } catch (error) {
     const cancelled = error.name === "AbortError";
+    if (!cancelled) console.error("Erro no processamento do recorte:", error.message);
     if (job.operation_reserved) {
       try {
         await axios.post(
@@ -286,7 +288,9 @@ async function processTrim(jobId, authorization, userType) {
           progress: cancelled ? 0 : job.progress,
           reserved_bytes: 0,
           operation_reserved: false,
-          error: error.message,
+          error: cancelled
+            ? "Video trim cancelled."
+            : failureMessage(error, "The video could not be trimmed. Please try again."),
           finished_at: new Date(),
         },
       },

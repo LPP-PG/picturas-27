@@ -9,6 +9,7 @@ const axios = require("axios");
 const { get_image_internal_url } = require("./imageStorage");
 const { readVideoMetadata } = require("./videoMetadata");
 const { processVideoFilter } = require("./videoFilterFfmpeg");
+const { userError } = require("./videoMessages");
 
 async function prepareFilteredVideo(
   video,
@@ -39,7 +40,7 @@ async function prepareFilteredVideo(
     );
 
     if (!response.data?.url) {
-      throw new Error("Video source is unavailable.");
+      throw userError("Video source is unavailable.");
     }
 
     // Descarregar uma cópia temporária

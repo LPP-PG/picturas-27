@@ -7,6 +7,7 @@ const Video = require("../models/video");
 const VideoFilter = require("../models/videoFilter");
 const { prepareFilteredVideo } = require("./videoFilterProcessing");
 const { saveFilteredVideo } = require("./videoFilterStorage");
+const { failureMessage } = require("./videoMessages");
 const {
   releaseUploadReservation,
 } = require("./videoReservations");
@@ -137,6 +138,7 @@ async function processFilterJob(jobId, authorization) {
     );
   } catch (error) {
     const cancelled = error.name === "AbortError";
+    if (!cancelled) console.error("Error processing video filter:", error.message);
 
     // Devolver a operação reservada em caso de falha.
     let refunded = false;
@@ -167,7 +169,9 @@ async function processFilterJob(jobId, authorization) {
           state: cancelled ? "cancelled" : "failed",
           reserved_bytes: 0,
           ...(refunded ? { operation_reserved: false } : {}),
-          error: error.message,
+          error: cancelled
+            ? "Video filter cancelled."
+            : failureMessage(error, "The video filter could not be applied. Please try again."),
           finished_at: new Date(),
         },
       },
