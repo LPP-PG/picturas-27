@@ -194,9 +194,10 @@ if (
       });
     }
 
+    // Mostrar a causa quando é conhecida (ex.: reserva de espaço recusada)
     if (!res.headersSent) {
       return res.status(error.status || 503).json({
-        error: "Could not start video filter.",
+        error: error.status ? error.message : "Could not start video filter.",
       });
     }
   }
