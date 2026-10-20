@@ -146,19 +146,19 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 
 ### 2.8 Questões em Aberto
 
-|**ID**|**Questão**|
-|---|---|
-|**Q3**|Deve o utilizador poder editar manualmente o texto das legendas depois da geração?|
-|**Q4**|Deve ser possível alterar manualmente os instantes inicial e final de cada segmento?|
-|**Q5**|Deve ser possível exportar as legendas para formatos como SRT ou WebVTT?|
-|**Q6**|Deve existir uma opção para incorporar permanentemente as legendas na imagem do vídeo?|
-|**Q7**|Deve uma versão futura suportar vídeos em que são utilizados vários idiomas?|
-|**Q8**|Deve o sistema conseguir identificar diferentes pessoas a falar no mesmo vídeo?|
-|**Q9**|Deve existir uma funcionalidade separada para traduzir automaticamente as legendas, por exemplo para legendar em inglês vídeos falados noutros idiomas?|
-|**Q11**|No sistema existente, as funcionalidades com IA são uma vantagem do perfil Premium. A geração de legendas, que usa reconhecimento de fala, deve estar disponível para o perfil Registado ou apenas para o Premium?|
-|**Q12**|A restrição R5 do sistema existente limita as operações com IA a 60 s de tempo de resposta médio. Como se aplica a vídeos Premium com até 10 min, cuja transcrição pode demorar mais? O alvo MVP de processamento está fixado na DQ-002 (REQ-VID-LEG-062); falta decidir o alvo face à R5 em produção|
-|**Q15**|Quando um vídeo com legendas é recortado (UC-VID-001), o novo vídeo deve herdar as legendas do intervalo, com os instantes ajustados, ou fica sem legendas (UC-VID-001, Q6)? No caso dos Filtros a questão está decidida na RN16|
-|**Q16**|Deve ser reservado espaço para as legendas na confirmação, como no recorte (UC-VID-001, A7), ou basta verificar o espaço na confirmação e ao guardar (A12)? Relacionado com UC-VID-004, Q1|
+|**ID**|**Questão**|**Resolução**|
+|---|---|---|
+|**Q3**|Deve o utilizador poder editar manualmente o texto das legendas depois da geração?|Adiada para uma fase posterior. No MVP as legendas são apenas geradas automaticamente; o utilizador só pode voltar a gerá-las (FA7, RN14)|
+|**Q4**|Deve ser possível alterar manualmente os instantes inicial e final de cada segmento?|Adiada para uma fase posterior, pelo mesmo motivo da Q3: no MVP os instantes resultam apenas do reconhecimento de fala (RN5, RN6)|
+|**Q5**|Deve ser possível exportar as legendas para formatos como SRT ou WebVTT?|Decidida para o MVP: não há exportação. O WebVTT é usado apenas pelo leitor do editor (RN5, DQ-005); a exportação fica para uma fase posterior|
+|**Q6**|Deve existir uma opção para incorporar permanentemente as legendas na imagem do vídeo?|Adiada para uma fase posterior. Incorporar as legendas obrigaria a reprocessar o vídeo e a criar um novo ficheiro de vídeo; no MVP as legendas ficam separadas do vídeo (RN8)|
+|**Q7**|Deve uma versão futura suportar vídeos em que são utilizados vários idiomas?|Adiada para uma fase posterior. No MVP o vídeo é falado num único idioma, o inglês (RN4, A3)|
+|**Q8**|Deve o sistema conseguir identificar diferentes pessoas a falar no mesmo vídeo?|Adiada para uma fase posterior. A identificação de oradores não faz parte do MVP e o modelo usado (A14) não a disponibiliza|
+|**Q9**|Deve existir uma funcionalidade separada para traduzir automaticamente as legendas, por exemplo para legendar em inglês vídeos falados noutros idiomas?|Adiada para uma fase posterior, como funcionalidade separada. No MVP o sistema nunca traduz o conteúdo falado (RN4, Exceção 8)|
+|**Q11**|No sistema existente, as funcionalidades com IA são uma vantagem do perfil Premium. A geração de legendas, que usa reconhecimento de fala, deve estar disponível para o perfil Registado ou apenas para o Premium?|Decidida: a ferramenta está disponível para os perfis Registado e Premium (Secção 1, Ator Principal, RN2). O Registado fica limitado pela quota diária (RN7) e pelos limites de carregamento do UC-VID-004 (RN4)|
+|**Q12**|A restrição R5 do sistema existente limita as operações com IA a 60 s de tempo de resposta médio. Como se aplica a vídeos Premium com até 10 min, cuja transcrição pode demorar mais? O alvo MVP de processamento está fixado na DQ-002 (REQ-VID-LEG-062); falta decidir o alvo face à R5 em produção|Parcialmente decidida: no MVP aplica-se o alvo da DQ-002 (REQ-VID-LEG-062). A compatibilização com a R5 e o RNF43 da baseline em produção fica para a Fase 2, dedicada aos aspetos não funcionais|
+|**Q15**|Quando um vídeo com legendas é recortado (UC-VID-001), o novo vídeo deve herdar as legendas do intervalo, com os instantes ajustados, ou fica sem legendas (UC-VID-001, Q6)? No caso dos Filtros a questão está decidida na RN16|Decidida para o MVP: o resultado de um recorte não herda as legendas do original (é o comportamento implementado); o utilizador pode gerar legendas para o vídeo recortado. A herança com os instantes ajustados fica para uma fase posterior, em articulação com o UC-VID-001 (Q6)|
+|**Q16**|Deve ser reservado espaço para as legendas na confirmação, como no recorte (UC-VID-001, A7), ou basta verificar o espaço na confirmação e ao guardar (A12)? Relacionado com UC-VID-004, Q1|Decidida na A12: não se reserva espaço; o espaço é verificado na confirmação, com uma estimativa, e ao guardar, com o tamanho real (REQ-VID-LEG-029 e 041)|
 
 <!--
 **Questões retiradas na v1.1** (os IDs não serão reutilizados):
@@ -371,7 +371,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | DQ-004 | Legendas sem expiração automática e só acessíveis pela API autenticada | REQ-VID-LEG-064 |
 | DQ-005 | Formato WebVTT e compatibilidade com os navegadores | REQ-VID-LEG-052, 065 |
 | DQ-006 | Ferramentas de vídeo independentes e implantação sem passos manuais | REQ-VID-LEG-066, 067 |
-| Q3–Q16 | Questões em aberto (Q1, Q2, Q10, Q13 e Q14 retiradas). Não originam requisitos enquanto não forem decididas e incorporadas no caso de uso | — |
+| Q3–Q16 | Questões com resolução na 2.8 (Q1, Q2, Q10, Q13 e Q14 retiradas). As adiadas não originam requisitos; a Q16 é concretizada pela A12 e as Q5, Q11 e Q15 confirmam comportamentos já cobertos, sem requisitos novos | REQ-VID-LEG-029, 041 (Q16) |
 
 **Decisões de qualidade**
 
