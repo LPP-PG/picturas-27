@@ -76,19 +76,24 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 |**FA9 – Vídeo retirado do projeto**|No passo 5, o vídeo já não pertence ao projeto (por exemplo, foi eliminado noutro separador). O sistema não cria o pedido e informa que o vídeo não foi encontrado no projeto|
 |**FA10 – Cancelamento tardio**|O utilizador seleciona **Cancelar** depois de as novas legendas já terem sido associadas ao vídeo (passo 10). O cancelamento já não tem efeito: o pedido termina em **Concluído** e a operação fica contabilizada|
 
+<!--
+**Fluxos retirados** (os IDs não serão reutilizados):
+- v1.3 — FA2 (deteção automática inconclusiva): com o MVP só em inglês deixou de haver deteção automática do idioma; o caso de confiança insuficiente passou a ser tratado no FA1.
+-->
+
 ### 2.4 Exceções
 
-|**Condição**|**Comportamento do Sistema**|
-|---|---|
-|O vídeo não contém uma faixa de áudio (passo 2)|Apresenta **"Não foi encontrada uma faixa de áudio neste vídeo"** e não permite iniciar a geração de legendas|
-|A quota diária de operações está esgotada (passos 2 e 5)|Apresenta **"Atingiu o limite diário de operações"**, indica quando a quota será reposta e não cria o pedido|
-|Não é detetada fala reconhecível no áudio (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Não foi possível identificar fala neste vídeo"**, não cria legendas e não contabiliza a operação|
-|O reconhecimento de fala falha durante o processamento (passo 8)|Passa o pedido para **Falhou**, elimina quaisquer legendas parciais, apresenta uma mensagem de erro e não contabiliza a operação|
-|O serviço de reconhecimento de fala está indisponível (passo 6)|Informa que o serviço está temporariamente indisponível, não cria o pedido e não contabiliza a operação|
-|O espaço livre no projeto ou na conta não chega para guardar as legendas (passo 5)|Apresenta **"Espaço de armazenamento insuficiente"** com o limite atingido (projeto ou conta), não cria o pedido e não contabiliza a operação|
-|Não existe espaço suficiente no projeto ou na conta para guardar as legendas no fim do processamento (passo 10)|Passa o pedido para **Falhou**, elimina qualquer resultado parcial, apresenta **"Espaço de armazenamento insuficiente"** e não contabiliza a operação|
-|A fala do vídeo está num idioma que não é o inglês (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Este vídeo não parece estar em inglês"**, não cria legendas e não contabiliza a operação. O sistema não traduz o conteúdo falado|
-|Não se sabe se o vídeo tem faixa de áudio (vídeo carregado antes desta funcionalidade) e, durante o processamento, verifica-se que não tem (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Não foi encontrada uma faixa de áudio neste vídeo"**, não cria legendas e não contabiliza a operação|
+|**ID**|**Condição**|**Comportamento do Sistema**|
+|---|---|---|
+|**Exceção 1**|O vídeo não contém uma faixa de áudio (passo 2)|Apresenta **"Não foi encontrada uma faixa de áudio neste vídeo"** e não permite iniciar a geração de legendas|
+|**Exceção 2**|A quota diária de operações está esgotada (passos 2 e 5)|Apresenta **"Atingiu o limite diário de operações"**, indica quando a quota será reposta e não cria o pedido|
+|**Exceção 3**|Não é detetada fala reconhecível no áudio (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Não foi possível identificar fala neste vídeo"**, não cria legendas e não contabiliza a operação|
+|**Exceção 4**|O reconhecimento de fala falha durante o processamento (passo 8)|Passa o pedido para **Falhou**, elimina quaisquer legendas parciais, apresenta uma mensagem de erro e não contabiliza a operação|
+|**Exceção 5**|O serviço de reconhecimento de fala está indisponível (passo 6)|Informa que o serviço está temporariamente indisponível, não cria o pedido e não contabiliza a operação|
+|**Exceção 6**|O espaço livre no projeto ou na conta não chega para guardar as legendas (passo 5)|Apresenta **"Espaço de armazenamento insuficiente"** com o limite atingido (projeto ou conta), não cria o pedido e não contabiliza a operação|
+|**Exceção 7**|Não existe espaço suficiente no projeto ou na conta para guardar as legendas no fim do processamento (passo 10)|Passa o pedido para **Falhou**, elimina qualquer resultado parcial, apresenta **"Espaço de armazenamento insuficiente"** e não contabiliza a operação|
+|**Exceção 8**|A fala do vídeo está num idioma que não é o inglês (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Este vídeo não parece estar em inglês"**, não cria legendas e não contabiliza a operação. O sistema não traduz o conteúdo falado|
+|**Exceção 9**|Não se sabe se o vídeo tem faixa de áudio (vídeo carregado antes desta funcionalidade) e, durante o processamento, verifica-se que não tem (passo 8)|Passa o pedido para **Falhou** com a mensagem **"Não foi encontrada uma faixa de áudio neste vídeo"**, não cria legendas e não contabiliza a operação|
 
 ### 2.5 Pós-condições
 
@@ -368,7 +373,7 @@ A geração automática de legendas permite tornar o conteúdo falado de um víd
 | DQ-006 | Ferramentas de vídeo independentes e implantação sem passos manuais | REQ-VID-LEG-066, 067 |
 | Q3–Q16 | Questões em aberto (Q1, Q2, Q10, Q13 e Q14 retiradas). Não originam requisitos enquanto não forem decididas e incorporadas no caso de uso | — |
 
-**Decisões de qualidade introduzidas nesta aula**
+**Decisões de qualidade**
 
 | **ID** | **Decisão de qualidade** | **Justificação** | **Requisito(s) relacionado(s)** |
 | :-- | :-- | :-- | :-- |
