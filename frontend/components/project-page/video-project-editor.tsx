@@ -112,6 +112,8 @@ export default function VideoProjectEditor({
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
   const manualSelectionRef = useRef<string | null>(null);
   const [deleteVideo, setDeleteVideo] = useState<ProjectVideo | null>(null);
+  const [blockedDeleteVideo, setBlockedDeleteVideo] =
+    useState<ProjectVideo | null>(null);
   // Pedidos de legendas vistos ativos e já notificados (um aviso por pedido)
   const activeSubtitleIdsRef = useRef(new Set<string>());
   const notifiedSubtitleIdsRef = useRef(new Set<string>());
@@ -591,6 +593,15 @@ export default function VideoProjectEditor({
       setDeleteVideo(null);
       await queryClient.invalidateQueries();
     },
+    onError: (error, deletedVideo) => {
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.data?.error_code === "busy_delete"
+      ) {
+        setDeleteVideo(null);
+        setBlockedDeleteVideo(deletedVideo);
+      }
+    },
   });
 
   function confirmDeletion() {
@@ -672,38 +683,58 @@ export default function VideoProjectEditor({
   return (
     <div className="flex h-full flex-col">
       <Dialog
-        open={deleteVideo !== null}
+        open={deleteVideo !== null || blockedDeleteVideo !== null}
         onOpenChange={(open) => {
           if (!open && !deletion.isPending) {
             setDeleteVideo(null);
+            setBlockedDeleteVideo(null);
           }
         }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Are you sure?</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone.
-              {deleteVideo && items.length === 1 && (
-                <span className="mt-2 block">
-                  This is the last video in the project, so this action will
-                  also delete the current project.
-                </span>
-              )}
-            </DialogDescription>
+            {blockedDeleteVideo ? (
+              <>
+                <DialogTitle>Video cannot be deleted</DialogTitle>
+                <DialogDescription>
+                  This video cannot be removed because one or more video
+                  processing requests are using it. Cancel the active request
+                  and try again.
+                </DialogDescription>
+              </>
+            ) : (
+              <>
+                <DialogTitle>Are you sure?</DialogTitle>
+                <DialogDescription>
+                  This action cannot be undone.
+                  {deleteVideo && items.length === 1 && (
+                    <span className="mt-2 block">
+                      This is the last video in the project, so this action
+                      will also delete the current project.
+                    </span>
+                  )}
+                </DialogDescription>
+              </>
+            )}
           </DialogHeader>
-          <div className="flex justify-end">
-            <Button
-              variant="destructive"
-              disabled={!deleteVideo || deletion.isPending}
-              onClick={() => {
-                if (deleteVideo) {
-                  deletion.mutate(deleteVideo);
-                }
-              }}
-            >
-              {deletion.isPending ? "Deleting…" : "Permanently Delete"}
-            </Button>
+          <div className="flex justify-end gap-2">
+            {blockedDeleteVideo ? (
+              <Button onClick={() => setBlockedDeleteVideo(null)}>
+                Close
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                disabled={!deleteVideo || deletion.isPending}
+                onClick={() => {
+                  if (deleteVideo) {
+                    deletion.mutate(deleteVideo);
+                  }
+                }}
+              >
+                {deletion.isPending ? "Deleting…" : "Permanently Delete"}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

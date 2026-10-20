@@ -134,7 +134,9 @@ router.post("/", async (req, res) => {
         quotaError.status = 429;
         throw quotaError;
       }
-      throw new Error("Could not confirm the daily operation quota.");
+      const unavailableError = new Error(videoMessages.unavailable);
+      unavailableError.status = 503;
+      throw unavailableError;
     }
 
     job = await VideoTrim.create({

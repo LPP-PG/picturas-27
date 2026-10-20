@@ -95,6 +95,13 @@ async function readVideoMetadata(filePath, { signal } = {}) {
     ),
     width: videoStream.width,
     height: videoStream.height,
+    frame_rate: (() => {
+      const [numerator, denominator] = String(
+        videoStream.avg_frame_rate || videoStream.r_frame_rate || "",
+      ).split("/");
+      const rate = Number(numerator) / Number(denominator);
+      return Number.isFinite(rate) && rate > 0 ? rate : null;
+    })(),
     video_bitrate: Number.isFinite(Number(videoStream.bit_rate))
       ? Number(videoStream.bit_rate)
       : Number(metadata.format?.bit_rate) || null,

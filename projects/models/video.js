@@ -78,6 +78,21 @@ const videoSchema = new mongoose.Schema(
       default: null,
     },
 
+    width: {
+      type: Number,
+      default: null,
+    },
+
+    height: {
+      type: Number,
+      default: null,
+    },
+
+    frame_rate: {
+      type: Number,
+      default: null,
+    },
+
     subtitles_key: {
       type: String,
       default: null,

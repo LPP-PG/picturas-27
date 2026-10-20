@@ -3,6 +3,7 @@
 const videoMessages = {
   quota: "You have reached the daily operations limit. It resets at midnight (UTC).",
   limit: "The simultaneous video-processing limit was reached.",
+  unavailable: "The video processing service is temporarily unavailable. Please try again later.",
   storage_project: "Insufficient storage space in the project.",
   storage_account: "Insufficient storage space in the account.",
 };
