@@ -15,11 +15,26 @@ const {
 } = require("../utils/videoReservations");
 const axios = require("axios");
 const https = require("node:https");
-const { processFilterJob } = require("../utils/videoFilterJob");
+const { processFilterJob, cancelFilterJob } = require("../utils/videoFilterJob");
+const { videoMessages, storageMessage } = require("../utils/videoMessages");
 
 const usersHttpsAgent = new https.Agent({
   rejectUnauthorized: false,
 });
+
+// Dados de um pedido de filtro enviados ao frontend
+function publicJob(job) {
+  return {
+    _id: job._id,
+    source_video_id: job.source_video_id,
+    result_video_id: job.result_video_id,
+    filter_name: job.filter_name,
+    state: job.state,
+    progress: job.progress,
+    cancel_requested: job.cancel_requested,
+    error: job.error,
+  };
+}
 
  // Iniciar a aplicação de um filtro
 router.post("/", async (req, res) => {
@@ -63,7 +78,7 @@ const activeCount = await countActiveVideoJobs(req.videoUser._id);
 
 if (activeCount >= maxActiveVideoJobs(req.videoUser.type)) {
   return res.status(429).json({
-    error: "The simultaneous video-processing limit was reached.",
+    error: videoMessages.limit,
   });
 }
 
@@ -86,7 +101,7 @@ if (
   estimatedBytes > capacity.project_available_bytes
 ) {
   return res.status(409).json({
-    error: "Insufficient storage space.",
+    error: storageMessage(estimatedBytes, capacity),
   });
 }
 
@@ -104,7 +119,7 @@ if (
     } catch (error) {
       if (error.response?.status === 701) {
         return res.status(429).json({
-          error: "No daily operations are available.",
+          error: videoMessages.quota,
         });
       }
 
@@ -135,15 +150,7 @@ if (
     });
 
     // Informar o frontend de que o pedido foi aceite.
-    res.status(202).json({
-      _id: job._id,
-      source_video_id: job.source_video_id,
-      result_video_id: job.result_video_id,
-      filter_name: job.filter_name,
-      state: job.state,
-      progress: job.progress,
-      error: job.error,
-    });
+    res.status(202).json(publicJob(job));
 
     // Iniciar o processamento em segundo plano.
     setImmediate(() => {
@@ -196,6 +203,34 @@ if (
 });
 
 
+// Consultar o pedido de filtro mais recente de um vídeo
+router.get("/", async (req, res) => {
+  try {
+    const videoId = req.query.video_id;
+
+    if (!mongoose.isObjectIdOrHexString(videoId)) {
+      return res.status(400).json({ error: "Invalid video ID." });
+    }
+
+    const job = await VideoFilter.findOne({
+      user_id: req.videoUser._id,
+      project_id: req.videoProject._id,
+      source_video_id: videoId,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.set("Cache-Control", "no-store");
+    res.json(job ? publicJob(job) : null);
+  } catch (error) {
+    console.error("Error fetching video filter:", error);
+
+    res.status(500).json({
+      error: "Could not retrieve video filter status.",
+    });
+  }
+});
+
 // Consultar o estado de um pedido de filtro
 router.get("/:filterId", async (req, res) => {
   try {
@@ -219,15 +254,7 @@ router.get("/:filterId", async (req, res) => {
 
     res.set("Cache-Control", "no-store");
 
-    res.json({
-      _id: job._id,
-      source_video_id: job.source_video_id,
-      result_video_id: job.result_video_id,
-      filter_name: job.filter_name,
-      state: job.state,
-      progress: job.progress,
-      error: job.error,
-    });
+    res.json(publicJob(job));
   } catch (error) {
     console.error("Error fetching video filter:", error);
 
@@ -247,16 +274,12 @@ router.delete("/:filterId", async (req, res) => {
     }
 
     // Só é possível cancelar pedidos em fila ou em processamento.
-    const job = await VideoFilter.findOneAndUpdate(
-      {
-        _id: req.params.filterId,
-        user_id: req.videoUser._id,
-        project_id: req.videoProject._id,
-        state: { $in: ["queued", "processing"] },
-      },
-      { $set: { cancel_requested: true } },
-      { new: true },
-    );
+    const job = await VideoFilter.findOne({
+      _id: req.params.filterId,
+      user_id: req.videoUser._id,
+      project_id: req.videoProject._id,
+      state: { $in: ["queued", "processing"] },
+    });
 
     if (!job) {
       return res.status(404).json({
@@ -264,70 +287,9 @@ router.delete("/:filterId", async (req, res) => {
       });
     }
 
-    // Se ainda estiver em fila, cancelar imediatamente.
-    if (job.state === "queued") {
-      const cancelled = await VideoFilter.findOneAndUpdate(
-        {
-          _id: job._id,
-          state: "queued",
-          cancel_requested: true,
-        },
-        {
-          $set: {
-            state: "cancelled",
-            progress: 0,
-            reserved_bytes: 0,
-            error: "Video filter cancelled.",
-            finished_at: new Date(),
-          },
-        },
-        { new: true },
-      );
+    const current = await cancelFilterJob(job);
 
-      if (cancelled) {
-        // Libertar o espaço reservado para o resultado.
-        await releaseUploadReservation(
-          cancelled.user_id,
-          cancelled._id,
-        );
-
-        // Devolver a operação diária reservada.
-        if (cancelled.operation_reserved) {
-          try {
-            await axios.post(
-              `https://users:10001/${cancelled.user_id}/process/refund/1`,
-              {},
-              {
-                httpsAgent: usersHttpsAgent,
-                timeout: 10000,
-              },
-            );
-
-            await VideoFilter.updateOne(
-              { _id: cancelled._id },
-              { $set: { operation_reserved: false } },
-            );
-          } catch (refundError) {
-            console.error(
-              "Error refunding cancelled filter:",
-              refundError.message,
-            );
-          }
-        }
-      }
-    }
-
-    // Se estiver a processar, o serviço FFmpeg deteta
-    // o pedido de cancelamento e interrompe o trabalho.
-    const current = await VideoFilter.findById(job._id);
-
-    return res.status(202).json({
-      _id: current._id,
-      state: current.state,
-      progress: current.progress,
-      cancel_requested: current.cancel_requested,
-      error: current.error,
-    });
+    return res.status(202).json(publicJob(current));
   } catch (error) {
     console.error("Error cancelling video filter:", error);
 

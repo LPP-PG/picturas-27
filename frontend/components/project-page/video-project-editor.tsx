@@ -12,7 +12,7 @@ import {
   fetchProjectVideos,
   startVideoTrim,
   startVideoFilter,
-  fetchVideoFilter,
+  fetchLatestVideoFilter,
   cancelVideoFilter,
   startVideoSubtitles,
   fetchLatestVideoSubtitles,
@@ -23,7 +23,6 @@ import {
   type ProjectVideo,
   type VideoTrimJob,
   type VideoFilterName,
-  type VideoFilterJob,
 } from "@/lib/videos";
 import { useSession } from "@/providers/session-provider";
 import { Button } from "@/components/ui/button";
@@ -38,6 +37,7 @@ import { api } from "@/lib/axios";
 import { deleteProject, type Project } from "@/lib/projects";
 import { useVideoTrim } from "@/providers/video-trim-provider";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 interface VideoProjectEditorProps {
   projectId: string;
@@ -56,7 +56,8 @@ const SUBTITLE_LANGUAGE_NAMES: Record<string, string> = {
 const REPLACE_SUBTITLES_MESSAGE =
   "This video already has subtitles. They will be replaced only if the new generation completes. Continue?";
 
-const SUBTITLE_STATE_LABELS: Record<VideoSubtitleJob["state"], string> = {
+// Nomes dos estados dos pedidos, iguais em todas as ferramentas de vídeo
+const JOB_STATE_LABELS: Record<VideoSubtitleJob["state"], string> = {
   queued: "Queued",
   processing: "Processing",
   completed: "Completed",
@@ -87,16 +88,16 @@ export default function VideoProjectEditor({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { registerTrim } = useVideoTrim();
+  const { registerTrim, isTrimActive } = useVideoTrim();
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playbackFailed, setPlaybackFailed] = useState(false);
-  const [trimOpen, setTrimOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Só um painel de ferramenta aberto de cada vez
+  const [openTool, setOpenTool] = useState<
+    "trim" | "filters" | "subtitles" | null
+  >(null);
   const [selectedFilter, setSelectedFilter] =
     useState<VideoFilterName>("grayscale");
-  const [filterJob, setFilterJob] = useState<VideoFilterJob | null>(null);
-  const [subtitlesOpen, setSubtitlesOpen] = useState(false);
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
   const subtitleTrackRef = useRef<HTMLTrackElement | null>(null);
   const [trimStart, setTrimStart] = useState("0");
@@ -106,6 +107,8 @@ export default function VideoProjectEditor({
   // Pedidos de legendas vistos ativos e já notificados (um aviso por pedido)
   const activeSubtitleIdsRef = useRef(new Set<string>());
   const notifiedSubtitleIdsRef = useRef(new Set<string>());
+  // Pedidos de filtros vistos ativos neste ecrã
+  const activeFilterIdsRef = useRef(new Set<string>());
 
   const videos = useQuery({
     queryKey: [
@@ -155,28 +158,30 @@ export default function VideoProjectEditor({
     },
 
     onSuccess: (job) => {
-      setFilterJob(job);
+      queryClient.setQueryData(
+        ["videoFilter", session.user._id, projectId, job.source_video_id],
+        job,
+      );
+      // A operação fica reservada: atualizar o contador
+      window.dispatchEvent(new Event("session-updated"));
     },
   });
+  const { reset: resetStartFilter } = startFilter;
 
+  // O pedido mais recente do vídeo vem do servidor, para continuar visível ao regressar
   const filterStatus = useQuery({
-    queryKey: [
-      "videoFilter",
-      session.user._id,
-      projectId,
-      filterJob?._id,
-    ],
+    queryKey: ["videoFilter", session.user._id, projectId, selected?._id],
 
     queryFn: ({ signal }) =>
-      fetchVideoFilter({
+      fetchLatestVideoFilter({
         uid: session.user._id,
         pid: projectId,
         token: session.token,
-        filterId: filterJob!._id,
+        videoId: selected!._id,
         signal,
       }),
 
-    enabled: Boolean(filterJob?._id),
+    enabled: Boolean(selected?._id),
 
     refetchInterval: (query) => {
       const state = query.state.data?.state;
@@ -187,11 +192,14 @@ export default function VideoProjectEditor({
     },
   });
 
-  const currentFilterJob = filterStatus.data ?? filterJob;
+  const currentFilterJob = filterStatus.data ?? null;
+  const filterActive =
+    currentFilterJob?.state === "queued" ||
+    currentFilterJob?.state === "processing";
 
   const cancelFilter = useMutation({
     mutationFn: async () => {
-      if (!filterJob) {
+      if (!currentFilterJob) {
         throw new Error("No active filter request.");
       }
 
@@ -199,39 +207,83 @@ export default function VideoProjectEditor({
         uid: session.user._id,
         pid: projectId,
         token: session.token,
-        filterId: filterJob._id,
+        filterId: currentFilterJob._id,
       });
     },
 
     onSuccess: (job) => {
-      setFilterJob(job);
-
       queryClient.setQueryData(
-        ["videoFilter", session.user._id, projectId, job._id],
+        ["videoFilter", session.user._id, projectId, job.source_video_id],
         job,
       );
     },
   });
+  const { reset: resetCancelFilter } = cancelFilter;
 
   useEffect(() => {
-  if (filterStatus.data?.state === "completed") {
-    void queryClient.invalidateQueries({
-      queryKey: [
-        "projectVideos",
-        session.user._id,
-        projectId,
-        session.token,
-      ],
-    });
-  }
-}, [
-  filterStatus.data?.state,
-  filterStatus.data?._id,
-  queryClient,
-  session.user._id,
-  projectId,
-  session.token,
-]);
+    if (!currentFilterJob) return;
+
+    if (
+      currentFilterJob.state === "queued" ||
+      currentFilterJob.state === "processing"
+    ) {
+      activeFilterIdsRef.current.add(currentFilterJob._id);
+      return;
+    }
+
+    // Só tratar pedidos que foram vistos ativos neste ecrã (um aviso por pedido)
+    if (!activeFilterIdsRef.current.delete(currentFilterJob._id)) return;
+
+    // Pedido terminado: a operação foi consumida ou devolvida
+    window.dispatchEvent(new Event("session-updated"));
+
+    if (currentFilterJob.state === "completed") {
+      const resultId = currentFilterJob.result_video_id;
+
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "projectVideos",
+          session.user._id,
+          projectId,
+          session.token,
+        ],
+      });
+      toast({
+        title: "Video filter completed",
+        description: "The filtered video is now available in the project.",
+        duration: 6000,
+        action: (
+          <ToastAction
+            altText="Open filtered video"
+            onClick={() =>
+              router.push(
+                `/dashboard/${projectId}?video=${encodeURIComponent(resultId)}`,
+              )
+            }
+          >
+            Open video
+          </ToastAction>
+        ),
+      });
+    } else if (currentFilterJob.state === "failed") {
+      toast({
+        title: "Video filter failed",
+        description:
+          currentFilterJob.error ||
+          "The video filter could not be applied. Please try again.",
+        variant: "destructive",
+        duration: 6000,
+      });
+    }
+  }, [
+    currentFilterJob,
+    queryClient,
+    router,
+    toast,
+    session.user._id,
+    projectId,
+    session.token,
+  ]);
 
   const subtitlesKey = [
     "videoSubtitles",
@@ -366,6 +418,14 @@ export default function VideoProjectEditor({
           session.token,
         ],
       });
+    } else if (subtitleJob.state === "failed") {
+      toast({
+        title: "Subtitle generation failed",
+        description:
+          subtitleJob.error || "Could not generate subtitles. Please try again.",
+        variant: "destructive",
+        duration: 6000,
+      });
     }
   }, [
     subtitleJob,
@@ -433,7 +493,15 @@ export default function VideoProjectEditor({
   useEffect(() => {
     resetStartSubtitles();
     resetCancelSubtitles();
-  }, [selected?._id, resetStartSubtitles, resetCancelSubtitles]);
+    resetStartFilter();
+    resetCancelFilter();
+  }, [
+    selected?._id,
+    resetStartSubtitles,
+    resetCancelSubtitles,
+    resetStartFilter,
+    resetCancelFilter,
+  ]);
 
   function generateSubtitles() {
     if (!selected || startSubtitles.isPending || subtitleActive) return;
@@ -745,9 +813,10 @@ export default function VideoProjectEditor({
       variant="outline"
       className="w-full justify-start"
       onClick={() => {
+        if (openTool === "trim") return setOpenTool(null);
         setTrimEnd(String(Math.max(1, Math.floor(selected.duration_seconds))));
         setTrimFormat(selected.format);
-        setTrimOpen(true);
+        setOpenTool("trim");
       }}
     >
       Trim
@@ -756,7 +825,7 @@ export default function VideoProjectEditor({
       type="button"
       variant="outline"
       className="w-full justify-start"
-      onClick={() => setFiltersOpen(!filtersOpen)}
+      onClick={() => setOpenTool(openTool === "filters" ? null : "filters")}
     >
       Filters
     </Button>
@@ -765,7 +834,7 @@ export default function VideoProjectEditor({
       variant="outline"
       className="w-full justify-start"
       disabled={selected.has_audio === false}
-      onClick={() => setSubtitlesOpen(!subtitlesOpen)}
+      onClick={() => setOpenTool(openTool === "subtitles" ? null : "subtitles")}
     >
       Subtitles
     </Button>
@@ -774,7 +843,7 @@ export default function VideoProjectEditor({
     )}
   </div>
 
-    {trimOpen && (
+    {openTool === "trim" && (
     <form
       className="mt-4 space-y-3 border-t pt-4"
       onSubmit={(event) => {
@@ -827,23 +896,27 @@ export default function VideoProjectEditor({
         <Button
           type="submit"
           size="sm"
-          disabled={startTrim.isPending || !validTrimInterval}
+          disabled={
+            startTrim.isPending ||
+            !validTrimInterval ||
+            isTrimActive(selected._id)
+          }
         >
-          Start trim
+          {startTrim.isPending ? "Starting…" : "Start trim"}
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setTrimOpen(false)}>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpenTool(null)}>
           Close
         </Button>
       </div>
       {!validTrimInterval && (
         <p className="text-xs text-red-500">{trimValidationMessage}</p>
       )}
-      {startTrim.isError && <p role="alert" className="text-xs text-red-500">{errorMessage(startTrim.error)}</p>}
+      {startTrim.isError && <p role="alert" className="text-xs text-red-500">{errorMessage(startTrim.error, "Could not start the video trim.")}</p>}
     </form>
   )}
 
 
-    {filtersOpen && (
+    {openTool === "filters" && (
       <div className="mt-4 space-y-3 border-t pt-4">
         <h3 className="text-sm font-medium">
           Apply video filter
@@ -868,18 +941,19 @@ export default function VideoProjectEditor({
           </select>
         </label>
 
-        <Button
-          type="button"
-          disabled={
-            startFilter.isPending ||
-            ["queued", "processing"].includes(
-              currentFilterJob?.state ?? ""
-            )
-          }
-          onClick={() => startFilter.mutate()}
-        >
-          {startFilter.isPending ? "Starting..." : "Apply Filter"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            disabled={startFilter.isPending || filterActive}
+            onClick={() => startFilter.mutate()}
+          >
+            {startFilter.isPending ? "Starting…" : "Apply filter"}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setOpenTool(null)}>
+            Close
+          </Button>
+        </div>
         {startFilter.isError && (
           <p role="alert" className="text-xs text-red-500">
             {errorMessage(startFilter.error, "Could not start video filter.")}
@@ -889,24 +963,34 @@ export default function VideoProjectEditor({
 
         {currentFilterJob && (
           <div className="rounded border p-3 text-sm">
-            <p>Status: {currentFilterJob.state}</p>
+            <p>Status: {JOB_STATE_LABELS[currentFilterJob.state]}</p>
 
-            <p>Progress: {currentFilterJob.progress}%</p>
+            {filterActive && <p>Progress: {currentFilterJob.progress}%</p>}
 
-            {["queued", "processing"].includes(currentFilterJob.state) && (
+            {filterActive && (
               <Button
                 type="button"
                 variant="outline"
                 disabled={cancelFilter.isPending}
                 onClick={() => cancelFilter.mutate()}
               >
-                {cancelFilter.isPending ? "Cancelling..." : "Cancel"}
+                {cancelFilter.isPending ? "Cancelling…" : "Cancel"}
               </Button>
             )}
 
-            {currentFilterJob.error && (
+            {currentFilterJob.state === "failed" && (
               <p role="alert" className="text-red-500">
-                {currentFilterJob.error}
+                {currentFilterJob.error ||
+                  "The video filter could not be applied. Please try again."}
+              </p>
+            )}
+
+            {cancelFilter.isError && (
+              <p role="alert" className="text-red-500">
+                {errorMessage(
+                  cancelFilter.error,
+                  "Could not cancel video filter.",
+                )}
               </p>
             )}
           </div>
@@ -915,7 +999,7 @@ export default function VideoProjectEditor({
       </div>
     )}
 
-    {subtitlesOpen && selected.has_audio !== false && (
+    {openTool === "subtitles" && selected.has_audio !== false && (
       <div className="mt-4 space-y-3 border-t pt-4">
         <h3 className="text-sm font-medium">Generate subtitles</h3>
 
@@ -924,13 +1008,19 @@ export default function VideoProjectEditor({
           supported and are not translated.
         </p>
 
-        <Button
-          type="button"
-          disabled={startSubtitles.isPending || subtitleActive}
-          onClick={generateSubtitles}
-        >
-          {startSubtitles.isPending ? "Starting..." : "Generate subtitles"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            disabled={startSubtitles.isPending || subtitleActive}
+            onClick={generateSubtitles}
+          >
+            {startSubtitles.isPending ? "Starting…" : "Generate subtitles"}
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setOpenTool(null)}>
+            Close
+          </Button>
+        </div>
         {startSubtitles.isError && (
           <p role="alert" className="text-xs text-red-500">
             {errorMessage(
@@ -942,7 +1032,7 @@ export default function VideoProjectEditor({
 
         {subtitleJob && (
           <div className="rounded border p-3 text-sm">
-            <p>Status: {SUBTITLE_STATE_LABELS[subtitleJob.state]}</p>
+            <p>Status: {JOB_STATE_LABELS[subtitleJob.state]}</p>
 
             {subtitleActive && <p>Progress: {subtitleJob.progress}%</p>}
 
@@ -953,7 +1043,7 @@ export default function VideoProjectEditor({
                 disabled={cancelSubtitles.isPending}
                 onClick={() => cancelSubtitles.mutate()}
               >
-                {cancelSubtitles.isPending ? "Cancelling..." : "Cancel"}
+                {cancelSubtitles.isPending ? "Cancelling…" : "Cancel"}
               </Button>
             )}
 

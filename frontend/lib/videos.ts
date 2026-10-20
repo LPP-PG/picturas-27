@@ -381,19 +381,21 @@ export async function startVideoFilter({
   return response.data;
 }
 
-export async function fetchVideoFilter({
+// Consultar o pedido de filtro mais recente de um vídeo
+export async function fetchLatestVideoFilter({
   uid,
   pid,
   token,
-  filterId,
+  videoId,
   signal,
 }: ProjectVideoRequest & {
-  filterId: string;
-}): Promise<VideoFilterJob> {
-  const response = await api.get<VideoFilterJob>(
-    `${projectVideosUrl(uid, pid)}/filters/${encodeURIComponent(filterId)}`,
+  videoId: string;
+}): Promise<VideoFilterJob | null> {
+  const response = await api.get<VideoFilterJob | null>(
+    `${projectVideosUrl(uid, pid)}/filters`,
     {
       headers: authHeaders(token),
+      params: { video_id: videoId },
       signal,
     },
   );
@@ -532,13 +534,13 @@ export async function fetchSubtitlesVtt({
   return response.data;
 }
 
-// Cancelar todos os pedidos de legendas ativos da conta (usado no logout)
-export async function cancelActiveSubtitles({
+// Cancelar todos os pedidos de vídeo ativos da conta (usado no logout)
+export async function cancelActiveVideoJobs({
   uid,
   token,
 }: AccountRequest): Promise<{ cancelled: number }> {
   const response = await api.post<{ cancelled: number }>(
-    `/videos/${encodeURIComponent(uid)}/subtitles/cancel-active`,
+    `/videos/${encodeURIComponent(uid)}/jobs/cancel-active`,
     {},
     // Timeout curto para não atrasar o logout
     { headers: authHeaders(token), timeout: 5000 },

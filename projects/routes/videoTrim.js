@@ -14,7 +14,8 @@ const {
   reserveUpload,
   releaseUploadReservation,
 } = require("../utils/videoReservations");
-const { processTrim } = require("../utils/videoTrim");
+const { processTrim, cancelTrimJob } = require("../utils/videoTrim");
+const { videoMessages, storageMessage } = require("../utils/videoMessages");
 
 const router = express.Router();
 const usersService = "https://users:10001";
@@ -100,7 +101,7 @@ router.post("/", async (req, res) => {
     // Verificar o limite global de processamentos de vídeo
     const activeCount = await countActiveVideoJobs(req.videoUser._id);
     if (activeCount >= maxActiveVideoJobs(req.videoUser.type)) {
-      const error = new Error("The simultaneous video-processing limit was reached.");
+      const error = new Error(videoMessages.limit);
       error.status = 429;
       throw error;
     }
@@ -116,7 +117,7 @@ router.post("/", async (req, res) => {
       authorization: req.headers.authorization,
     });
     if (estimate > capacity.account_available_bytes || estimate > capacity.project_available_bytes) {
-      const error = new Error("Insufficient storage space.");
+      const error = new Error(storageMessage(estimate, capacity));
       error.status = 409;
       throw error;
     }
@@ -129,7 +130,7 @@ router.post("/", async (req, res) => {
       operationReserved = true;
     } catch (error) {
       if (error.response?.status === 701) {
-        const quotaError = new Error("No daily operations are available.");
+        const quotaError = new Error(videoMessages.quota);
         quotaError.status = 429;
         throw quotaError;
       }
@@ -206,38 +207,14 @@ router.get("/:trimId", async (req, res) => {
 
 router.delete("/:trimId", async (req, res) => {
   try {
-    const job = await VideoTrim.findOneAndUpdate(
-      {
-        _id: req.params.trimId,
-        user_id: req.videoUser._id,
-        project_id: req.videoProject._id,
-        state: { $in: ["queued", "processing"] },
-      },
-      { $set: { cancel_requested: true } },
-      { new: true },
-    );
+    const job = await VideoTrim.findOne({
+      _id: req.params.trimId,
+      user_id: req.videoUser._id,
+      project_id: req.videoProject._id,
+      state: { $in: ["queued", "processing"] },
+    });
     if (!job) return res.status(404).json({ error: "Trim request not found or already finished." });
-    if (job.state === "queued") {
-      await VideoTrim.updateOne(
-        { _id: job._id },
-        { $set: { state: "cancelled", reserved_bytes: 0, finished_at: new Date(), error: "Video trim cancelled." } },
-      );
-      await releaseUploadReservation(req.videoUser._id, job._id);
-      if (job.operation_reserved) {
-        await axios.post(
-          `${usersService}/${req.videoUser._id}/process/refund/1`,
-          {},
-          { httpsAgent: usersHttpsAgent, timeout: 10000 },
-        ).catch((error) => {
-          console.error("Erro ao devolver operação cancelada:", error.message);
-        });
-        await VideoTrim.updateOne(
-          { _id: job._id },
-          { $set: { operation_reserved: false } },
-        );
-      }
-    }
-    res.status(202).json(publicJob(await VideoTrim.findById(job._id)));
+    res.status(202).json(publicJob(await cancelTrimJob(job)));
   } catch (error) {
     sendError(res, error);
   }

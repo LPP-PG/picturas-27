@@ -9,7 +9,7 @@ import {
   updateUser,
   updatePassword,
 } from "../session";
-import { cancelActiveSubtitles } from "../videos";
+import { cancelActiveVideoJobs } from "../videos";
 
 export const useLogin = () => {
   const qc = useQueryClient();
@@ -60,13 +60,13 @@ export const useLogout = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      // Cancelar legendas ativas antes de terminar a sessão (nunca bloqueia o logout)
+      // Cancelar os pedidos de vídeo ativos antes de terminar a sessão (nunca bloqueia o logout)
       try {
         const stored = localStorage.getItem("session");
         const current = stored ? (JSON.parse(stored) as SessionData) : null;
 
         if (current?.token && current.user.type !== "anonymous") {
-          await cancelActiveSubtitles({
+          await cancelActiveVideoJobs({
             uid: current.user._id,
             token: current.token,
           });

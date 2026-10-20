@@ -109,15 +109,15 @@ router.get(
   },
 );
 
-// Cancelar todos os pedidos de legendas ativos (antes das rotas /:user/:project)
+// Cancelar todos os pedidos de vídeo ativos (antes das rotas /:user/:project)
 router.post(
-  "/:user/subtitles/cancel-active",
+  "/:user/jobs/cancel-active",
   auth.checkToken,
   requireVideoOwner,
   async (req, res) => {
     try {
       const response = await axios.post(
-        `https://projects:9001/videos/${encodeURIComponent(req.params.user)}/subtitles/cancel-active`,
+        `https://projects:9001/videos/${encodeURIComponent(req.params.user)}/jobs/cancel-active`,
         {},
         {
           httpsAgent,
@@ -186,6 +186,13 @@ controlRoute(
   "post",
   "/:user/:project/filters",
   () => "/filters",
+);
+
+controlRoute(
+  "get",
+  "/:user/:project/filters",
+  (req) =>
+    `/filters?video_id=${encodeURIComponent(req.query.video_id ?? "")}`,
 );
 
 controlRoute(

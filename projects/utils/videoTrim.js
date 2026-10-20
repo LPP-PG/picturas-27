@@ -9,12 +9,16 @@ const Video = require("../models/video");
 const VideoTrim = require("../models/videoTrim");
 const Project = require("../models/project");
 const { generateVideoThumbnail } = require("./videoThumbnail");
+const { storageMessage, userError, failureMessage } = require("./videoMessages");
 const {
   get_image_internal_url,
   post_image,
   delete_image,
 } = require("./imageStorage");
-const { getUploadCapacity } = require("./videoReservations");
+const {
+  getUploadCapacity,
+  releaseUploadReservation,
+} = require("./videoReservations");
 
 const usersService = "https://users:10001";
 const usersHttpsAgent = new (require("node:https").Agent)({
@@ -103,7 +107,7 @@ function runFfmpeg(
       clearInterval(cancelTimer);
       if (code === 0) return resolve();
       if (shouldCancel()) {
-        const error = new Error("Recorte cancelado.");
+        const error = new Error("Video trim cancelled.");
         error.name = "AbortError";
         return reject(error);
       }
@@ -135,7 +139,7 @@ async function processTrim(jobId, authorization, userType) {
       user_id: current.user_id,
       project_id: current.project_id,
     });
-    if (!source) throw new Error("The original video is no longer available.");
+    if (!source) throw userError("The original video is no longer available.");
 
     sourcePath = path.join(require("node:os").tmpdir(), `${job._id}.trim-source`);
     outputPath = path.join(
@@ -184,7 +188,7 @@ async function processTrim(jobId, authorization, userType) {
       });
       if (outputSize - current.reserved_bytes > capacity.account_available_bytes ||
           outputSize - current.reserved_bytes > capacity.project_available_bytes) {
-        throw new Error("Insufficient storage space.");
+        throw userError(storageMessage(outputSize - current.reserved_bytes, capacity));
       }
     }
     await VideoTrim.updateOne({ _id: job._id }, { $set: { progress: 65 } });
@@ -264,6 +268,7 @@ async function processTrim(jobId, authorization, userType) {
     );
   } catch (error) {
     const cancelled = error.name === "AbortError";
+    if (!cancelled) console.error("Erro no processamento do recorte:", error.message);
     if (job.operation_reserved) {
       try {
         await axios.post(
@@ -283,7 +288,9 @@ async function processTrim(jobId, authorization, userType) {
           progress: cancelled ? 0 : job.progress,
           reserved_bytes: 0,
           operation_reserved: false,
-          error: error.message,
+          error: cancelled
+            ? "Video trim cancelled."
+            : failureMessage(error, "The video could not be trimmed. Please try again."),
           finished_at: new Date(),
         },
       },
@@ -300,4 +307,37 @@ async function processTrim(jobId, authorization, userType) {
   }
 }
 
-module.exports = { processTrim };
+// Cancelar um pedido de recorte ativo (usado na rota de cancelamento e no logout)
+async function cancelTrimJob(job) {
+  const marked = await VideoTrim.findOneAndUpdate(
+    { _id: job._id, state: { $in: ["queued", "processing"] } },
+    { $set: { cancel_requested: true } },
+    { new: true },
+  );
+
+  // Se ainda estiver em fila, cancelar já; se estiver a processar, o trabalho deteta o pedido.
+  if (marked?.state === "queued") {
+    await VideoTrim.updateOne(
+      { _id: marked._id },
+      { $set: { state: "cancelled", reserved_bytes: 0, finished_at: new Date(), error: "Video trim cancelled." } },
+    );
+    await releaseUploadReservation(marked.user_id, marked._id);
+    if (marked.operation_reserved) {
+      await axios.post(
+        `${usersService}/${marked.user_id}/process/refund/1`,
+        {},
+        { httpsAgent: usersHttpsAgent, timeout: 10000 },
+      ).catch((error) => {
+        console.error("Erro ao devolver operação cancelada:", error.message);
+      });
+      await VideoTrim.updateOne(
+        { _id: marked._id },
+        { $set: { operation_reserved: false } },
+      );
+    }
+  }
+
+  return VideoTrim.findById(job._id);
+}
+
+module.exports = { processTrim, cancelTrimJob };
