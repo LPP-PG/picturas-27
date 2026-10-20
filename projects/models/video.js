@@ -72,6 +72,21 @@ const videoSchema = new mongoose.Schema(
       ref: "Video",
       default: null,
     },
+
+    has_audio: {
+      type: Boolean,
+      default: null,
+    },
+
+    subtitles_key: {
+      type: String,
+      default: null,
+    },
+
+    subtitles_language: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true },
 );

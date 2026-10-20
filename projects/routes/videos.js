@@ -10,6 +10,8 @@ const FormData = require("form-data");
 const Project = require("../models/project");
 const Video = require("../models/video");
 const VideoUpload = require("../models/videoUpload");
+const VideoSubtitle = require("../models/videoSubtitle");
+const { cancelSubtitleJob } = require("../utils/videoSubtitleJob");
 const videoAuth = require("../middleware/videoAuth");
 const videoProjectAuth = require("../middleware/videoProjectAuth");
 
@@ -62,11 +64,49 @@ router.get("/:user/capacity", videoAuth, async (req, res) => {
   }
 });
 
+// Cancelar todos os pedidos de legendas ativos do utilizador
+router.post("/:user/subtitles/cancel-active", videoAuth, async (req, res) => {
+  try {
+    const jobs = await VideoSubtitle.find({
+      user_id: req.videoUser._id,
+      state: { $in: ["queued", "processing"] },
+    }).lean();
+
+    let cancelled = 0;
+
+    for (const job of jobs) {
+      // Uma falha não impede o cancelamento dos restantes
+      try {
+        await cancelSubtitleJob(job);
+        cancelled += 1;
+      } catch (error) {
+        console.error("Error cancelling subtitle job:", error);
+      }
+    }
+
+    res.set("Cache-Control", "no-store");
+    res.json({ cancelled });
+  } catch (error) {
+    console.error("Error cancelling active subtitles:", error);
+
+    res.status(503).json({
+      error: "Could not cancel subtitle generation.",
+    });
+  }
+});
+
 router.use(
   "/:user/:project/trim",
   videoAuth,
   videoProjectAuth,
   require("./videoTrim"),
+);
+
+router.use(
+  "/:user/:project/subtitles",
+  videoAuth,
+  videoProjectAuth,
+  require("./videoSubtitles"),
 );
 
 router.use(
@@ -135,6 +175,9 @@ async function publicVideo(userId, video) {
     duration_seconds: video.duration_seconds,
     size_bytes: video.size_bytes,
     original_video_id: video.original_video_id,
+    has_audio: video.has_audio ?? null,
+    has_subtitles: Boolean(video.subtitles_key),
+    subtitles_language: video.subtitles_language ?? null,
     thumbnail_time_seconds: video.thumbnail_time_seconds ?? null,
     video_url:
       results[0].status === "fulfilled" ? results[0].value : null,
@@ -594,6 +637,7 @@ router.post(
         format,
         duration_seconds: metadata.duration_seconds,
         size_bytes: file.size,
+        has_audio: metadata.has_audio,
       });
 
       checkCancellation(signal);

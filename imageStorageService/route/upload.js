@@ -23,13 +23,13 @@ router.post("/:userId/:projectId/:stage", (req, res) => {
 
   if (!allowedStages.includes(stage)) {
     return res.status(400).json({
-      error: "O estágio deve ser src, preview, preview_cache ou out.",
+      error: "O estágio deve ser src, preview, preview_cache, out ou subtitles.",
     });
   }
 
   if (
     storageFileName !== undefined &&
-    !/^[a-f0-9]{24}\.(mp4|mov|jpg)$/i.test(storageFileName)
+    !/^[a-f0-9]{24}\.(mp4|mov|jpg|vtt)$/i.test(storageFileName)
   ) {
     return res.status(400).json({
       error: "Nome de armazenamento inválido.",

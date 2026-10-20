@@ -1845,6 +1845,19 @@ router.delete(
           });
         }
 
+        // Recusar se houver pedidos de processamento ativos no projeto
+        const {
+          hasActiveVideoJobs,
+        } = require("../utils/videoProcessingLimit");
+
+        if (await hasActiveVideoJobs({ userId, projectId })) {
+          return res.status(409).jsonp({
+            error:
+              "This video has a processing request in progress. Cancel it before deleting.",
+            error_code: "busy_delete",
+          });
+        }
+
         const {
           prepareVideoProjectDeletion,
         } = require("../utils/videoProjectDeletion");

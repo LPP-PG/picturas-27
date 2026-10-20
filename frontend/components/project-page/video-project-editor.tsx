@@ -14,6 +14,12 @@ import {
   startVideoFilter,
   fetchVideoFilter,
   cancelVideoFilter,
+  startVideoSubtitles,
+  fetchLatestVideoSubtitles,
+  cancelVideoSubtitles,
+  fetchSubtitlesVtt,
+  type SubtitleLanguage,
+  type VideoSubtitleJob,
   type ProjectVideo,
   type VideoTrimJob,
   type VideoFilterName,
@@ -31,11 +37,32 @@ import {
 import { api } from "@/lib/axios";
 import { deleteProject, type Project } from "@/lib/projects";
 import { useVideoTrim } from "@/providers/video-trim-provider";
+import { useToast } from "@/hooks/use-toast";
 
 interface VideoProjectEditorProps {
   projectId: string;
   projectName: string;
 }
+
+const NO_AUDIO_MESSAGE = "No audio track was found in this video.";
+
+const SUBTITLE_LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  pt: "Portuguese",
+  es: "Spanish",
+  fr: "French",
+};
+
+const REPLACE_SUBTITLES_MESSAGE =
+  "This video already has subtitles. They will be replaced only if the new generation completes. Continue?";
+
+const SUBTITLE_STATE_LABELS: Record<VideoSubtitleJob["state"], string> = {
+  queued: "Queued",
+  processing: "Processing",
+  completed: "Completed",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
 
 function errorMessage(
   error: unknown,
@@ -61,6 +88,7 @@ export default function VideoProjectEditor({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { registerTrim } = useVideoTrim();
+  const { toast } = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playbackFailed, setPlaybackFailed] = useState(false);
   const [trimOpen, setTrimOpen] = useState(false);
@@ -68,10 +96,16 @@ export default function VideoProjectEditor({
   const [selectedFilter, setSelectedFilter] =
     useState<VideoFilterName>("grayscale");
   const [filterJob, setFilterJob] = useState<VideoFilterJob | null>(null);
+  const [subtitlesOpen, setSubtitlesOpen] = useState(false);
+  const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
+  const subtitleTrackRef = useRef<HTMLTrackElement | null>(null);
   const [trimStart, setTrimStart] = useState("0");
   const [trimEnd, setTrimEnd] = useState("");
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
   const manualSelectionRef = useRef<string | null>(null);
+  // Pedidos de legendas vistos ativos e já notificados (um aviso por pedido)
+  const activeSubtitleIdsRef = useRef(new Set<string>());
+  const notifiedSubtitleIdsRef = useRef(new Set<string>());
 
   const videos = useQuery({
     queryKey: [
@@ -198,6 +232,220 @@ export default function VideoProjectEditor({
   projectId,
   session.token,
 ]);
+
+  const subtitlesKey = [
+    "videoSubtitles",
+    session.user._id,
+    projectId,
+    selected?._id,
+  ];
+
+  const startSubtitles = useMutation({
+    mutationFn: ({
+      videoId,
+      language,
+    }: {
+      videoId: string;
+      language: SubtitleLanguage;
+    }) =>
+      startVideoSubtitles({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId,
+        language,
+      }),
+
+    onSuccess: (job) => {
+      queryClient.setQueryData(
+        ["videoSubtitles", session.user._id, projectId, job.video_id],
+        job,
+      );
+      // A operação fica reservada: atualizar o contador
+      window.dispatchEvent(new Event("session-updated"));
+    },
+
+    onError: (_error, { videoId }) => {
+      // Atualizar o estado (ex.: pedido já ativo noutro separador)
+      void queryClient.invalidateQueries({
+        queryKey: ["videoSubtitles", session.user._id, projectId, videoId],
+      });
+    },
+  });
+  const { reset: resetStartSubtitles } = startSubtitles;
+
+  const subtitleStatus = useQuery({
+    queryKey: subtitlesKey,
+
+    queryFn: ({ signal }) =>
+      fetchLatestVideoSubtitles({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId: selected!._id,
+        signal,
+      }),
+
+    enabled: Boolean(selected?._id),
+
+    refetchInterval: (query) => {
+      const state = query.state.data?.state;
+
+      return state === "queued" || state === "processing"
+        ? 1000
+        : false;
+    },
+  });
+
+  const subtitleJob = subtitleStatus.data ?? null;
+  const subtitleActive =
+    subtitleJob?.state === "queued" || subtitleJob?.state === "processing";
+
+  const cancelSubtitles = useMutation({
+    mutationFn: async () => {
+      if (!subtitleJob) {
+        throw new Error("No active subtitle request.");
+      }
+
+      return cancelVideoSubtitles({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        subtitleId: subtitleJob._id,
+      });
+    },
+
+    onSuccess: (job) => {
+      queryClient.setQueryData(
+        ["videoSubtitles", session.user._id, projectId, job.video_id],
+        job,
+      );
+    },
+  });
+
+  const { reset: resetCancelSubtitles } = cancelSubtitles;
+
+  useEffect(() => {
+    if (!subtitleJob) return;
+
+    if (subtitleJob.state === "queued" || subtitleJob.state === "processing") {
+      activeSubtitleIdsRef.current.add(subtitleJob._id);
+      return;
+    }
+
+    // Só tratar pedidos que foram vistos ativos neste ecrã
+    if (!activeSubtitleIdsRef.current.has(subtitleJob._id)) return;
+
+    // Pedido terminado: a operação foi consumida ou devolvida
+    activeSubtitleIdsRef.current.delete(subtitleJob._id);
+    window.dispatchEvent(new Event("session-updated"));
+
+    if (
+      subtitleJob.state === "completed" &&
+      !notifiedSubtitleIdsRef.current.has(subtitleJob._id)
+    ) {
+      notifiedSubtitleIdsRef.current.add(subtitleJob._id);
+      toast({
+        title: "Subtitles ready",
+        description: "The subtitles were added to the video.",
+        duration: 6000,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "subtitlesVtt",
+          session.user._id,
+          projectId,
+          subtitleJob.video_id,
+        ],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "projectVideos",
+          session.user._id,
+          projectId,
+          session.token,
+        ],
+      });
+    }
+  }, [
+    subtitleJob,
+    toast,
+    queryClient,
+    session.user._id,
+    projectId,
+    session.token,
+  ]);
+
+  // As legendas só são pedidas quando o vídeo as tem
+  const subtitlesVtt = useQuery({
+    queryKey: [
+      "subtitlesVtt",
+      session.user._id,
+      projectId,
+      selected?._id,
+      selected?.subtitles_language,
+    ],
+
+    queryFn: ({ signal }) =>
+      fetchSubtitlesVtt({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId: selected!._id,
+        signal,
+      }),
+
+    enabled: Boolean(selected?._id && selected.has_subtitles),
+  });
+
+  const vttData = selected?.has_subtitles ? subtitlesVtt.data : undefined;
+  const subtitleTrackLanguage = vttData?.language;
+
+  useEffect(() => {
+    if (!vttData) {
+      setSubtitleUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(
+      new Blob([vttData.vtt], { type: "text/vtt" }),
+    );
+    setSubtitleUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [vttData]);
+
+  // Alguns navegadores ignoram "default" numa pista adicionada dinamicamente
+  useEffect(() => {
+    const element = subtitleTrackRef.current;
+    if (!element || !subtitleUrl) return;
+
+    const showTrack = () => {
+      element.track.mode = "showing";
+    };
+
+    showTrack();
+    element.addEventListener("load", showTrack);
+
+    return () => element.removeEventListener("load", showTrack);
+  }, [subtitleUrl, subtitleTrackLanguage, selected?._id, selected?.video_url]);
+
+  useEffect(() => {
+    resetStartSubtitles();
+    resetCancelSubtitles();
+  }, [selected?._id, resetStartSubtitles, resetCancelSubtitles]);
+
+  function generateSubtitles() {
+    if (!selected || startSubtitles.isPending || subtitleActive) return;
+    if (selected.has_subtitles && !window.confirm(REPLACE_SUBTITLES_MESSAGE)) {
+      return;
+    }
+
+    startSubtitles.mutate({
+      videoId: selected._id,
+      language: "en",
+    });
+  }
 
   const deletion = useMutation({
     mutationFn: async (video: ProjectVideo) => {
@@ -420,6 +668,20 @@ export default function VideoProjectEditor({
                 className="aspect-video max-h-[60vh] w-full bg-black object-contain"
                 onError={() => setPlaybackFailed(true)}
               >
+                {subtitleUrl && subtitleTrackLanguage && (
+                  <track
+                    key={subtitleUrl}
+                    ref={subtitleTrackRef}
+                    kind="subtitles"
+                    default
+                    srcLang={subtitleTrackLanguage}
+                    label={
+                      SUBTITLE_LANGUAGE_NAMES[subtitleTrackLanguage] ??
+                      subtitleTrackLanguage
+                    }
+                    src={subtitleUrl}
+                  />
+                )}
                 Your browser does not support video playback.
               </video>
 
@@ -502,10 +764,14 @@ export default function VideoProjectEditor({
       type="button"
       variant="outline"
       className="w-full justify-start"
-      disabled
+      disabled={selected.has_audio === false}
+      onClick={() => setSubtitlesOpen(!subtitlesOpen)}
     >
       Subtitles
     </Button>
+    {selected.has_audio === false && (
+      <p className="text-xs text-muted-foreground">{NO_AUDIO_MESSAGE}</p>
+    )}
   </div>
 
     {trimOpen && (
@@ -646,6 +912,68 @@ export default function VideoProjectEditor({
           </div>
         )}
 
+      </div>
+    )}
+
+    {subtitlesOpen && selected.has_audio !== false && (
+      <div className="mt-4 space-y-3 border-t pt-4">
+        <h3 className="text-sm font-medium">Generate subtitles</h3>
+
+        <p className="text-xs text-muted-foreground">
+          Spoken language: English. Videos in other languages are not
+          supported and are not translated.
+        </p>
+
+        <Button
+          type="button"
+          disabled={startSubtitles.isPending || subtitleActive}
+          onClick={generateSubtitles}
+        >
+          {startSubtitles.isPending ? "Starting..." : "Generate subtitles"}
+        </Button>
+        {startSubtitles.isError && (
+          <p role="alert" className="text-xs text-red-500">
+            {errorMessage(
+              startSubtitles.error,
+              "Could not start subtitle generation.",
+            )}
+          </p>
+        )}
+
+        {subtitleJob && (
+          <div className="rounded border p-3 text-sm">
+            <p>Status: {SUBTITLE_STATE_LABELS[subtitleJob.state]}</p>
+
+            {subtitleActive && <p>Progress: {subtitleJob.progress}%</p>}
+
+            {subtitleActive && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cancelSubtitles.isPending}
+                onClick={() => cancelSubtitles.mutate()}
+              >
+                {cancelSubtitles.isPending ? "Cancelling..." : "Cancel"}
+              </Button>
+            )}
+
+            {subtitleJob.state === "failed" && (
+              <p role="alert" className="text-red-500">
+                {subtitleJob.error ||
+                  "Could not generate subtitles. Please try again."}
+              </p>
+            )}
+
+            {cancelSubtitles.isError && (
+              <p role="alert" className="text-red-500">
+                {errorMessage(
+                  cancelSubtitles.error,
+                  "Could not cancel subtitle generation.",
+                )}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     )}
 

@@ -2,6 +2,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const FormData = require("form-data");
+const axios = require("axios");
 
 const Video = require("../models/video");
 const Project = require("../models/project");
@@ -9,8 +10,34 @@ const { generateVideoThumbnail } = require("./videoThumbnail");
 const {
   post_image,
   delete_image,
+  get_image_internal_url,
 } = require("./imageStorage");
 const { getUploadCapacity } = require("./videoReservations");
+
+// Ler as legendas do vídeo original, se existirem (RN16 das legendas).
+// Uma falha aqui não impede o filtro: o resultado fica sem legendas.
+async function readSourceSubtitles(source) {
+  if (!source.subtitles_key) return null;
+
+  try {
+    const response = await get_image_internal_url(
+      String(source.user_id),
+      String(source._id),
+      "subtitles",
+      source.subtitles_key.split("/").pop(),
+    );
+
+    const download = await axios.get(response.data.url, {
+      responseType: "text",
+      timeout: 30000,
+    });
+
+    return typeof download.data === "string" ? download.data : null;
+  } catch (error) {
+    console.error("Could not read source subtitles:", error.message);
+    return null;
+  }
+}
 
 async function saveFilteredVideo({
   job,
@@ -72,6 +99,20 @@ async function saveFilteredVideo({
     throw new Error("Insufficient storage space.");
     }
 
+    // Copiar as legendas só se couberem no espaço livre.
+    let subtitlesText = await readSourceSubtitles(source);
+
+    if (subtitlesText) {
+      const subtitlesBytes = Buffer.byteLength(subtitlesText);
+
+      if (
+        extraBytes + subtitlesBytes > capacity.account_available_bytes ||
+        extraBytes + subtitlesBytes > capacity.project_available_bytes
+      ) {
+        subtitlesText = null;
+      }
+    }
+
     // Criar uma miniatura do vídeo filtrado.
     const thumbnail = await generateVideoThumbnail(
       outputPath,
@@ -118,6 +159,37 @@ async function saveFilteredVideo({
     uploadedFiles.push(["preview", thumbnailFileName]);
     checkCancelled();
 
+    // Guardar a cópia das legendas no grupo do novo vídeo.
+    let subtitlesKey = null;
+
+    if (subtitlesText) {
+      const subtitlesFileName = `${resultId}.vtt`;
+
+      try {
+        const subtitlesForm = new FormData();
+
+        subtitlesForm.append("file", Buffer.from(subtitlesText), {
+          filename: subtitlesFileName,
+          contentType: "text/vtt",
+        });
+
+        uploadedFiles.push(["subtitles", subtitlesFileName]);
+
+        await post_image(userId, resultId, "subtitles", subtitlesForm, {
+          headers: {
+            "X-Storage-File-Name": subtitlesFileName,
+            Authorization: authorization,
+          },
+        });
+
+        subtitlesKey = `${resultId}/subtitles/${subtitlesFileName}`;
+      } catch (error) {
+        console.error("Could not copy subtitles:", error.message);
+      }
+
+      checkCancelled();
+    }
+
     // Criar um nome diferente do original.
     const baseName = path.basename(
       source.name,
@@ -155,6 +227,11 @@ async function saveFilteredVideo({
       duration_seconds: metadata.duration_seconds,
       size_bytes: sizeBytes,
       original_video_id: job.source_video_id,
+      has_audio: metadata.has_audio ?? null,
+      subtitles_key: subtitlesKey,
+      subtitles_language: subtitlesKey
+        ? source.subtitles_language ?? null
+        : null,
     });
 
     videoCreated = true;

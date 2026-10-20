@@ -140,6 +140,13 @@ async function processVideoProjectDeletions() {
             video.thumbnail_key,
           );
 
+          await deleteStoredFile(
+            job.user_id,
+            video._id,
+            "subtitles",
+            video.subtitles_key,
+          );
+
           await Video.deleteOne({
             _id: video._id,
             user_id: job.user_id,

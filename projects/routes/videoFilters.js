@@ -4,7 +4,10 @@ const VideoFilter = require("../models/videoFilter");
 const router = express.Router();
 const Video = require("../models/video");
 const { getVideoFilterGraph } = require("../utils/videoFilterPresets");
-const VideoTrim = require("../models/videoTrim");
+const {
+  countActiveVideoJobs,
+  maxActiveVideoJobs,
+} = require("../utils/videoProcessingLimit");
 const {
   getUploadCapacity,
   reserveUpload,
@@ -56,20 +59,9 @@ router.post("/", async (req, res) => {
 
 
 // Verificar o limite global de processamentos de vídeo
-const [activeTrims, activeFilters] = await Promise.all([
-  VideoTrim.countDocuments({
-    user_id: req.videoUser._id,
-    state: { $in: ["queued", "processing"] },
-  }),
-  VideoFilter.countDocuments({
-    user_id: req.videoUser._id,
-    state: { $in: ["queued", "processing"] },
-  }),
-]);
+const activeCount = await countActiveVideoJobs(req.videoUser._id);
 
-const maxActive = req.videoUser.type === "premium" ? 3 : 1;
-
-if (activeTrims + activeFilters >= maxActive) {
+if (activeCount >= maxActiveVideoJobs(req.videoUser.type)) {
   return res.status(429).json({
     error: "The simultaneous video-processing limit was reached.",
   });

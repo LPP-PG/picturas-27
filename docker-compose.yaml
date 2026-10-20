@@ -132,6 +132,10 @@ services:
         condition: service_healthy
       projects_mongoDB:
         condition: service_started
+      subtitles_ai:
+        condition: service_started
+      users:
+        condition: service_started
     ports:
       - "9002:9001"
     restart: on-failure
@@ -419,6 +423,26 @@ services:
       timeout: 3s
       retries: 30
 
+  subtitles_ai:
+    build: ./subtitlesService
+    restart: on-failure
+    environment:
+      WHISPER_MODEL: small
+      WHISPER_CPU_THREADS: 2
+    networks:
+      - elk
+    volumes:
+      - whisper_models:/root/.cache
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:7870/health').read()\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
   expand_ai_tool:
     build:
       context: ./Tools
@@ -539,3 +563,4 @@ volumes:
   image_data:
   seaweedfs_data:
   subscription_data:
+  whisper_models:

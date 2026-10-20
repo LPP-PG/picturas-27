@@ -5,6 +5,7 @@ const Project = require("../models/project");
 const Video = require("../models/video");
 const VideoUpload = require("../models/videoUpload");
 const { delete_image } = require("../utils/imageStorage");
+const { hasActiveVideoJobs } = require("../utils/videoProcessingLimit");
 
 const router = express.Router({ mergeParams: true });
 
@@ -24,6 +25,7 @@ const schema = new mongoose.Schema(
     },
     storage_key: String,
     thumbnail_key: String,
+    subtitles_key: String,
     last_error: { type: String, default: "" },
   },
   { timestamps: true },
@@ -70,6 +72,7 @@ async function processDeletions() {
 
         await deleteFile(job, "src", job.storage_key);
         await deleteFile(job, "preview", job.thumbnail_key);
+        await deleteFile(job, "subtitles", job.subtitles_key);
 
         await Video.deleteOne({
           _id: job._id,
@@ -140,6 +143,17 @@ router.delete("/items/:video", async (req, res) => {
       });
     }
 
+    // Recusar se houver um pedido de processamento ativo para este vídeo
+    const busy = await hasActiveVideoJobs({ userId, videoId });
+
+    if (busy) {
+      return res.status(409).json({
+        error:
+          "This video has a processing request in progress. Cancel it before deleting.",
+        error_code: "busy_delete",
+      });
+    }
+
     // Guardar os dados de limpeza antes de alterar o projeto.
     await Deletion.updateOne(
       { _id: videoId },
@@ -149,6 +163,7 @@ router.delete("/items/:video", async (req, res) => {
           project_id: projectId,
           storage_key: video.storage_key,
           thumbnail_key: video.thumbnail_key,
+          subtitles_key: video.subtitles_key,
         },
       },
       { upsert: true },
