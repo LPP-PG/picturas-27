@@ -27,7 +27,8 @@ interface TrackedTrim {
 
 interface VideoTrimContextValue {
   registerTrim: (projectId: string, job: VideoTrimJob) => void;
-  hasActiveTrim: boolean;
+  // Indica se o vídeo tem um recorte a aguardar ou a processar
+  isTrimActive: (videoId: string) => boolean;
 }
 
 const VideoTrimContext = createContext<VideoTrimContextValue | undefined>(
@@ -328,9 +329,12 @@ export function VideoTrimProvider({
   const value = useMemo(
     () => ({
       registerTrim,
-      hasActiveTrim: trims.some((item) =>
-        ["queued", "processing"].includes(item.job.state),
-      ),
+      isTrimActive: (videoId: string) =>
+        trims.some(
+          (item) =>
+            item.job.source_video_id === videoId &&
+            ["queued", "processing"].includes(item.job.state),
+        ),
     }),
     [registerTrim, trims],
   );
