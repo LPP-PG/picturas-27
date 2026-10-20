@@ -37,6 +37,7 @@ import { api } from "@/lib/axios";
 import { deleteProject, type Project } from "@/lib/projects";
 import { useVideoTrim } from "@/providers/video-trim-provider";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 interface VideoProjectEditorProps {
   projectId: string;
@@ -104,6 +105,8 @@ export default function VideoProjectEditor({
   // Pedidos de legendas vistos ativos e já notificados (um aviso por pedido)
   const activeSubtitleIdsRef = useRef(new Set<string>());
   const notifiedSubtitleIdsRef = useRef(new Set<string>());
+  // Pedidos de filtros vistos ativos neste ecrã
+  const activeFilterIdsRef = useRef(new Set<string>());
 
   const videos = useQuery({
     queryKey: [
@@ -211,24 +214,55 @@ export default function VideoProjectEditor({
   const { reset: resetCancelFilter } = cancelFilter;
 
   useEffect(() => {
-  if (filterStatus.data?.state === "completed") {
-    void queryClient.invalidateQueries({
-      queryKey: [
-        "projectVideos",
-        session.user._id,
-        projectId,
-        session.token,
-      ],
-    });
-  }
-}, [
-  filterStatus.data?.state,
-  filterStatus.data?._id,
-  queryClient,
-  session.user._id,
-  projectId,
-  session.token,
-]);
+    if (!currentFilterJob) return;
+
+    if (
+      currentFilterJob.state === "queued" ||
+      currentFilterJob.state === "processing"
+    ) {
+      activeFilterIdsRef.current.add(currentFilterJob._id);
+      return;
+    }
+
+    // Só tratar pedidos que foram vistos ativos neste ecrã (um aviso por pedido)
+    if (!activeFilterIdsRef.current.delete(currentFilterJob._id)) return;
+
+    if (currentFilterJob.state === "completed") {
+      const resultId = currentFilterJob.result_video_id;
+
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "projectVideos",
+          session.user._id,
+          projectId,
+          session.token,
+        ],
+      });
+      toast({
+        title: "Video filter completed",
+        description: "The filtered video is now available in the project.",
+        duration: 6000,
+        action: (
+          <ToastAction
+            altText="Open filtered video"
+            onClick={() => {
+              manualSelectionRef.current = resultId;
+              setSelectedId(resultId);
+            }}
+          >
+            Open video
+          </ToastAction>
+        ),
+      });
+    }
+  }, [
+    currentFilterJob,
+    queryClient,
+    toast,
+    session.user._id,
+    projectId,
+    session.token,
+  ]);
 
   const subtitlesKey = [
     "videoSubtitles",
