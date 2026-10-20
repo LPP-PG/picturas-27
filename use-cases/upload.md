@@ -342,10 +342,7 @@ A coluna **Elemento da baseline** indica o elemento do documento de requisitos d
 | RN16 | Eliminação confirmada, derivados, último vídeo e seleção seguinte | REQ-VID-UPLOAD-043 a REQ-VID-UPLOAD-046 |
 | RN19 | Impedir eliminação com processamento dependente ativo | REQ-VID-STATUS-013 |
 
-**Cobertura documental:** os 50 requisitos aparecem na matriz. Os 41 IDs da baseline e respetivas prioridades foram preservados. Q1–Q9 mantêm o respetivo ID e registam respostas apenas parciais quando houve decisão posterior. Verificação da implementação, testes e correspondência com IDs da solução de base não são declarados concluídos.
-
-
-**Decisões de qualidade introduzidas nesta aula**
+**Decisões de qualidade**
 
 Os IDs desta tabela pertencem ao dossiê UC-VID-004. Nas tabelas conjuntas do relatório devem ser escritos UC-VID-004/DQ-nnn ou substituídos por uma referência ao registo global aprovado, preservando o mapeamento. Não se confundem com os DQ de Recorte, Filtros ou Legendas. Os alvos de produção da secção 4.1.2 são mínimos herdados, não medições nem compromissos adicionais aprovados nesta revisão.
 
