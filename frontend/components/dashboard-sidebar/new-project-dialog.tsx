@@ -26,7 +26,7 @@ import {
 } from "@/lib/videos";
 import ImageSubmissionArea from "../image-submission-area";
 import { useSession } from "@/providers/session-provider";
-import { LoaderCircle } from "lucide-react";
+import { FileVideo, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -146,6 +146,7 @@ const [mediaType, setMediaType] = useState<"image" | "video">(
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewError, setPreviewError] = useState("");
+  const [videoDragging, setVideoDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [capacity, setCapacity] = useState<VideoCapacity | null>(null);
@@ -936,14 +937,23 @@ async function refreshProjects() {
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {premium
-                  ? "MP4 or MOV: up to 600 seconds and 1 GB per video. Up to 3 simultaneous uploads per account."
-                  : "MP4 or MOV: up to 60 seconds and 100 MB per video. One simultaneous upload per account."}
-                {" "}Uploading does not use daily operations.
+                Maximum storage per profile:{" "}
+                {capacity
+                  ? formatBytes(capacity.limits.maxAccountBytes)
+                  : "Checking…"}
               </p>
 
               {capacity ? (
                 <div className="rounded-md border p-3 text-sm">
+                  <p>
+                    Accepted formats: MP4 and MOV.
+                  </p>
+                  <p>
+                    Maximum per video: {premium ? "1 GB" : "100 MB"}.
+                  </p>
+                  <p>
+                    Maximum duration: {premium ? "600 seconds" : "60 seconds"}.
+                  </p>
                   <p>
                     Project: {formatBytes(capacity.project_available_bytes)}
                     {" available out of "}
@@ -976,17 +986,34 @@ async function refreshProjects() {
               )}
 
               <div
-                className="rounded-md border-2 border-dashed p-4"
+                className={`flex min-h-64 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-4 text-center transition-colors ${
+                  videoDragging
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-neutral-400 text-neutral-400 hover:bg-sidebar"
+                }`}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setVideoDragging(true);
+                }}
                 onDragOver={(event) => event.preventDefault()}
+                onDragLeave={(event) => {
+                  event.preventDefault();
+                  setVideoDragging(false);
+                }}
                 onDrop={(event) => {
                   event.preventDefault();
+                  setVideoDragging(false);
                   if (!busy) {
                     void selectVideos(event.dataTransfer.files);
                   }
                 }}
+                onClick={() => {
+                  if (!busy) fileInputRef.current?.click();
+                }}
               >
-                <p className="mb-2 text-sm">
-                  Drag videos here or select files.
+                <FileVideo className="h-16 w-16" />
+                <p className="text-lg font-medium">
+                  Drag and drop videos or click to select files
                 </p>
                 <Input
                   ref={fileInputRef}
@@ -995,6 +1022,7 @@ async function refreshProjects() {
                   multiple
                   disabled={busy}
                   aria-label="Select videos"
+                  className="hidden"
                   onChange={(event) => {
                     void selectVideos(event.target.files);
                   }}

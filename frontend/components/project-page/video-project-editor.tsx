@@ -38,6 +38,13 @@ import { deleteProject, type Project } from "@/lib/projects";
 import { useVideoTrim } from "@/providers/video-trim-provider";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface VideoProjectEditorProps {
   projectId: string;
@@ -104,6 +111,7 @@ export default function VideoProjectEditor({
   const [trimEnd, setTrimEnd] = useState("");
   const [trimFormat, setTrimFormat] = useState<"mp4" | "mov">("mp4");
   const manualSelectionRef = useRef<string | null>(null);
+  const [deleteVideo, setDeleteVideo] = useState<ProjectVideo | null>(null);
   // Pedidos de legendas vistos ativos e já notificados (um aviso por pedido)
   const activeSubtitleIdsRef = useRef(new Set<string>());
   const notifiedSubtitleIdsRef = useRef(new Set<string>());
@@ -539,15 +547,6 @@ export default function VideoProjectEditor({
       }
 
       const deleteWholeProject = videoIds.length === 1;
-      const confirmed = window.confirm(
-        deleteWholeProject
-          ? `Delete "${video.name}" and this project?\n\n` +
-              "This is the last video in the project. The video, its thumbnail and the project will be permanently deleted."
-          : `Delete "${video.name}"?\n\n` +
-              "The video and its thumbnail will be permanently deleted.",
-      );
-
-      if (!confirmed) return "cancelled" as const;
 
       if (deleteWholeProject) {
         await deleteProject({
@@ -568,10 +567,9 @@ export default function VideoProjectEditor({
       return "video" as const;
     },
     onSuccess: async (result, deletedVideo) => {
-      if (result === "cancelled") return;
-
       await queryClient.cancelQueries({ queryKey });
       if (result === "project") {
+        setDeleteVideo(null);
         queryClient.removeQueries({ queryKey });
         router.replace("/dashboard");
         await queryClient.invalidateQueries({ queryKey: ["projects"] });
@@ -590,13 +588,14 @@ export default function VideoProjectEditor({
         (video) => video._id !== deletedVideo._id,
       );
       setSelectedId(remaining[index]?._id ?? remaining[0]?._id ?? null);
+      setDeleteVideo(null);
       await queryClient.invalidateQueries();
     },
   });
 
   function confirmDeletion() {
     if (!selected || deletion.isPending) return;
-    deletion.mutate(selected);
+    setDeleteVideo(selected);
   }
 
   function clearVideoQueryParameter() {
@@ -672,6 +671,42 @@ export default function VideoProjectEditor({
 
   return (
     <div className="flex h-full flex-col">
+      <Dialog
+        open={deleteVideo !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletion.isPending) {
+            setDeleteVideo(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone.
+              {deleteVideo && items.length === 1 && (
+                <span className="mt-2 block">
+                  This is the last video in the project, so this action will
+                  also delete the current project.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button
+              variant="destructive"
+              disabled={!deleteVideo || deletion.isPending}
+              onClick={() => {
+                if (deleteVideo) {
+                  deletion.mutate(deleteVideo);
+                }
+              }}
+            >
+              {deletion.isPending ? "Deleting…" : "Permanently Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <header className="flex items-center gap-3 border-b p-4">
         <SidebarTrigger
           variant="outline"
