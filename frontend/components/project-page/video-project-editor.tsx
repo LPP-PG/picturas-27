@@ -14,6 +14,7 @@ import {
   startVideoFilter,
   fetchLatestVideoFilter,
   cancelVideoFilter,
+  fetchVideoFilterPreview,
   startVideoSubtitles,
   fetchLatestVideoSubtitles,
   cancelVideoSubtitles,
@@ -151,6 +152,32 @@ export default function VideoProjectEditor({
     projectId,
     session.token,
   ];
+
+
+
+  // Pré-visualização do filtro selecionado, sem consumir quota
+  const filterPreview = useQuery({
+    queryKey: [
+      "videoFilterPreview",
+      session.user._id,
+      projectId,
+      selected?._id,
+      selectedFilter,
+    ],
+    queryFn: ({ signal }) =>
+      fetchVideoFilterPreview({
+        uid: session.user._id,
+        pid: projectId,
+        token: session.token,
+        videoId: selected!._id,
+        filterName: selectedFilter,
+        signal,
+      }),
+    enabled: openTool === "filters" && Boolean(selected?._id),
+    retry: false,
+  });
+
+
 
   const startFilter = useMutation({
     mutationFn: async () => {
@@ -1006,6 +1033,51 @@ export default function VideoProjectEditor({
             <option value="blur">Soft Blur</option>
           </select>
         </label>
+
+          
+        {/* Pré-visualização do filtro escolhido */}
+        {filterPreview.isPending && (
+          <p role="status" className="text-xs text-muted-foreground">
+            Loading filter preview...
+          </p>
+        )}
+
+        {filterPreview.isError && (
+          <div className="space-y-2">
+            <p role="alert" className="text-xs text-red-500">
+              Could not load the filter preview.
+              Choose another filter or try again.
+            </p>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void filterPreview.refetch()}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {filterPreview.isSuccess && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Filter preview (sample frame)
+            </p>
+
+            <img
+              src={filterPreview.data}
+              alt={`Preview of ${selectedFilter} filter`}
+              className="aspect-video w-full rounded border bg-black object-contain"
+            />
+
+            <p className="text-xs text-muted-foreground">
+              Preview only. No operation has been used.
+            </p>
+          </div>
+        )}
+
 
         <div className="flex gap-2">
           <Button

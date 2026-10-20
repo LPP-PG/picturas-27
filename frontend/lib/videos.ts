@@ -381,6 +381,34 @@ export async function startVideoFilter({
   return response.data;
 }
 
+
+export async function fetchVideoFilterPreview({
+  uid,
+  pid,
+  token,
+  videoId,
+  filterName,
+  signal,
+}: ProjectVideoRequest & {
+  videoId: string;
+  filterName: VideoFilterName;
+}): Promise<string> {
+  const response = await api.get<{ image: string }>(
+    `${projectVideosUrl(uid, pid)}/filters/preview`,
+    {
+      headers: authHeaders(token),
+      params: {
+        video_id: videoId,
+        filter_name: filterName,
+      },
+      signal,
+    },
+  );
+
+  return response.data.image;
+}
+
+
 // Consultar o pedido de filtro mais recente de um vídeo
 export async function fetchLatestVideoFilter({
   uid,

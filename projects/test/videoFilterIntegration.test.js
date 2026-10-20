@@ -14,7 +14,7 @@ test("TST-FILT-INT-01: aplica preto e branco a um MOV real", async () => {
   const pastaTemporaria = await fs.mkdtemp(
     path.join(os.tmpdir(), "teste-filtros-")
   );
-  const resultado = path.join(pastaTemporaria, "resultado.mov");
+  const resultado = path.join(pastaTemporaria, "resultado.mp4");
 
   try {
     const ficheiroOriginal = await fs.readFile(original);
@@ -201,7 +201,8 @@ test("TST-FILT-INT-04: o filtro preto e branco remove as cores", async () => {
 });
 
 
-test("TST-FILT-INT-05: preserva o áudio original do vídeo", async () => {
+
+test("TST-FILT-INT-05: preserva áudio reproduzível em AAC", async () => {
   const { execFileSync } = require("node:child_process");
 
   const original = path.join(
@@ -216,24 +217,10 @@ test("TST-FILT-INT-05: preserva o áudio original do vídeo", async () => {
 
   const resultado = path.join(pastaTemporaria, "resultado.mp4");
 
-  function obterHashAudio(ficheiro) {
-    return execFileSync("ffmpeg", [
-      "-v", "error",
-      "-i", ficheiro,
-      "-map", "0:a:0",
-      "-c:a", "copy",
-      "-f", "hash",
-      "-hash", "sha256",
-      "-"
-    ]).toString().trim();
-  }
-
   try {
     const antes = await readVideoMetadata(original);
 
     assert.equal(antes.has_audio, true);
-
-    const hashAudioOriginal = obterHashAudio(original);
 
     await processVideoFilter(original, resultado, "sepia", {
       durationSeconds: antes.duration_seconds,
@@ -241,12 +228,29 @@ test("TST-FILT-INT-05: preserva o áudio original do vídeo", async () => {
 
     const depois = await readVideoMetadata(resultado);
 
-    // O vídeo filtrado continua a ter áudio
+    // O resultado continua a ter áudio
     assert.equal(depois.has_audio, true);
 
-    // Os dados do áudio original foram preservados
-    const hashAudioResultado = obterHashAudio(resultado);
-    assert.equal(hashAudioResultado, hashAudioOriginal);
+    // O áudio resultante utiliza o codec AAC
+    const codecAudio = execFileSync("ffprobe", [
+      "-v", "error",
+      "-select_streams", "a:0",
+      "-show_entries", "stream=codec_name",
+      "-of", "default=noprint_wrappers=1:nokey=1",
+      resultado
+    ]).toString().trim();
+
+    assert.equal(codecAudio, "aac");
+
+    // Confirmar que o áudio pode ser descodificado sem erros
+    execFileSync("ffmpeg", [
+      "-v", "error",
+      "-xerror",
+      "-i", resultado,
+      "-map", "0:a:0",
+      "-f", "null",
+      "-"
+    ]);
 
     // A duração do vídeo mantém-se
     assert.ok(

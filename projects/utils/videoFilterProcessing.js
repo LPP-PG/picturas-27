@@ -25,7 +25,7 @@ async function prepareFilteredVideo(
 
   const outputPath = path.join(
     os.tmpdir(),
-    `${jobId}-filter-result.${video.format}`,
+    `${jobId}-filter-result.mp4`,
   );
 
   let completed = false;

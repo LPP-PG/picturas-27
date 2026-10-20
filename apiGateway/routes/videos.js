@@ -195,6 +195,16 @@ controlRoute(
     `/filters?video_id=${encodeURIComponent(req.query.video_id ?? "")}`,
 );
 
+
+ // Pré-visualização de filtros, sem criar pedido
+controlRoute(
+  "get",
+  "/:user/:project/filters/preview",
+  (req) =>
+    `/filters/preview?video_id=${encodeURIComponent(req.query.video_id ?? "")}&filter_name=${encodeURIComponent(req.query.filter_name ?? "")}`,
+);
+
+
 controlRoute(
   "get",
   "/:user/:project/filters/:filterId",

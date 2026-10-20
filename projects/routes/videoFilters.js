@@ -17,7 +17,7 @@ const axios = require("axios");
 const https = require("node:https");
 const { processFilterJob, cancelFilterJob } = require("../utils/videoFilterJob");
 const { videoMessages, storageMessage } = require("../utils/videoMessages");
-
+const { generateVideoFilterPreview } = require("../utils/videoFilterPreview");
 const usersHttpsAgent = new https.Agent({
   rejectUnauthorized: false,
 });
@@ -134,7 +134,7 @@ if (
       source_video_id: video._id,
       result_video_id: new mongoose.Types.ObjectId(),
       filter_name,
-      output_format: video.format,
+      output_format: "mp4",
       reserved_bytes: estimatedBytes,
       operation_reserved: true,
     });
@@ -230,6 +230,70 @@ router.get("/", async (req, res) => {
     });
   }
 });
+
+
+
+ // Pré-visualizar um filtro sem criar pedido nem consumir quota
+router.get("/preview", async (req, res) => {
+  try {
+    const videoId = req.query.video_id;
+    const filterName = req.query.filter_name;
+
+    // Validar o vídeo
+    if (!mongoose.isObjectIdOrHexString(videoId)) {
+      return res.status(400).json({
+        error: "Invalid video ID.",
+      });
+    }
+
+    // Validar o filtro selecionado
+    if (typeof filterName !== "string") {
+      return res.status(400).json({
+        error: "Invalid filter.",
+      });
+    }
+
+    try {
+      getVideoFilterGraph(filterName);
+    } catch {
+      return res.status(400).json({
+        error: "Unsupported video filter.",
+      });
+    }
+
+    // Garantir que o vídeo pertence ao utilizador e ao projeto
+    const video = await Video.findOne({
+      _id: videoId,
+      user_id: req.videoUser._id,
+      project_id: req.videoProject._id,
+    }).lean();
+
+    if (!video || !video.thumbnail_key) {
+      return res.status(404).json({
+        error: "Video preview is not available.",
+      });
+    }
+
+    // Gerar apenas uma imagem, sem reservar espaço ou quota
+    const image = await generateVideoFilterPreview(
+      video,
+      filterName
+    );
+
+    res.set("Cache-Control", "no-store");
+
+    return res.json({
+      image: `data:image/jpeg;base64,${image.toString("base64")}`,
+    });
+  } catch (error) {
+    console.error("Error generating filter preview:", error);
+
+    return res.status(503).json({
+      error: "Could not generate filter preview.",
+    });
+  }
+});
+
 
 // Consultar o estado de um pedido de filtro
 router.get("/:filterId", async (req, res) => {
