@@ -79,7 +79,7 @@ A aplicação de filtros permite transformar o aspeto de um vídeo diretamente n
 | E2 – Pré-visualização indisponível (passo 3) | Apresenta «Não foi possível pré-visualizar o filtro» e permite repetir ou escolher outro filtro. Não cria um pedido nem consome quota só por falhar a pré-visualização; o processamento continua dependente de confirmação explícita. |
 | E3 – Espaço insuficiente no projeto ou na conta (passo 4) | Apresenta «Espaço de armazenamento insuficiente» e indica qual o limite atingido; não reserva espaço nem cria pedido. |
 | E4 – Erro a meio do processamento (passos 6–8) | Passa a **Falhou**, descarta resultados parciais, liberta a reserva, informa a falha, não contabiliza a operação e mantém o original intacto. |
-| E5 – Serviço indisponível ou fila cheia (passo 4) | Informa que o serviço está temporariamente indisponível; não cria pedido nem reserva espaço. |
+| E5 – Um serviço necessário ao processamento está indisponível (passo 4) | Informa que o serviço está temporariamente indisponível; não cria pedido nem reserva espaço. |
 | E6 – O resultado excede a reserva e não cabe no espaço livre (passo 8) | Passa a **Falhou**, elimina o resultado incompleto, liberta a reserva, informa o limite atingido e não contabiliza a operação. |
 | E7 – Vídeo indisponível, projeto inexistente ou acesso não autorizado | Não permite aplicar filtros a ficheiros ainda em carregamento nem a vídeos/projetos de outro utilizador; informa a indisponibilidade ou recusa o acesso. O carregamento e respetivos limites continuam sujeitos ao UC-VID-004. |
 
