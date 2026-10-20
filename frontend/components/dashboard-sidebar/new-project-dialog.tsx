@@ -45,7 +45,7 @@ interface SelectedVideo {
 }
 
 const labels: Record<VideoUploadState, string> = {
-  waiting: "Waiting",
+  waiting: "Queued",
   uploading: "Uploading",
   validating: "Validating",
   thumbnail: "Preparing thumbnail",
