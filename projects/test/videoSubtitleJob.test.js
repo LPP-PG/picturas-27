@@ -66,7 +66,7 @@ const job = (extra = {}) => ({
   ...extra,
 });
 
-test("recuperação: legendas já ligadas ao vídeo concluem o pedido sem devolução", async () => {
+test("TST-LEG-REC-01: recuperação — legendas já ligadas ao vídeo concluem o pedido sem devolução", async () => {
   const j = job();
   const state = setup({
     jobs: [j],
@@ -82,7 +82,7 @@ test("recuperação: legendas já ligadas ao vídeo concluem o pedido sem devolu
   assert.equal(state.updates[0].update.$set.progress, 100);
 });
 
-test("recuperação: apaga o ficheiro órfão, falha o pedido e devolve a operação", async () => {
+test("TST-LEG-REC-02: recuperação — apaga o ficheiro órfão, falha o pedido e devolve a operação", async () => {
   const j = job();
   const state = setup({ jobs: [j], video: { subtitles_key: null } });
 
@@ -94,7 +94,7 @@ test("recuperação: apaga o ficheiro órfão, falha o pedido e devolve a opera�
   assert.equal(j.operation_reserved, false);
 });
 
-test("devolução repetida: mantém a marca se o serviço continua em baixo", async () => {
+test("TST-LEG-REC-03: devolução repetida — mantém a marca se o serviço continua em baixo", async () => {
   const j = job({ state: "failed" });
   const state = setup({ jobs: [j], refundOk: false });
 
@@ -104,7 +104,7 @@ test("devolução repetida: mantém a marca se o serviço continua em baixo", as
   assert.equal(j.operation_reserved, true);
 });
 
-test("devolução repetida: devolve uma só vez e limpa a marca", async () => {
+test("TST-LEG-REC-04: devolução repetida — devolve uma só vez e limpa a marca", async () => {
   const j = job({ state: "cancelled" });
   const state = setup({ jobs: [j] });
 

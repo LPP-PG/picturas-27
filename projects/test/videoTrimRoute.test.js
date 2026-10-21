@@ -167,7 +167,7 @@ async function post(body) {
 
 test.beforeEach(resetState);
 
-test("TST-TRIM-ERR-00 / REQ-VID-TRIM-034: não permite consultar um pedido de outro proprietário", async () => {
+test("TST-TRIM-ERR-00 / REQ-VID-STATUS-020: não permite consultar um pedido de outro proprietário", async () => {
   VideoTrim.findOne = async () => null;
   const response = makeResponse();
 
@@ -357,7 +357,7 @@ test("TST-TRIM-ERR-05B: rejeita um vídeo cuja duração não permite um interva
   state.video.duration_seconds = originalDuration;
 });
 
-test("TST-TRIM-ERR-06 / REQ-VID-TRIM-034: rejeita acesso a vídeo que não pertence ao projeto", async () => {
+test("TST-TRIM-ERR-06 / REQ-VID-STATUS-020: rejeita acesso a vídeo que não pertence ao projeto", async () => {
   Video.findOne = () => lean(null);
   const response = await post({
     video_id: videoId.toString(),
@@ -442,7 +442,7 @@ test("TST-TRIM-ERR-09: rejeita quando a quota diária não está disponível", a
   assert.equal(state.createdJobs.length, 0);
 });
 
-test("TST-TRIM-ERR-09B / REQ-VID-TRIM-032: rejeita quando o serviço de processamento está indisponível", async () => {
+test("TST-TRIM-ERR-09B / REQ-VID-STATUS-012: rejeita quando o serviço de processamento está indisponível", async () => {
   axios.get = async () => {
     throw new Error("users service unavailable");
   };

@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const { Readable } = require("node:stream");
 const { parseSpeechStream } = require("../utils/speechClient");
 
-test("stream normal com linhas partidas entre chunks", async () => {
+test("TST-LEG-SPEECH-01: lê o stream do serviço de fala com linhas partidas entre chunks", async () => {
   const text =
     '{"type":"info","language":"pt","probability":0.9}\n' +
     '{"type":"segment","start":0,"end":1.5,"text":"Olá"}\n' +
@@ -23,7 +23,7 @@ test("stream normal com linhas partidas entre chunks", async () => {
   assert.deepEqual(segments.map((s) => s.text), ["Olá", "mundo"]);
 });
 
-test("caracteres multibyte partidos entre chunks", async () => {
+test("TST-LEG-SPEECH-02: lê caracteres multibyte partidos entre chunks", async () => {
   const bytes = Buffer.from(
     '{"type":"segment","start":0,"end":1,"text":"Olá"}\n{"type":"done"}\n',
   );
@@ -39,7 +39,7 @@ test("caracteres multibyte partidos entre chunks", async () => {
   assert.equal(segments[0].text, "Olá");
 });
 
-test("evento error rejeita com o código", async () => {
+test("TST-LEG-SPEECH-03: um evento de erro rejeita com o código recebido", async () => {
   const stream = Readable.from([
     '{"type":"info","language":null,"probability":0.1}\n{"type":"error",',
     '"code":"not_english"}\n',
@@ -50,7 +50,7 @@ test("evento error rejeita com o código", async () => {
   });
 });
 
-test("stream sem done nem error é uma falha", async () => {
+test("TST-LEG-SPEECH-04: um stream sem fim nem erro é uma falha", async () => {
   const stream = Readable.from([
     '{"type":"info","language":"en","probability":0.9}\n',
     '{"type":"segment","start":0,"end":1,"text":"Hi"}\n',
