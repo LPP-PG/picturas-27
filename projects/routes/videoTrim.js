@@ -21,11 +21,15 @@ const router = express.Router();
 const usersService = "https://users:10001";
 const usersHttpsAgent = new https.Agent({ rejectUnauthorized: false });
 
-function sendError(res, error) {
+function sendError(res, error, fallback = "Could not start the video trim.") {
   console.error("Erro no recorte de vídeo:", error.message);
   res.status(error.status || 503).json({
-    error: error.status ? error.message : "Could not start the video trim.",
+    error: error.status ? error.message : fallback,
   });
+}
+
+function invalidTrimId(res) {
+  return res.status(400).json({ error: "Invalid trim request ID." });
 }
 
 function publicJob(job) {
@@ -194,6 +198,9 @@ router.post("/", async (req, res) => {
 
 router.get("/:trimId", async (req, res) => {
   try {
+    if (!mongoose.isObjectIdOrHexString(req.params.trimId)) {
+      return invalidTrimId(res);
+    }
     const job = await VideoTrim.findOne({
       _id: req.params.trimId,
       user_id: req.videoUser._id,
@@ -203,12 +210,15 @@ router.get("/:trimId", async (req, res) => {
     res.set("Cache-Control", "no-store");
     res.json(publicJob(job));
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, "Could not retrieve the trim request.");
   }
 });
 
 router.delete("/:trimId", async (req, res) => {
   try {
+    if (!mongoose.isObjectIdOrHexString(req.params.trimId)) {
+      return invalidTrimId(res);
+    }
     const job = await VideoTrim.findOne({
       _id: req.params.trimId,
       user_id: req.videoUser._id,
@@ -218,7 +228,7 @@ router.delete("/:trimId", async (req, res) => {
     if (!job) return res.status(404).json({ error: "Trim request not found or already finished." });
     res.status(202).json(publicJob(await cancelTrimJob(job)));
   } catch (error) {
-    sendError(res, error);
+    sendError(res, error, "Could not cancel the video trim.");
   }
 });
 
