@@ -162,7 +162,7 @@ export function useVideoJobToasts<J extends VideoJob>(
     });
   }, [results, tracked, showProgress]);
 
-  // Fechar as notificações de progresso ao sair do editor
+  // Fechar as notificações de progresso ao sair do dashboard
   useEffect(() => {
     const open = toasts.current;
     return () => {
