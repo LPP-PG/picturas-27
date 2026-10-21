@@ -63,6 +63,8 @@ async function prepareFilteredVideo(
       filterName,
       {
         durationSeconds: sourceMetadata.duration_seconds,
+        videoBitrate: sourceMetadata.video_bitrate,
+        audioCodec: sourceMetadata.audio_codec,
         onProgress,
         isCancelled,
       },

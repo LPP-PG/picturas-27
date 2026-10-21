@@ -6,9 +6,18 @@ function processVideoFilter(
   inputPath,
   outputPath,
   filterName,
-  { durationSeconds, onProgress, isCancelled } = {},
+  { durationSeconds, videoBitrate, audioCodec, onProgress, isCancelled } = {},
 ) {
   const filterGraph = getVideoFilterGraph(filterName);
+
+  // Manter a taxa de bits do original, como no recorte, para não perder qualidade
+  const videoEncoding = Number.isFinite(videoBitrate) && videoBitrate > 0
+    ? ["-b:v", `${Math.round(videoBitrate / 1000)}k`]
+    : ["-crf", "12"];
+  // O áudio AAC é copiado tal como está; os outros codecs são convertidos para AAC
+  const audioEncoding = audioCodec === "aac"
+    ? ["-c:a", "copy"]
+    : ["-c:a", "aac", "-b:a", "192k"];
 
   return new Promise((resolve, reject) => {
     const args = [
@@ -20,11 +29,10 @@ function processVideoFilter(
       "-map", "0:a?",
       "-vf", filterGraph,
       "-c:v", "libx264",
+      ...videoEncoding,
       "-preset", "medium",
-      "-crf", "23",
       "-pix_fmt", "yuv420p",
-      "-c:a", "aac",
-      "-b:a", "192k",
+      ...audioEncoding,
       "-movflags", "+faststart",
       "-progress", "pipe:1",
       "-nostats",

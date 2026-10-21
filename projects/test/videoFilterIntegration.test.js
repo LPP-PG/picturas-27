@@ -383,3 +383,40 @@ test("TST-FILT-INT-07: limpa ficheiros temporários após uma falha", async (t) 
     delete require.cache[modulePath];
   }
 });
+
+
+
+test("TST-FILT-INT-08: mantém a qualidade do vídeo e copia o áudio AAC sem perdas", async () => {
+  const { execFileSync } = require("node:child_process");
+  const original = path.join(__dirname, "fixtures", "traffic-voiceover.mp4");
+  const pastaTemporaria = await fs.mkdtemp(
+    path.join(os.tmpdir(), "teste-qualidade-filtro-")
+  );
+  const resultado = path.join(pastaTemporaria, "resultado.mp4");
+  const hashAudio = (ficheiro) => execFileSync("ffmpeg", [
+    "-v", "error", "-i", ficheiro, "-map", "0:a:0", "-c", "copy", "-f", "md5", "-",
+  ]).toString().trim();
+
+  try {
+    const antes = await readVideoMetadata(original);
+    assert.equal(antes.audio_codec, "aac");
+
+    await processVideoFilter(original, resultado, "grayscale", {
+      durationSeconds: antes.duration_seconds,
+      videoBitrate: antes.video_bitrate,
+      audioCodec: antes.audio_codec,
+    });
+
+    const depois = await readVideoMetadata(resultado);
+
+    // O vídeo é codificado com uma taxa de bits próxima da original
+    assert.ok(
+      depois.video_bitrate >= antes.video_bitrate * 0.8,
+      `taxa de bits ${depois.video_bitrate} muito abaixo de ${antes.video_bitrate}`,
+    );
+    // O áudio AAC é copiado sem nova compressão
+    assert.equal(hashAudio(resultado), hashAudio(original));
+  } finally {
+    await fs.rm(pastaTemporaria, { recursive: true, force: true });
+  }
+});

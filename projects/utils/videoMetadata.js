@@ -93,6 +93,9 @@ async function readVideoMetadata(filePath, { signal } = {}) {
     has_audio: streams.some(
       (stream) => stream.codec_type === "audio",
     ),
+    audio_codec: streams.find(
+      (stream) => stream.codec_type === "audio",
+    )?.codec_name || null,
     width: videoStream.width,
     height: videoStream.height,
     frame_rate: (() => {
