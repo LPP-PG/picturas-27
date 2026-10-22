@@ -448,19 +448,18 @@ async function refreshProjects() {
         .map(async (item) => {
           const duration = await readLocalDuration(item.file);
           const maxDuration = premium ? 600 : 60;
+          // Se o navegador não ler o vídeo (codec não suportado), o ficheiro
+          // continua elegível: é o servidor que valida o conteúdo (UPLOAD-041).
           const tooLong = duration !== null && duration > maxDuration;
-          const unreadable = duration === null;
 
           updateVideo(item.id, {
             duration,
             checking: false,
-            ...((tooLong || unreadable)
+            ...(tooLong
               ? {
                   eligible: false,
                   state: "failed" as const,
-                  error: unreadable
-                    ? "The video could not be read. Please choose a valid MP4 or MOV video."
-                    : `The video exceeds ${maxDuration} seconds.`,
+                  error: `The video exceeds ${maxDuration} seconds.`,
                 }
               : {}),
           });
