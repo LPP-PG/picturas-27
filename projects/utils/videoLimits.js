@@ -45,23 +45,28 @@ function validateVideoLimits(userType, durationSeconds, sizeBytes) {
     throw error;
   }
 
-  if (sizeBytes > limits.maxSizeBytes) {
-    const error = new Error(
+  const violations = [];
+  const tooLarge = sizeBytes > limits.maxSizeBytes;
+
+  if (tooLarge) {
+    violations.push(
       userType === "free"
         ? "O vídeo excede o limite de 100 MB do perfil Registado."
         : "O vídeo excede o limite de 1 GB do perfil Premium.",
     );
-    error.status = 413;
-    throw error;
   }
 
   if (durationSeconds > limits.maxDurationSeconds) {
-    const error = new Error(
+    violations.push(
       userType === "free"
         ? "O vídeo excede o limite de 60 segundos do perfil Registado."
         : "O vídeo excede o limite de 600 segundos do perfil Premium.",
     );
-    error.status = 400;
+  }
+
+  if (violations.length > 0) {
+    const error = new Error(violations.join(" "));
+    error.status = tooLarge ? 413 : 400;
     throw error;
   }
 

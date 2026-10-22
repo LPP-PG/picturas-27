@@ -25,6 +25,7 @@ import {
   type VideoCapacity,
   type VideoUploadState,
 } from "@/lib/videos";
+import { canReadLocalVideo, getLocalVideoError, readLocalDuration } from "@/lib/local-video-validation";
 import ImageSubmissionArea from "../image-submission-area";
 import { useSession } from "@/providers/session-provider";
 import { FileVideo, LoaderCircle } from "lucide-react";
@@ -85,39 +86,6 @@ function wait(milliseconds: number) {
   });
 }
 
-function readLocalDuration(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
-    const video = document.createElement("video");
-    const url = URL.createObjectURL(file);
-    let settled = false;
-
-    const finish = (duration: number | null) => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timer);
-      video.onloadedmetadata = null;
-      video.onerror = null;
-      video.removeAttribute("src");
-      video.load();
-      URL.revokeObjectURL(url);
-      resolve(duration);
-    };
-
-    const timer = window.setTimeout(() => finish(null), 12000);
-
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      finish(
-        Number.isFinite(video.duration) && video.duration > 0
-          ? video.duration
-          : null,
-      );
-    };
-    video.onerror = () => finish(null);
-    video.src = url;
-  });
-}
-
 export default function NewProjectDialog({
   files = [],
   setFiles,
@@ -162,6 +130,7 @@ const [mediaType, setMediaType] = useState<"image" | "video">(
 );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const controllersRef = useRef(new Map<string, AbortController>());
+  const durationControllersRef = useRef(new Map<string, AbortController>());
   const cancelledRef = useRef(new Set<string>());
   const stopAllRef = useRef(false);
   const batchRef = useRef<Promise<void> | null>(null);
@@ -367,7 +336,17 @@ async function refreshProjects() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mediaType, session.user._id, session.token]);
 
+  useEffect(() => {
+    const controllers = durationControllersRef.current;
+    return () => {
+      controllers.forEach((controller) => controller.abort());
+      controllers.clear();
+    };
+  }, []);
+
   function resetForm() {
+    durationControllersRef.current.forEach((controller) => controller.abort());
+    durationControllersRef.current.clear();
     setName(existingProject?.name ?? "");
     setMediaType(existingProject ? "video" : "image");
     setImageFiles([]);
@@ -405,19 +384,8 @@ async function refreshProjects() {
   async function selectVideos(selected: FileList | File[] | null) {
     if (!selected || busy) return;
 
-    const maxSize = premium ? 1_000_000_000 : 100_000_000;
-
     const additions: SelectedVideo[] = Array.from(selected).map((file) => {
-      let reason = "";
-
-      if (!/\.(mp4|mov)$/i.test(file.name)) {
-        reason = "Only MP4 or MOV videos are accepted.";
-      } else if (file.size <= 0) {
-        reason = "The file is empty.";
-      } else if (file.size > maxSize) {
-        reason = `The file exceeds ${premium ? "1 GB" : "100 MB"}.`;
-      }
-
+      const reason = getLocalVideoError(file, null, premium);
       return {
         id: crypto.randomUUID(),
         file,
@@ -426,7 +394,7 @@ async function refreshProjects() {
         error: reason,
         eligible: !reason,
         duration: null,
-        checking: !reason,
+        checking: canReadLocalVideo(file),
       };
     });
 
@@ -443,28 +411,33 @@ async function refreshProjects() {
     }
 
     await Promise.all(
-      additions
-        .filter((item) => item.eligible)
-        .map(async (item) => {
-          const duration = await readLocalDuration(item.file);
-          const maxDuration = premium ? 600 : 60;
-          // Se o navegador não ler o vídeo (codec não suportado), o ficheiro
-          // continua elegível: é o servidor que valida o conteúdo (UPLOAD-041).
-          const tooLong = duration !== null && duration > maxDuration;
-
-          updateVideo(item.id, {
-            duration,
-            checking: false,
-            ...(tooLong
-              ? {
-                  eligible: false,
-                  state: "failed" as const,
-                  error: `The video exceeds ${maxDuration} seconds.`,
-                }
-              : {}),
-          });
-        }),
+      additions.filter((item) => item.checking).map(async (item) => {
+        const controller = new AbortController();
+        durationControllersRef.current.set(item.id, controller);
+        try {
+          const duration = await readLocalDuration(item.file, controller.signal);
+          if (controller.signal.aborted) return;
+          const current = videosRef.current.find((video) => video.id === item.id);
+          if (!current) return;
+          applyLocalDuration(current, current.duration ?? duration);
+        } finally {
+          durationControllersRef.current.delete(item.id);
+        }
+      }),
     );
+  }
+
+  function applyLocalDuration(item: SelectedVideo, duration: number | null) {
+    // Late metadata must not replace the state of an upload already started.
+    if (item.uploadId || !["waiting", "failed"].includes(item.state)) return;
+    const reason = getLocalVideoError(item.file, duration, premium);
+    updateVideo(item.id, {
+      duration,
+      checking: false,
+      eligible: !reason,
+      state: reason ? "failed" : "waiting",
+      error: reason,
+    });
   }
 
   async function cancelItem(id: string) {
@@ -693,7 +666,7 @@ async function refreshProjects() {
           error: "",
         });
 
-        await uploadProjectVideo({
+        const uploaded = await uploadProjectVideo({
           ...request,
           pid: pid!,
           uploadId,
@@ -705,6 +678,7 @@ async function refreshProjects() {
         });
 
         updateVideo(item.id, {
+          duration: uploaded.video.duration_seconds,
           state: "completed",
           progress: 100,
           cleanupPending: false,
@@ -1046,10 +1020,24 @@ async function refreshProjects() {
                     playsInline
                     preload="metadata"
                     className="aspect-video w-full rounded-md bg-black"
+                    onLoadedMetadata={(event) => {
+                      const duration = event.currentTarget.duration;
+                      if (!Number.isFinite(duration) || duration <= 0) return;
+                      videosRef.current
+                        .filter((item) => item.file === previewFile)
+                        .forEach((item) => applyLocalDuration(item, duration));
+                    }}
+                    onDurationChange={(event) => {
+                      const duration = event.currentTarget.duration;
+                      if (!Number.isFinite(duration) || duration <= 0) return;
+                      videosRef.current
+                        .filter((item) => item.file === previewFile)
+                        .forEach((item) => applyLocalDuration(item, duration));
+                    }}
                     onError={() => {
                       setPreviewError(
                         "Your browser could not preview this video. " +
-                          "You can still upload it; the server will validate the file.",
+                          "The server validates uploaded videos independently.",
                       );
                     }}
                   />
@@ -1074,7 +1062,9 @@ async function refreshProjects() {
                         ? "Checking duration"
                         : item.duration !== null
                           ? `${item.duration.toFixed(2)} s`
-                          : "Duration unavailable in this browser"}
+                          : canReadLocalVideo(item.file)
+                            ? "Duration unavailable in this browser"
+                            : "Duration not checked"}
                       {" · "}
                       {labels[item.state]}
                     </p>
@@ -1096,6 +1086,13 @@ async function refreshProjects() {
                           </p>
                         </div>
                       )}
+
+                    {!item.checking && item.duration === null && item.eligible && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        The server will check the duration and validate the video
+                        when it is uploaded.
+                      </p>
+                    )}
 
                     {item.error && (
                       <p className="mt-1 text-sm text-red-500">
@@ -1159,6 +1156,8 @@ async function refreshProjects() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
+                              durationControllersRef.current.get(item.id)?.abort();
+                              durationControllersRef.current.delete(item.id);
                               replaceVideos(
                                 videosRef.current.filter(
                                   (video) => video.id !== item.id,
