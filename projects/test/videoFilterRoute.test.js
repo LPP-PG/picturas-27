@@ -121,6 +121,32 @@ test("TST-FILT-ROUTE-01: mostra a causa quando a reserva de espaço falha", asyn
   assert.equal(state.refunds, 1);
 });
 
+test("TST-FILT-ROUTE-03 / REQ-VID-FILT-004: recusa aplicar um filtro a um vídeo ainda não registado no projeto", async () => {
+  // O registo Video só é criado no fim do carregamento
+  const original = Video.findOne;
+  Video.findOne = () => ({ lean: async () => null });
+  let created = false;
+  const originalCreate = VideoFilter.create;
+  VideoFilter.create = async () => {
+    created = true;
+  };
+
+  try {
+    const response = await post({
+      video_id: videoId.toString(),
+      filter_name: "grayscale",
+    });
+
+    assert.equal(response.statusCode, 404);
+    assert.equal(response.body.error, "Video not found in this project.");
+    assert.equal(created, false);
+    assert.equal(state.refunds, 0);
+  } finally {
+    Video.findOne = original;
+    VideoFilter.create = originalCreate;
+  }
+});
+
 test("TST-FILT-ROUTE-02: usa a mensagem genérica num erro inesperado", async () => {
   state.reserveError = new Error("database unavailable");
 
