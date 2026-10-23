@@ -60,4 +60,4 @@ Os commits abaixo foram preparados pelo Claude Code nas sessões indicadas e reg
 
 ## 4. Prompts relevantes
 
-Os pedidos feitos ao Claude Code estão em [`prompts/daniel-rodrigues.md`](prompts/daniel-rodrigues.md), por sessão e com data.
+Os pedidos feitos ao Claude Code estão em [`claude_opus55.md`](claude_opus55.md), por sessão e com data.
