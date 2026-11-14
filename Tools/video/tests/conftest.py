@@ -4,7 +4,8 @@ import sys
 
 import pytest
 
-# allows "import effects" / "import video_processor" as in the container
+# allows "import effects" / "import video_processor" / "import utils" as in the container
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
