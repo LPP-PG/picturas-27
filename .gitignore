@@ -16,3 +16,7 @@ backups/
 __pycache__/
 *.py[cod]
 .venv/
+
+# Local autoscaling runtime files
+.autoscaling.lock
+medicoes/autoscaling*.csv
