@@ -38,7 +38,8 @@ def binarization(img: Image.Image, threshold: int) -> Image.Image:
 
 
 def cut(img: Image.Image, left: int, top: int, right: int, bottom: int) -> Image.Image:
-    return img.crop((int(left), int(top), int(right), int(bottom)))
+    # The crop tool sends the pixels to remove from each side
+    return img.crop((int(left), int(top), img.width - int(right), img.height - int(bottom)))
 
 
 def border(img: Image.Image, borderWidth: int, r: int, g: int, b: int) -> Image.Image:
