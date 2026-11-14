@@ -5,7 +5,7 @@ import datetime
 
 import pytz
 
-from PIL import Image, ImageEnhance
+from utils import filters
 
 from utils.img_handler import Img_Handler
 from utils.tool_msg import ToolMSG
@@ -29,15 +29,10 @@ class Brightness:
     def adjust_brightness(self, img_path, store_img_path, brightness_factor):
         # Load the image
         img = self._img_handler.get_img(img_path)
-        
-        # Only convert palette images 
-        if img.mode == 'P':
-            img = img.convert('RGB')
-        
+
         # adjust brightness
-        enhancer = ImageEnhance.Brightness(img)
-        new_img = enhancer.enhance(brightness_factor)
-        
+        new_img = filters.brightness(img, brightness_factor)
+
         # save image
         self._img_handler.store_img(new_img, store_img_path)
 

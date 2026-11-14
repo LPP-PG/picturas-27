@@ -4,7 +4,7 @@ import datetime
 import pytz
 import pytz
 
-from PIL import Image
+from utils import filters
 
 from utils.img_handler import Img_Handler
 from utils.tool_msg import ToolMSG
@@ -20,9 +20,9 @@ class Rotate:
             'error_processing': 1601
         }
 
-    def rotate_image(self, img_path, store_img_path, degrees, expand=True):
+    def rotate_image(self, img_path, store_img_path, degrees):
         img = self._img_handler.get_img(img_path)
-        new_img = img.rotate(degrees, expand=expand)
+        new_img = filters.rotate(img, degrees)
         self._img_handler.store_img(new_img, store_img_path)
 
     def rotate_callback(self, ch, method, properties, body):

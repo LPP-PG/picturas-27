@@ -4,7 +4,7 @@ import json
 import datetime
 import pytz
 
-from PIL import Image
+from utils import filters
 
 from utils.img_handler import Img_Handler
 from utils.tool_msg import ToolMSG
@@ -30,12 +30,8 @@ class Cut:
         # load image
         img = self._img_handler.get_img(img_path)
         
-        # Validate dimensions
-        # left, top, right, bottom = map(float, dimensions) 
-        # dimensions = (round(left), round(top), round(right), round(bottom))
-        
         # cut image
-        new_img = img.crop(dimensions)
+        new_img = filters.cut(img, *dimensions)
         
         # store image
         self._img_handler.store_img(new_img, store_img_path)

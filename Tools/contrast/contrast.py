@@ -3,7 +3,7 @@ import json
 import datetime
 import pytz
 
-from PIL import Image, ImageEnhance
+from utils import filters
 
 from utils.img_handler import Img_Handler
 from utils.tool_msg import ToolMSG
@@ -27,15 +27,10 @@ class Contrast:
     def contrast_image(self, img_path, store_img_path, contrast_factor):
         # load image
         img = self._img_handler.get_img(img_path)
-        
-        # Only convert palette images
-        if img.mode == 'P':
-            img = img.convert('RGB')
-        
+
         # apply contrast
-        enhancer = ImageEnhance.Contrast(img)
-        new_img = enhancer.enhance(contrast_factor)
-        
+        new_img = filters.contrast(img, contrast_factor)
+
         # store image
         self._img_handler.store_img(new_img, store_img_path)
 

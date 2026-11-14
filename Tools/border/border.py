@@ -1,4 +1,4 @@
-from PIL import Image, ImageOps
+from utils import filters
 import sys
 import json
 import datetime
@@ -24,7 +24,7 @@ class Border:
         img = self._img_handler.get_img(img_path)
         
         # add border
-        image_with_border = ImageOps.expand(img, border=border_width, fill=border_color)
+        image_with_border = filters.border(img, border_width, *border_color)
         
         # save image
         self._img_handler.store_img(image_with_border, output_path)

@@ -4,7 +4,7 @@ import datetime
 
 import pytz
 
-from PIL import Image, ImageOps
+from utils import filters
 
 from utils.img_handler import Img_Handler
 from utils.tool_msg import ToolMSG
@@ -30,8 +30,7 @@ class Binarization:
         img = self._img_handler.get_img(img_path)
 
         # add binarization
-        new_img = ImageOps.grayscale(img)
-        new_img = new_img.point(lambda x: 0 if x < threshold else 255)
+        new_img = filters.binarization(img, threshold)
 
         # save image
         self._img_handler.store_img(new_img, output_path)
