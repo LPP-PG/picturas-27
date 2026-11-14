@@ -11,7 +11,8 @@ from PIL import Image, ImageStat
 
 from effects import UnsupportedEffect
 from video_processor import (InvalidSpeed, InvalidTrim, InvalidVideo, PREVIEW_SECONDS,
-                             atempo_chain, probe, process_video, resolve_trim)
+                             atempo_chain, probe, resolve_trim)
+from tests.local_pipeline import process_video
 
 
 def sha(path):

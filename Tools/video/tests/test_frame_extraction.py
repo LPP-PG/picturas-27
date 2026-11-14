@@ -7,7 +7,7 @@ from PIL import Image
 
 import frame_extraction
 from frame_extraction import InvalidExtraction, sampling_times, validate_params
-from video_processor import process_video
+from tests.local_pipeline import process_video
 
 
 def tool(**params):
@@ -155,8 +155,8 @@ def test_invalid_parameter_container(params):
 
 @pytest.mark.parametrize("fmt", ["png", "jpeg"])
 def test_extraction_only_seeks_original_without_transcoding(silent_video, tmp_path, monkeypatch, fmt):
-    import video_processor
-    monkeypatch.setattr(video_processor, "_process_video",
+    from tests import local_pipeline
+    monkeypatch.setattr(local_pipeline, "_process_video",
                         lambda *a, **k: pytest.fail("extraction-only must not transcode"))
     result = process_video(silent_video, str(tmp_path / "result.mp4"),
                            [tool(count=100, format=fmt)])

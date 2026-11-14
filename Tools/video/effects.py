@@ -7,6 +7,8 @@ the same ones the frontend already sends to the image tools.
 """
 from PIL import Image, ImageEnhance, ImageOps
 
+from video_media import UnsupportedEffect
+
 
 def brightness(img: Image.Image, brightness: float) -> Image.Image:
     return ImageEnhance.Brightness(img).enhance(float(brightness))
@@ -58,10 +60,6 @@ FRAME_EFFECTS = {
 TIME_EFFECTS = {"trim", "speed"}
 
 SUPPORTED = set(FRAME_EFFECTS) | TIME_EFFECTS
-
-
-class UnsupportedEffect(Exception):
-    pass
 
 
 def apply_frame_effects(img: Image.Image, tools: list) -> Image.Image:

@@ -157,7 +157,7 @@ function appliesToVideo(tool, imgId) {
   return !target || String(target) === String(imgId);
 }
 
-// The ordered pipeline of one video, sent to the video worker in a single message
+// The ordered pipeline of one video, before grouping it into worker stages
 function videoPipeline(project, imgId) {
   return [...(project.tools || [])]
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))

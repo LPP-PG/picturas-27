@@ -8,7 +8,8 @@ import pytest
 from PIL import Image, ImageChops
 
 import subtitles
-from video_processor import process_video, probe
+from tests.local_pipeline import process_video
+from video_media import probe
 
 CAPTIONS = [{"procedure": "subtitles", "params": {}}]
 

@@ -23,6 +23,8 @@ const {
   send_msg_client_preview,
   send_msg_client_preview_error,
   read_msg,
+  read_video_results,
+  send_video_stage,
   send_msg_project_op,   
 } = require("../utils/project_msg");
 
@@ -67,7 +69,23 @@ const {
   insertPipelineTool,
 } = require("../utils/video");
 const { persistFrameResults } = require("../utils/frameResults");
+const { planVideoStages, videoStageRequest, videoWorkDir } = require("../utils/videoStages");
+
 const { dispatchProcessBatch } = require("../utils/processBatch");
+
+async function dispatchVideoStage(process) {
+  const request = videoStageRequest(process);
+  if (process.cur_pos === 0) {
+    await fs.promises.mkdir(videoWorkDir(process), { recursive: true });
+  }
+  await send_video_stage(request);
+}
+
+async function clearVideoWork(process) {
+  await fs.promises.rm(videoWorkDir(process), { recursive: true, force: true }).catch((error) => {
+    console.error("[video] could not clean temporary files:", error);
+  });
+}
 
 const storage = multer.memoryStorage();
 var upload = multer({ storage: storage });
@@ -167,7 +185,7 @@ function toolsEqual(a, b) {
 
 // TODO process message according to type of output
 function process_msg() {
-  read_msg(async (msg) => {
+  async function handleResult(msg, stagedVideo = false) {
 
     const timestamp = new Date().toISOString();
     const user_msg_id = `update-client-process-${uuidv4()}`;
@@ -175,13 +193,24 @@ function process_msg() {
     // variáveis “seguras” para usar no catch
     let runnerIdSafe = null;
     let ownerIdSafe = null;
+    let retryVideo = stagedVideo;
+    let finishedVideo;
+    let previewJob = false;
 
     try {
-      const msg_content = JSON.parse(msg.content.toString());
-      const msg_id = msg_content.correlationId;
+      let msg_content;
+      try {
+        msg_content = JSON.parse(msg.content.toString());
+      } catch (error) {
+        console.error("[process_msg] invalid message:", error);
+        return;
+      }
+      const msg_id = msg_content?.correlationId;
+      if (typeof msg_id !== "string") return;
 
       const process = await Process.getOneByMsgId(msg_id);
-      if (!process) return;
+      if (!process || Boolean(process.video_stages) !== stagedVideo) return;
+      previewJob = msg_id.startsWith("preview-");
 
       ownerIdSafe = process.user_id;
       runnerIdSafe = process.runner_id || process.user_id;
@@ -197,20 +226,46 @@ function process_msg() {
       const prev_process_output_img = process.new_img_uri;
       
       // Get current process, delete it and create it's sucessor if possible
-      const og_img_uri = process.og_img_uri;
       const img_id = process.img_id;
       
       const project = await Project.getOne(process.user_id, process.project_id);
+      const active = project?.activeToken || 0;
+      const tok = process.token || 0;
+      if (!project || active !== tok) {
+        await Process.delete(process.user_id, process.project_id, process._id);
+        if (stagedVideo) await clearVideoWork(process);
+        return;
+      }
+
+      if (stagedVideo) {
+        if (process.video_failed) return;
+        // A redelivery after advancing MongoDB retries publication of the same
+        // stage, using the input already recorded on the Process.
+        if (msg_content.stageIndex === process.cur_pos - 1 &&
+            msg_content.messageId === process.video_previous_reply) {
+          await dispatchVideoStage(process);
+          return;
+        }
+        if (msg_content.stageIndex !== process.cur_pos) return;
+        if (msg_content.status === "success" && process.cur_pos + 1 < process.video_stages.length) {
+          const next = await Process.advanceVideo(process, msg_content);
+          if (next) await dispatchVideoStage(next);
+          return;
+        }
+        finishedVideo = process;
+        retryVideo = false;
+      }
+
       const sourceIsVideo = project.imgs.some((img) => String(img._id) === String(img_id) && isVideoMedia(img));
-      // In extraction runs keep every source job visible until its output is
-      // persisted, including ordinary images in mixed projects. Failed jobs stay
-      // as barriers so another source cannot commit a partial run.
-      const holdsRunCommit = project.tools.some((tool) => tool.procedure === "extract_frames") && !/preview/.test(msg_id);
-      if (!holdsRunCommit) await Process.delete(process.user_id, process.project_id, process._id);
-      
+      // Keep each source visible until its output is stored in mixed batches.
+      // A failed source remains a barrier to committing an incomplete run.
+      const holdsRunCommit = !previewJob && (project.imgs.some(isVideoMedia) ||
+        project.tools.some((tool) => tool.procedure === "extract_frames"));
+      if (!holdsRunCommit && !stagedVideo) await Process.delete(process.user_id, process.project_id, process._id);
+
       if (msg_content.status === "error") {
         console.log(JSON.stringify(msg_content));
-        if (/preview/.test(msg_id)) {
+        if (previewJob) {
           send_msg_client_preview_error(`update-client-preview-${uuidv4()}`, timestamp, runnerId, msg_content.error.code, msg_content.error.msg)
         }
         
@@ -229,32 +284,14 @@ function process_msg() {
       const output_file_uri = msg_content.output.imageURI;
       const type = msg_content.output.type;
 
-      // Guard robusto: se o utilizador cancelou, activeToken muda e ignoramos outputs deste run
-      const active = project.activeToken || 0;
-      const tok = process.token || 0;
-
-      console.log(
-        `[RUN-DEBUG] msg=${msg_id} curPos=${process.cur_pos} processTok=${tok} activeTok=${active}`
-      );
-
-      if (active !== tok) {
-        console.log(`[RUN-GUARD] IGNORE msg=${msg_id} processTok=${tok} activeTok=${active}`);
-        if (holdsRunCommit) await Process.delete(process.user_id, process.project_id, process._id);
-        return;
-      }
-
       const next_pos = process.cur_pos + 1;
-
-      // Images only go through the image tools (trim is video-only);
-      // a video is processed in one go by the video worker, so its reply is
-      // always the last one of the chain.
       const imgTools = imageTools(project);
       // A video worker also returns an image for extraction previews, or frames
       // for full extraction. Neither should enter the image-effect chain.
       const chainEnd = sourceIsVideo || type === "video" || type === "frames" || next_pos >= imgTools.length;
       const isLast = type == "text" || chainEnd;
 
-if (/preview/.test(msg_id) && isLast) {
+if (previewJob && isLast) {
   const file_path = path.resolve(__dirname, "..", output_file_uri);
   const file_name = path.basename(file_path);
   const fileStream = fs.createReadStream(file_path);
@@ -370,9 +407,9 @@ if (/preview/.test(msg_id) && isLast) {
   }
 }
 
-      if (/preview/.test(msg_id) && chainEnd) return;
+      if (previewJob && chainEnd) return;
 
-      if (!/preview/.test(msg_id) && isLast && type === "frames") {
+      if (!previewJob && isLast && type === "frames") {
         if (!holdsRunCommit || !sourceIsVideo) throw new Error("Unexpected extracted frames for this job");
         await persistFrameResults(msg_content.output, process, {
           upload: async (file, name) => {
@@ -385,7 +422,7 @@ if (/preview/.test(msg_id) && isLast) {
           removeResult: (id) => Result.deleteById(process.user_id, process.project_id, id),
           removeImage: (key) => delete_image(process.user_id, process.project_id, "out", key),
         });
-      } else if (!/preview/.test(msg_id) && isLast) {
+      } else if (!previewJob && isLast) {
         const file_path = path.resolve(__dirname, "..", output_file_uri);
         const file_name = path.basename(file_path);
         const fileStream = fs.createReadStream(file_path); // Use createReadStream for efficiency
@@ -422,7 +459,7 @@ if (/preview/.test(msg_id) && isLast) {
       }
 
       // Se esta imagem acabou o pipeline, pode ser que a execução tenha terminado
-      if (!/preview/.test(msg_id) && isLast) {
+      if (!previewJob && isLast) {
 
         if (holdsRunCommit && chainEnd) await Process.delete(process.user_id, process.project_id, process._id);
         // A terminal source has all outputs stored; intermediate text results
@@ -474,7 +511,7 @@ if (/preview/.test(msg_id) && isLast) {
       }
 
       // Notify only after the result is stored and the completed run is committed.
-      if (!/preview/.test(msg_id))
+      if (!previewJob)
         send_msg_client(
           user_msg_id,
           timestamp,
@@ -483,7 +520,7 @@ if (/preview/.test(msg_id) && isLast) {
 
       if (chainEnd) return;
 
-      const new_msg_id = /preview/.test(msg_id)
+      const new_msg_id = previewJob
         ? `preview-${uuidv4()}`
         : `request-${uuidv4()}`;
 
@@ -523,8 +560,16 @@ if (/preview/.test(msg_id) && isLast) {
         params
       );
     } catch (err) {
-
+      if (retryVideo) throw err;
       console.error("[process_msg] error:", err);
+
+      if (finishedVideo && previewJob) {
+        send_msg_client_preview_error(
+          "update-client-preview-" + uuidv4(), timestamp, runnerIdSafe,
+          "30000", "An error happened while processing the preview"
+        );
+        return;
+      }
 
       const target = runnerIdSafe || ownerIdSafe;
 
@@ -536,8 +581,24 @@ if (/preview/.test(msg_id) && isLast) {
         "An error happened while processing the project"
       );
       return;
+    } finally {
+      if (finishedVideo) {
+        if (previewJob) {
+          await Process.delete(finishedVideo.user_id, finishedVideo.project_id, finishedVideo._id);
+        } else {
+          // On success the record is already gone. On failure keep the
+          // commit barrier and ignore duplicate replies for this video.
+          await Process.update(finishedVideo.user_id, finishedVideo.project_id, finishedVideo._id, {
+            video_failed: true,
+          });
+        }
+        await clearVideoWork(finishedVideo);
+      }
     }
-  });
+  }
+
+  read_msg(handleResult);
+  read_video_results((msg) => handleResult(msg, true));
 }
 
 async function deleteProjectAndResources(userId, projectId) {
@@ -1107,21 +1168,13 @@ router.post("/:user/:project/preview/:img", checkSharePermission, requireEditPer
         }
       }
 
-      // video: the whole pipeline goes in one message to the video worker,
-      // which only processes the initial excerpt
-      const tool = previewIsVideo ? { procedure: "video" } : imageTools(project)[0];
-      if (!tool) {
+      const tool = imageTools(project)[0];
+      if (!previewIsVideo && !tool) {
         return res.status(400).jsonp("No tools selected");
       }
-
-      const tool_name = tool.procedure;
-      const params = previewIsVideo
-        ? {
-            tools: videoPipeline(project, req.params.img),
-            preview: true,
-            progress: { user: runnerUserId, projectId: req.params.project, imgId: req.params.img },
-          }
-        : tool.params;
+      const videoStages = previewIsVideo
+        ? planVideoStages(videoPipeline(project, req.params.img), true)
+        : undefined;
 
       const source_path = `/../images/users/${ownerId}/projects/${req.params.project}/src`;
       const result_path = `/../images/users/${ownerId}/projects/${req.params.project}/preview`;
@@ -1237,26 +1290,28 @@ router.post("/:user/:project/preview/:img", checkSharePermission, requireEditPer
         og_img_uri: og_img_uri,
         new_img_uri: new_img_uri,
         cache_key: cacheKey,
+        video_stages: videoStages,
         cancelToken: project.cancelToken || 0,
         token: project.activeToken || 0,
       };
 
-      Process.create(process)
-        .then(() => {
-          send_msg_tool(
-            msg_id,
-            timestamp,
-            og_img_uri,
-            new_img_uri,
-            tool_name,
-            params
-          );
-          res.sendStatus(201);
-        })
-        .catch((err) => {
-          console.error("[PREVIEW][Process.create] error:", err);
-          return res.status(500).jsonp("Error creating preview process request");
-        });
+      let created;
+      try {
+        created = await Process.create(process);
+        if (videoStages) {
+          await dispatchVideoStage(created);
+        } else {
+          send_msg_tool(msg_id, timestamp, og_img_uri, new_img_uri, tool.procedure, tool.params);
+        }
+        res.sendStatus(201);
+      } catch (err) {
+        if (created && videoStages) {
+          await Process.delete(created.user_id, created.project_id, created._id);
+          await clearVideoWork(created);
+        }
+        console.error("[PREVIEW][dispatch] error:", err);
+        return res.status(500).jsonp("Error creating preview process request");
+      }
     })
     .catch((err) => {
       console.error("[PREVIEW] error:", err);
@@ -1629,22 +1684,10 @@ router.post("/:user/:project/process", checkSharePermission, requireEditPermissi
 
           const og_img_uri = img.og_uri;
           const new_img_uri = img.new_uri;
-          let tool_name;
-          let params;
-          if (isVideoMedia(img)) {
-            // video: the whole pipeline in a single message to the video worker
-            tool_name = "video";
-            params = {
-              tools: videoPipeline(project, img._id),
-              preview: false,
-              progress: { user: runnerUserId, projectId: req.params.project, imgId: String(img._id) },
-            };
-          } else {
-            const tool = imageTools(project)[0];
-            if (!tool) continue; // only video effects: images are left as they are
-            tool_name = tool.procedure;
-            params = tool.params;
-          }
+          const video = isVideoMedia(img);
+          const tool = video ? null : imageTools(project)[0];
+          if (!video && !tool) continue; // only video effects: images are left as they are
+          const videoStages = video ? planVideoStages(videoPipeline(project, img._id), false) : undefined;
 
           const process = {
             user_id: ownerId,
@@ -1657,9 +1700,10 @@ router.post("/:user/:project/process", checkSharePermission, requireEditPermissi
             new_img_uri: new_img_uri,
             cancelToken: project.cancelToken || 0,
             token: runToken,
+            video_stages: videoStages,
           };
 
-          pendingJobs.push({ process, msg_id, timestamp, og_img_uri, new_img_uri, tool_name, params });
+          pendingJobs.push({ process, timestamp, tool });
         }
 
         // Register the complete batch before dispatching anything. Otherwise a
@@ -1668,7 +1712,9 @@ router.post("/:user/:project/process", checkSharePermission, requireEditPermissi
           await dispatchProcessBatch(pendingJobs, {
             create: (job) => Process.create(job),
             remove: (job) => Process.delete(job.user_id, job.project_id, job._id),
-            send: (job) => send_msg_tool(job.msg_id, job.timestamp, job.og_img_uri, job.new_img_uri, job.tool_name, job.params),
+            send: ({ process, timestamp, tool }) => process.video_stages
+              ? dispatchVideoStage(process)
+              : send_msg_tool(process.msg_id, timestamp, process.og_img_uri, process.new_img_uri, tool.procedure, tool.params),
           });
         } catch (error) {
           return res.status(603).jsonp("Could not start all processing requests. Please try again.");
@@ -2337,6 +2383,7 @@ router.delete(
       const processes = await Process.getProject(ownerId, projectId);
       for (const p of (processes || [])) {
         await Process.delete(p.user_id, p.project_id, p._id);
+        if (p.video_stages) await clearVideoWork(p);
       }
 
       // limpar dirs temporários (opcional)

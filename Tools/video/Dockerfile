@@ -1,15 +1,15 @@
 FROM python:3.11-slim
 
-# ffmpeg/ffprobe isolated in the container
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core fonts-noto-core fonts-noto-cjk \
+    && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY ./video .
-COPY ./utils ./utils
+COPY ./utils/requirements.txt ./utils/requirements.txt
 RUN pip install --no-cache-dir -r ./utils/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY ./utils/env.py ./utils/env.py
+COPY ./video/worker.py ./video/video_media.py ./
+COPY ./video/video.py ./video/video_processor.py ./video/effects.py ./
 
 CMD [ "python", "-u", "video.py" ]

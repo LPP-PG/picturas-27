@@ -33,6 +33,20 @@ module.exports.update = (user_id, project_id, process_id, process) => {
   );
 };
 
+module.exports.advanceVideo = (process, reply) => {
+  return Process.findOneAndUpdate(
+    { _id: process._id, cur_pos: reply.stageIndex },
+    {
+      $inc: { cur_pos: 1 },
+      $set: {
+        video_stage_input: reply.output.imageURI,
+        video_previous_reply: reply.messageId,
+      },
+    },
+    { new: true },
+  ).exec();
+};
+
 module.exports.delete = (user_id, project_id, process_id) => {
   return Process.deleteOne({
     user_id: user_id,

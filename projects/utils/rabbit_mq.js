@@ -29,7 +29,26 @@ function send_rabbit_msg(msg, queue) {
     
 }
 
-function read_rabbit_msg(queue, callback) {
+async function send_confirmed_msg(msg, queue) {
+    const connection = await require('amqplib').connect(rabbit_mq_sv);
+    connection.on('error', (err) => console.error("[rabbit] publisher connection:", err));
+    try {
+        const channel = await connection.createConfirmChannel();
+        channel.on('error', (err) => console.error("[rabbit] publisher channel:", err));
+        let unrouted = false;
+        channel.on('return', () => { unrouted = true; });
+        await new Promise((resolve, reject) => {
+            channel.publish(exchange, queue, Buffer.from(JSON.stringify(msg)),
+                { persistent: true, mandatory: true },
+                (err) => err ? reject(err) : resolve());
+        });
+        if (unrouted) throw new Error('No queue bound for ' + queue);
+    } finally {
+        await connection.close().catch(() => {});
+    }
+}
+
+function read_rabbit_msg(queue, callback, { serial = false, queueArguments } = {}) {
     amqp.connect(rabbit_mq_sv, (err_sv, connection) => {
         if (err_sv) throw err_sv;
 
@@ -40,13 +59,22 @@ function read_rabbit_msg(queue, callback) {
                 durable: true
               });
 
-            channel.assertQueue(queue, { durable: true }, (err_queue, q) => {
+            channel.assertQueue(queue, { durable: true, arguments: queueArguments }, (err_queue, q) => {
                 if(err_queue) throw err_queue;
 
+                if (serial) channel.prefetch(1);
                 channel.consume(q.queue, (msg) => {
-                    if(msg != null){
+                    if (!msg) return;
+                    if (serial) {
+                        Promise.resolve().then(() => callback(msg)).then(
+                            () => channel.ack(msg),
+                            (err) => {
+                                console.error("[rabbit] retrying video result:", err);
+                                channel.nack(msg, false, true);
+                            },
+                        );
+                    } else {
                         callback(msg);
-                        // Acknowledge the message
                         channel.ack(msg);
                     }
                 }, {
@@ -57,4 +85,4 @@ function read_rabbit_msg(queue, callback) {
     });
 }
 
-module.exports = { send_rabbit_msg, read_rabbit_msg };
+module.exports = { send_rabbit_msg, send_confirmed_msg, read_rabbit_msg };

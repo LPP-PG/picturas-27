@@ -36,7 +36,8 @@ Behind the gateway:
   - AI tools: `bg_remove_ai`, `cut_ai`, `expand_ai` (uses `generative-mock/`), `obj_ai`,
     `people_ai`, `text_ai`, `upgrade_ai`.
   - `Tools/utils/`: shared RabbitMQ, image I/O and message helpers.
-  - `Tools/video/` (`video_tool`): the single video worker, see below.
+  - `Tools/video/` (`video_tool`): video editing. `video_subtitles_tool` handles automatic captions
+    and `video_frames_tool` handles frame extraction. Each has a separate Dockerfile.
 - `rabbitMQ/definitions.json`: queues, exchange and bindings.
 - `docker-compose.yaml`: the single source of truth for services and configuration.
 
@@ -44,12 +45,13 @@ Behind the gateway:
 
 - **Images**: `projects` sends one message per (image, tool) step and advances the chain when
   the tool replies on `project_queue`. Progress goes to the browser through `ws_queue`.
-- **Videos**: `projects` sends **one** message per video carrying the whole pipeline to
-  `video_queue`. The worker probes with ffprobe, decodes once, applies the frame effects
-  (`Tools/video/effects.py`, same PIL operations as the image tools), and encodes once to
-  MP4/H.264 + AAC, keeping the audio. It reports progress as `video-progress` events on
-  `ws_queue`, acks only at the end and leaves no partial output on failure. Preview mode
-  renders only the first `VIDEO_PREVIEW_SECONDS` (3 s).
+- **Videos**: `projects/utils/videoStages.js` groups consecutive edits into one FFmpeg pass
+  on `video_edit_queue` and routes captions and extraction to `video_subtitles_queue` and
+  `video_frames_queue`. Each worker replies on `video_result_queue` and acknowledges the
+  request after the reply is confirmed. The orchestrator advances one Process record per
+  source and persists only the final output. Paths pass through the shared volume. Progress
+  still goes through `ws_queue`. The editing worker limits normal previews to
+  `VIDEO_PREVIEW_SECONDS` (3 s) at the stage that determines the preview timeline.
 
 ### Media types
 
@@ -63,10 +65,8 @@ Behind the gateway:
   tools. Each effect on a video counts as one operation.
 - `subtitles` is video-only and project-wide (no `imgId`): Faster-Whisper CPU/int8
   detects the spoken language and burns captions into the MP4. No audio/speech is a no-op.
-  It runs as an ordered stage inside the existing video worker; contiguous ordinary
-  effects still share one decode/encode pass. Models persist in `whisper_models`.
-- `extract_frames` is video-only and project-wide, terminal and unique. It reuses the
-  video worker: count (1–100) or interval, PNG/JPEG, max100 images per video. Full output
+  The subtitle worker runs at its position in the pipeline. Its models persist in `whisper_models`.
+- `extract_frames` is video-only and project-wide, terminal and unique. Its worker supports count (1–100) or interval, PNG/JPEG, up to 100 images per video. Full output
   is a frame manifest; preview is a contact sheet across the edited timeline. The
   orchestrator saves each frame as a separate image Result with the source `img_id`
   and unique result ID/name. Register all batch Process records before dispatch.
@@ -124,4 +124,4 @@ cd Tools/video && python3 -m venv .venv && .venv/bin/pip install -r requirements
 - The users service answers errors with a non-standard 701 status (including "daily limit
   reached"); `projects` maps that case to 403 before replying.
 - Image/video handling is branched in the orchestrator, PIL effects are duplicated in
-  `Tools/video/effects.py`, and there is a single `video_tool` with no replicas.
+  `Tools/video/effects.py`.

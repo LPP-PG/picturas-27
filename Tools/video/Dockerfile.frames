@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY ./utils/requirements.txt ./utils/requirements.txt
+RUN pip install --no-cache-dir -r ./utils/requirements.txt
+COPY ./utils/env.py ./utils/env.py
+COPY ./video/worker.py ./video/video_media.py ./
+COPY ./video/frame_worker.py ./video/frame_extraction.py ./
+
+CMD [ "python", "-u", "frame_worker.py" ]

@@ -110,7 +110,7 @@ are **not** published to the host unless noted otherwise — they talk to each o
    └────────┘ └────────┘ │     └────────┘   │
                          │                  │
                     ┌────▼──────────────────┴────┐
-                    │      RabbitMQ  :5672       │◄─── 16 image tools + video_tool
+                    │      RabbitMQ  :5672       │◄─── 16 image tools + 3 video workers
                     │    exchange "picturas"     │     (one queue per tool)
                     └────────────────────────────┘
 ```
@@ -151,14 +151,25 @@ exchange:
 > (`prcsousa/picturas-watermark-tool-ms`) instead of being built from this repository — it is a
 > deliberate example of integrating a third-party service.
 
-**Videos** are handled by a single worker, `video_tool` (`Tools/video/`), instead of the image
-tools. For each video, `projects` sends **one** message with the whole pipeline to
-`video_queue`; the worker probes the file with `ffprobe`, decodes it once, applies the frame
-effects (`Tools/video/effects.py`, the same PIL operations as the image tools), encodes once to
-MP4/H.264 + AAC and reports progress as `video-progress` events on `ws_queue`. It acknowledges
-the message only at the end and leaves no partial output on failure. `ffmpeg` is installed only
-inside this container. Automatic subtitles and frame extraction run as ordered stages of the
-same worker (`Tools/video/subtitles.py`, `Tools/video/frame_extraction.py`).
+**Videos** run through three workers in `Tools/video/`. The `projects` service groups consecutive edits
+and sends each stage in pipeline order. Workers share the `image_data` volume and pass file paths
+through RabbitMQ. Final results use the existing project storage and preview flows.
+
+| Compose service | Request queue | Responsibility |
+| --- | --- | --- |
+| video_tool | video_edit_queue | Apply frame effects, trim and speed in one FFmpeg pass per consecutive group, keeping the audio. |
+| video_subtitles_tool | video_subtitles_queue | Detect speech with Faster-Whisper and burn captions into the MP4. |
+| video_frames_tool | video_frames_queue | Export still frames or generate a preview contact sheet. |
+
+Workers reply on `video_result_queue` after processing, and report progress on `ws_queue`.
+A frame-only pipeline reads the original directly. An extraction preview samples the entire
+edited timeline.
+
+To update an existing Phase 2 stack, let current video jobs finish and run:
+
+```bash
+docker compose up -d --build rabbitmq projects video_tool video_subtitles_tool video_frames_tool
+```
 
 ### Infrastructure
 
@@ -374,9 +385,9 @@ All configuration currently lives as `environment:` entries in `docker-compose.y
 | `VIDEO_FREE_MAX_DURATION_S` / `_MAX_SIZE_MB`  | `60` / `100`                  | projects               | Video upload limits for free accounts        |
 | `VIDEO_PREMIUM_MAX_DURATION_S` / `_SIZE_MB`   | `600` / `1024`                | projects               | Video upload limits for premium accounts     |
 | `VIDEO_PREVIEW_SECONDS`                       | `3`                           | video_tool             | Length of a video preview render             |
-| `WHISPER_MODEL`                               | `small`                       | video_tool             | Faster-Whisper model for automatic subtitles |
-| `WHISPER_CACHE_DIR`                           | `/models/whisper`             | video_tool             | Model cache (the `whisper_models` volume)    |
-| `WHISPER_CPU_THREADS`                         | `2`                           | video_tool             | CPU threads for speech recognition           |
+| `WHISPER_MODEL`                               | `small`                       | video_subtitles_tool   | Faster-Whisper model for automatic subtitles |
+| `WHISPER_CACHE_DIR`                           | `/models/whisper`             | video_subtitles_tool   | Model cache (the `whisper_models` volume)    |
+| `WHISPER_CPU_THREADS`                         | `2`                           | video_subtitles_tool   | CPU threads for speech recognition           |
 
 ⚠️ If you change `JWT_SECRET_KEY`, change it in **all three** services (`users`, `api_gateway`,
 `ws_gateway`) or authentication silently breaks.
@@ -422,7 +433,7 @@ picturas-27/
 │   ├── models/               #   pre-downloaded ML weights (e.g. yolov5su.pt)
 │   ├── bg_remove_ai/  cut_ai/  expand_ai/  obj_ai/  people_ai/  text_ai/  upgrade_ai/
 │   ├── binarization/  border/  brightness/  contrast/  cut/  resize/  rotate/  saturation/
-│   └── video/                #   video_tool: ffmpeg worker for whole video pipelines
+│   └── video/                #   Video editing, subtitle and frame extraction workers
 ├── samples/video/            # Sample videos for manual tests (valid, MOV, too long, corrupted)
 ├── rabbitMQ/                 # Broker image with queue/exchange definitions
 ├── nginx/nginx.conf          # Reverse proxy, TLS, CORS, WebSocket routing
@@ -437,8 +448,8 @@ picturas-27/
 
 ## 🎬 Video Tools
 
-Besides `trim` and `speed`, projects with videos have two project-wide, video-only tools. Both
-run inside the existing `video_tool` worker; images in the same project skip them.
+Besides `trim` and `speed`, projects with videos have two project-wide, video-only tools. Images in
+the same project skip them.
 
 ### Automatic subtitles
 
@@ -532,8 +543,11 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # once
 .venv/bin/python -m pytest -q tests
 ```
 
-Without ffmpeg on the host, run them in the already-built worker image instead:
-`docker compose run --rm video_tool sh -c "pip install -q pytest && python -m pytest -q tests"`.
+Without ffmpeg on the host, mount the video source and tests in the subtitle worker image:
+
+```bash
+docker compose run --rm --no-deps -v "${PWD}/Tools/video:/video-tests:ro" video_subtitles_tool sh -c "pip install -q pytest && cd /video-tests && python -m pytest -q -p no:cacheprovider tests"
+```
 
 The media tests use real FFmpeg; speech recognition is simulated, so no model is downloaded.
 The orchestration tests for the video pipeline and frame extraction run inside `projects`:
@@ -602,8 +616,8 @@ is a valid MP4, MOV or WebM. Videos must go to `POST /:user/:project/video`; the
 endpoint rejects them.
 
 **A video stays at 0% or never finishes**
-There is a single `video_tool` with no replicas, so videos are processed one at a time. Check
-`docker compose logs -f video_tool` and the depth of `video_queue` in RabbitMQ.
+Check `docker compose logs -f projects video_tool video_subtitles_tool video_frames_tool`
+and the corresponding request and result queue depths in RabbitMQ.
 
 **`expand_ai` fails**
 It depends on `generative-mock` being healthy. Check <http://localhost:7860> and

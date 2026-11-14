@@ -1,4 +1,4 @@
-const { send_rabbit_msg, read_rabbit_msg } = require('./rabbit_mq')
+const { send_rabbit_msg, send_confirmed_msg, read_rabbit_msg } = require('./rabbit_mq')
 
 const queues = {
     'cut': 'cut_queue',
@@ -18,7 +18,10 @@ const queues = {
     'people_ai': 'people_ai_queue',
     'expand_ai': 'expand_ai_queue',
     'watermark': 'watermark_queue',
-    'video': 'video_queue',
+    'video_edit': 'video_edit_queue',
+    'video_subtitles': 'video_subtitles_queue',
+    'video_frames': 'video_frames_queue',
+    'video_result': 'video_result_queue',
     'project': 'project_queue',
     'ws': 'ws_queue'
 }
@@ -37,6 +40,17 @@ function send_msg_tool(msg_id, timestamp, og_img_uri, new_img_uri, tool, params)
     };
 
     send_rabbit_msg(msg, queue);
+}
+
+function send_video_stage(msg) {
+    return send_confirmed_msg(msg, queues[msg.procedure]);
+}
+
+function read_video_results(callback) {
+    read_rabbit_msg(queues.video_result, callback, {
+        serial: true,
+        queueArguments: { "x-single-active-consumer": true },
+    });
 }
 
 function send_msg_client(msg_id, timestamp, user) {
@@ -109,4 +123,4 @@ function send_msg_project_op({ projectId, ownerId, op }) {
   send_rabbit_msg(msg, queue);
 }
 
-module.exports = { send_msg_tool, send_msg_client, send_msg_client_error, send_msg_client_preview, send_msg_client_preview_error, read_msg, send_msg_project_op };
+module.exports = { send_msg_tool, send_video_stage, read_video_results, send_msg_client, send_msg_client_error, send_msg_client_preview, send_msg_client_preview_error, read_msg, send_msg_project_op };
