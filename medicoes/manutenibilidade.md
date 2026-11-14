@@ -8,12 +8,14 @@
 
 | Cenário e função analisada | Base — serviço / outras responsabilidades afetadas | Após refactoring — serviço / outras afetadas | Pontuação |
 |---|---|---|---:|
-| C1 · Brilho [brightness](../Tools/video/effects.py) | `video_tool` / Legendagem e extração (2) | `video_tool` / 0 | 0 → 1 |
+| C1 · Brilho [brightness](../Tools/utils/filters.py) | `video_tool` / Legendagem e extração (2) | `video_tool` / 0 | 0 → 1 |
 | C2 · Legendagem [timestamp](../Tools/video/subtitles.py) | `video_tool` / Edição e extração (2) | `video_subtitles_tool` / 0 | 0 → 1 |
 | C3 · Extração [sampling_times](../Tools/video/frame_extraction.py) | `video_tool` / Edição e legendagem (2) | `video_frames_tool` / 0 | 0 → 1 |
 | **Total** | | | **0/3 → 3/3** |
 
 Na base, o Dockerfile de `video_tool` copiava toda a pasta `video`. Na versão modular, o [Compose](../docker-compose.yaml#L255) associa cada serviço a um Dockerfile que inclui o código da sua responsabilidade e os módulos comuns. O resultado aplica-se às alterações locais dos três cenários. Uma alteração ao código partilhado, como `worker.py`, pode exigir reconstruir várias imagens.
+
+Na base, a função de C1 estava em `Tools/video/effects.py`. Depois de removida a duplicação dos filtros PIL, está em `Tools/utils/filters.py`, partilhado com as ferramentas de imagem. Entre os serviços de vídeo, só o `video_tool` inclui esse ficheiro, por isso C1 continua a valer 1. Uma alteração a um filtro passa também a reconstruir as ferramentas de imagem, que é o objetivo: o filtro fica igual nas imagens e nos vídeos.
 
 ## Verificação no Docker
 

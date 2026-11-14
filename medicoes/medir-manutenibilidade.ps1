@@ -23,7 +23,8 @@ if ($service.build.dockerfile -ne 'video/Dockerfile' -or
 }
 
 $scenarios = @(
-    @{ Id = 'C1'; Responsibility = 'Editing'; File = 'Tools/video/effects.py'; Function = 'brightness' }
+    # The filters moved to a module shared with the image tools.
+    @{ Id = 'C1'; Responsibility = 'Editing'; File = 'Tools/video/effects.py'; CurrentFile = 'Tools/utils/filters.py'; Function = 'brightness' }
     @{ Id = 'C2'; Responsibility = 'Subtitles'; File = 'Tools/video/subtitles.py'; Function = 'timestamp' }
     @{ Id = 'C3'; Responsibility = 'Frame extraction'; File = 'Tools/video/frame_extraction.py'; Function = 'sampling_times' }
 )
@@ -81,11 +82,13 @@ Write-Output ''
 Write-Output 'Current checkout'
 $locations = @{}
 foreach ($scenario in $scenarios) {
-    $source = './' + ($scenario.File -replace '^Tools/', '')
+    $file = $scenario.File
+    if ($scenario.CurrentFile) { $file = $scenario.CurrentFile }
+    $source = './' + ($file -replace '^Tools/', '')
     $pattern = "^def $($scenario.Function)\("
-    $definition = Select-String -LiteralPath (Join-Path $repo $scenario.File) -Pattern $pattern
+    $definition = Select-String -LiteralPath (Join-Path $repo $file) -Pattern $pattern
     if (-not $definition) { throw "Could not find the source for $($scenario.Id)." }
-    Write-Output "$($scenario.File):$($definition.LineNumber)"
+    Write-Output "${file}:$($definition.LineNumber)"
     $locations[$scenario.Id] = @($videoBuilds.Name | Where-Object {
         $copies[$_] -contains $source -or $copies[$_] -contains './video'
     })

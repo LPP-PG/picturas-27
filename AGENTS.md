@@ -35,7 +35,8 @@ Behind the gateway:
     `rotate`, `saturation`; `watermark` runs from a pre-built public image.
   - AI tools: `bg_remove_ai`, `cut_ai`, `expand_ai` (uses `generative-mock/`), `obj_ai`,
     `people_ai`, `text_ai`, `upgrade_ai`.
-  - `Tools/utils/`: shared RabbitMQ, image I/O and message helpers.
+  - `Tools/utils/`: shared RabbitMQ, image I/O and message helpers, and `filters.py`, the PIL
+    filters used by both the image tools and the video editing worker.
   - `Tools/video/` (`video_tool`): video editing. `video_subtitles_tool` handles automatic captions
     and `video_frames_tool` handles frame extraction. Each has a separate Dockerfile.
 - `rabbitMQ/definitions.json`: queues, exchange and bindings.
@@ -123,5 +124,6 @@ cd Tools/video && python3 -m venv .venv && .venv/bin/pip install -r requirements
   replies, so their errors do not reach the user.
 - The users service answers errors with a non-standard 701 status (including "daily limit
   reached"); `projects` maps that case to 403 before replying.
-- Image/video handling is branched in the orchestrator, PIL effects are duplicated in
-  `Tools/video/effects.py`.
+- Image/video handling is branched in the orchestrator.
+- Change a PIL filter only in `Tools/utils/filters.py`: images and videos must give the same
+  result. This rebuilds the image tools and `video_tool`.
