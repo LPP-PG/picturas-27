@@ -46,6 +46,34 @@ O recorte mostra o risco que a duplicação trazia. O frontend envia as margens 
 
 Para confirmar que o comportamento se manteve, comparámos pixel a pixel os filtros antigos e os novos: nas imagens com os modos RGB, P, L e RGBA e nos fotogramas de vídeo. Os resultados são iguais em todos os filtros exceto o recorte, que mudou de propósito. Os 79 testes do `video_tool`, incluindo cinco novos para o recorte, passam.
 
+## Efeito no tempo de processamento dos vídeos
+
+A divisão em três serviços mudou a forma como um vídeo é processado. Antes, o `projects` enviava uma mensagem por vídeo com o pipeline inteiro. Agora envia uma mensagem por etapa e recebe a resposta de cada uma em `video_result_queue` antes de enviar a seguinte. Medimos se isso tornou o processamento mais lento. Juntar os filtros num ficheiro não conta para este efeito: o filtro de brilho antigo e o novo demoram o mesmo (10,2 s para 300 fotogramas 1080p, nas imagens Docker das duas versões).
+
+**Métrica.** Segundos desde o pedido de processamento (o Apply) até os resultados ficarem visíveis na API, com o projeto acabado de criar.
+
+**Cenários.** Nenhum usa o recorte, porque na base o recorte falha e a comparação deixaria de ser justa.
+
+- A: `sample_10s_720p.mp4` com brilho, contraste, rodar 90° e redimensionar para 640×360. É uma só etapa nas duas versões e serve de controlo.
+- B: `speech_mandela_177s_1080p.webm` cortado nos primeiros 30 s, com brilho, legendas automáticas e extração de 4 fotogramas PNG. Depois da divisão são três etapas, uma em cada serviço.
+
+**Método.** O [script](./medir-tempo-video.py) usa a API como o frontend: cria uma conta premium de teste, um projeto novo por execução, envia o vídeo, adiciona as ferramentas, pede o processamento e consulta os resultados a cada 0,25 s. Em cada cenário faz uma execução de aquecimento, que não conta, e cinco medições, das quais se usa a mediana. A base corre a partir de uma cópia do commit `0523102` com outro nome de projeto Compose (`picturas-base`). As duas versões usam o porto 8080, por isso correm à vez. Fizemos duas rondas em ordem inversa (base e depois `fase-2`, e a seguir `fase-2` e depois base) para que a ordem não pese no resultado.
+
+**Ambiente.** AMD Ryzen 7 260 (8 núcleos, 16 threads), 31,3 GB de RAM, Windows 11 Home 10.0.26200, Docker 29.8.0 com 16 CPUs e 15,3 GB atribuídos, Docker Compose 5.5.1 e Python 3.12.10. Medido a 15/11/2026.
+
+| Cenário | Base, ronda 1 | Base, ronda 2 | `fase-2`, ronda 1 | `fase-2`, ronda 2 |
+|---|---:|---:|---:|---:|
+| A (1 etapa) | 8,19 s | 8,19 s | 8,50 s | 7,65 s |
+| B (3 etapas) | 31,03 s | 30,58 s | 34,20 s | 32,46 s |
+
+Os valores de cada execução estão em [resultados](./resultados/).
+
+No cenário A não há diferença que se possa atribuir à divisão: as duas rondas do `fase-2` diferem mais entre si do que da base.
+
+No cenário B, o `fase-2` foi mais lento nas duas rondas, 3,2 s e 1,9 s (10% e 6%). Para ver de onde vem, corremos cada etapa diretamente dentro da imagem Docker do seu serviço, sem RabbitMQ nem `projects`. No `fase-2`, a soma das três etapas deu 33,7 s, contra 34,2 s pela API na mesma ronda, por isso as mensagens e a coordenação entre serviços custam cerca de 0,5 s. A etapa de edição, corrida três vezes em alternância nas duas versões, demorou entre 21,4 s e 21,8 s em ambas. O resto da diferença, entre 1 e 2 s, não ficou isolado. Cada etapa volta a ler as características do vídeo com `ffprobe` e escreve o resultado numa pasta própria antes de a etapa seguinte começar, mas não medimos esses passos em separado.
+
+O grupo ainda não fixou um valor-alvo para este efeito.
+
 ## Reprodução
 
 O [script](./medir-manutenibilidade.ps1) lê os ficheiros da baseline no commit `0523102` com `git show` e inspeciona os ficheiros atuais da pasta de trabalho. Na duplicação dos filtros usa `git grep` sobre o mesmo commit e sobre a pasta de trabalho. Assim, compara as duas versões sem mudar de branch nem substituir ficheiros locais. O commit tem de estar disponível no histórico do clone. A inspeção pode ser executada com os contentores parados.
@@ -53,5 +81,19 @@ O [script](./medir-manutenibilidade.ps1) lê os ficheiros da baseline no commit 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\medicoes\medir-manutenibilidade.ps1
 ```
+
+Para repetir a medição do tempo, com a versão a medir a correr em `https://localhost:8080`:
+
+```bash
+git worktree add --detach ../picturas-base 0523102
+docker compose stop
+docker compose -f ../picturas-base/docker-compose.yaml -p picturas-base up -d --build
+python medicoes/medir-tempo-video.py --label base --reps 5
+docker compose -f ../picturas-base/docker-compose.yaml -p picturas-base stop
+docker compose start
+python medicoes/medir-tempo-video.py --label fase-2 --reps 5
+```
+
+Os comandos correm na pasta `picturas-27`. O script só usa a biblioteca padrão do Python e guarda os resultados em `medicoes/resultados/`.
 
 Para repetir a verificação no Docker, arranca os três serviços numa cópia de teste com um nome de projeto Compose próprio e com as portas do RabbitMQ despublicadas. Para cada função, aplica a alteração descrita, executa `docker compose up -d --no-deps --build <serviço>` com o mesmo projeto Compose e compara os IDs da imagem e do contentor com `docker inspect` antes e depois.
