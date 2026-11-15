@@ -112,3 +112,53 @@ $results = foreach ($scenario in $scenarios) {
 $results | Format-Table -AutoSize
 $score = ($results | Measure-Object -Property Independent -Sum).Sum
 Write-Output "Independent updates: $score/$($scenarios.Count)"
+
+# Duplicated PIL filters: in how many files of the services that offer the filter
+# is each one implemented? A filter is duplicated when it is in more than one.
+$filterFiles = @(
+    'Tools/brightness/brightness.py', 'Tools/contrast/contrast.py',
+    'Tools/saturation/saturation.py', 'Tools/rotate/rotate.py',
+    'Tools/resize/resize.py', 'Tools/binarization/binarization.py',
+    'Tools/cut/cut.py', 'Tools/border/border.py',
+    'Tools/video/effects.py', 'Tools/utils/filters.py'
+)
+$filters = [ordered]@{
+    brightness = 'ImageEnhance\.Brightness\('
+    contrast = 'ImageEnhance\.Contrast\('
+    saturation = 'ImageEnhance\.Color\('
+    rotate = 'img\.rotate\('
+    resize = 'img\.resize\('
+    binarization = 'ImageOps\.grayscale\('
+    cut = 'img\.crop\('
+    border = 'ImageOps\.expand\('
+}
+
+function Get-FilterFiles($pattern, $revision) {
+    # git grep exits with 1 when nothing matches, which is a valid result here
+    if ($revision) {
+        @(git -C $repo grep -l -E $pattern $revision -- @filterFiles) -replace "^${revision}:", ''
+    } else {
+        @(git -C $repo grep -l -E $pattern -- @filterFiles)
+    }
+}
+
+$duplication = foreach ($name in $filters.Keys) {
+    $before = @(Get-FilterFiles $filters[$name] $baseline | Where-Object { $_ })
+    $after = @(Get-FilterFiles $filters[$name] $null | Where-Object { $_ })
+    [pscustomobject]@{
+        Filter = $name
+        FilesBefore = $before.Count
+        FilesAfter = $after.Count
+        After = $after -join ', '
+    }
+}
+
+Write-Output ''
+Write-Output 'Duplicated PIL filters'
+$duplication | Format-Table -AutoSize
+$implBefore = ($duplication | Measure-Object -Property FilesBefore -Sum).Sum
+$implAfter = ($duplication | Measure-Object -Property FilesAfter -Sum).Sum
+$dupBefore = @($duplication | Where-Object FilesBefore -gt 1).Count
+$dupAfter = @($duplication | Where-Object FilesAfter -gt 1).Count
+Write-Output "Implementations: $implBefore -> $implAfter"
+Write-Output "Duplicated filters: $dupBefore/$($filters.Count) -> $dupAfter/$($filters.Count)"

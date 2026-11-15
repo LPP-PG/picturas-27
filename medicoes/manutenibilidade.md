@@ -27,9 +27,28 @@ Usámos uma cópia de teste para fazer uma alteração interna em cada função,
 | C2 | `f2af0a0040c8` → `6417f741c570` | `28e07c892937` → `48dbe9d2542d` |
 | C3 | `4e85d50be824` → `c7bd6bc3e980` | `c6a213322805` → `e28f6112f079` |
 
+## Duplicação dos filtros PIL
+
+**Métrica.** Número de filtros PIL implementados em mais de um ficheiro, entre os oito que existem para imagens e para vídeo (brilho, contraste, saturação, rodar, redimensionar, binarização, recorte e borda). Para cada filtro, conta-se em quantos ficheiros aparece a operação PIL que o implementa, por exemplo `ImageEnhance.Brightness(` no brilho ou `img.crop(` no recorte.
+
+**Alvo e mínimo aceitável.** 0 de 8 nos dois casos. Um filtro escrito em dois sítios pode passar a dar resultados diferentes nas imagens e nos vídeos sem que ninguém repare, e isso vale para qualquer um dos oito.
+
+**Ficheiros analisados.** O ficheiro principal de cada uma das oito ferramentas de imagem, `Tools/video/effects.py` e `Tools/utils/filters.py`. As ferramentas de IA também usam `crop` e `resize`, mas para preparar a entrada dos modelos, por isso não contam. O `Tools/cut/processor.py` tem um recorte, mas o `cut.py` importa-o sem nunca o chamar.
+
+| | Base (`0523102`) | Depois |
+|---|---:|---:|
+| Filtros duplicados | 8 de 8 | 0 de 8 |
+| Implementações de filtros | 16 | 8 |
+
+Na base, cada filtro estava escrito na sua ferramenta de imagem e outra vez em `Tools/video/effects.py`. Agora os oito estão só em `Tools/utils/filters.py`, que as ferramentas de imagem e o `video_tool` importam. Medido a 15/11/2026 com o script desta pasta.
+
+O recorte mostra o risco que a duplicação trazia. O frontend envia as margens a retirar de cada lado, mas as duas cópias tratavam esses valores como coordenadas, por isso o recorte falhava ou cortava mal nas imagens e nos vídeos. O erro vinha da base. Com o filtro num só ficheiro, bastou uma correção para os dois casos.
+
+Para confirmar que o comportamento se manteve, comparámos pixel a pixel os filtros antigos e os novos: nas imagens com os modos RGB, P, L e RGBA e nos fotogramas de vídeo. Os resultados são iguais em todos os filtros exceto o recorte, que mudou de propósito. Os 79 testes do `video_tool`, incluindo cinco novos para o recorte, passam.
+
 ## Reprodução
 
-O [script](./medir-manutenibilidade.ps1) lê os ficheiros da baseline no commit `0523102` com `git show` e inspeciona os ficheiros atuais da pasta de trabalho. Assim, compara as duas versões sem mudar de branch nem substituir ficheiros locais. O commit tem de estar disponível no histórico do clone. A inspeção pode ser executada com os contentores parados.
+O [script](./medir-manutenibilidade.ps1) lê os ficheiros da baseline no commit `0523102` com `git show` e inspeciona os ficheiros atuais da pasta de trabalho. Na duplicação dos filtros usa `git grep` sobre o mesmo commit e sobre a pasta de trabalho. Assim, compara as duas versões sem mudar de branch nem substituir ficheiros locais. O commit tem de estar disponível no histórico do clone. A inspeção pode ser executada com os contentores parados.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\medicoes\medir-manutenibilidade.ps1
