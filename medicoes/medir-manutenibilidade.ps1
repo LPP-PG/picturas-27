@@ -162,3 +162,34 @@ $dupBefore = @($duplication | Where-Object FilesBefore -gt 1).Count
 $dupAfter = @($duplication | Where-Object FilesAfter -gt 1).Count
 Write-Output "Implementations: $implBefore -> $implAfter"
 Write-Output "Duplicated filters: $dupBefore/$($filters.Count) -> $dupAfter/$($filters.Count)"
+
+# Message handling around the filters: lines of the eight image tools and how
+# many places build a reply to the projects service.
+$toolFiles = @($filterFiles | Where-Object { $_ -notmatch '^Tools/(video|utils)/' })
+$sharedWorker = 'Tools/utils/image_tool.py'
+
+function Measure-ToolCode($revision) {
+    $lines = 0
+    $replies = 0
+    foreach ($file in $toolFiles + $sharedWorker) {
+        if ($revision) {
+            # The shared worker does not exist in the baseline
+            if (-not (git -C $repo ls-tree --name-only $revision -- $file)) { continue }
+            $text = @(git -C $repo show "${revision}:$file")
+        } else {
+            $path = Join-Path $repo $file
+            if (-not (Test-Path -LiteralPath $path)) { continue }
+            $text = @(Get-Content -LiteralPath $path)
+        }
+        $lines += $text.Count
+        $replies += @($text -match 'send_msg\(').Count
+    }
+    [pscustomobject]@{ Lines = $lines; Replies = $replies }
+}
+
+$toolsBefore = Measure-ToolCode $baseline
+$toolsAfter = Measure-ToolCode $null
+Write-Output ''
+Write-Output 'Image tools (eight tools plus the shared worker)'
+Write-Output "Lines: $($toolsBefore.Lines) -> $($toolsAfter.Lines)"
+Write-Output "Places that send a reply (send_msg): $($toolsBefore.Replies) -> $($toolsAfter.Replies)"

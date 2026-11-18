@@ -35,8 +35,10 @@ Behind the gateway:
     `rotate`, `saturation`; `watermark` runs from a pre-built public image.
   - AI tools: `bg_remove_ai`, `cut_ai`, `expand_ai` (uses `generative-mock/`), `obj_ai`,
     `people_ai`, `text_ai`, `upgrade_ai`.
-  - `Tools/utils/`: shared RabbitMQ, image I/O and message helpers, and `filters.py`, the PIL
-    filters used by both the image tools and the video editing worker.
+  - `Tools/utils/`: shared RabbitMQ, image I/O and message helpers; `filters.py`, the PIL
+    filters used by both the image tools and the video editing worker; and `image_tool.py`,
+    the worker every PIL image tool runs (each `Tools/<tool>/<tool>.py` only names the
+    filter and its two error codes).
   - `Tools/video/` (`video_tool`): video editing. `video_subtitles_tool` handles automatic captions
     and `video_frames_tool` handles frame extraction. Each has a separate Dockerfile.
 - `rabbitMQ/definitions.json`: queues, exchange and bindings.
@@ -94,6 +96,12 @@ cd Tools/video && python3 -m venv .venv && .venv/bin/pip install -r requirements
 .venv/bin/python -m pytest -q tests
 ```
 
+Image tool tests run on the host too (no Docker, no RabbitMQ):
+
+```bash
+cd Tools && pip install -r utils/requirements.txt pytest && python -m pytest -q tests
+```
+
 - Open `https://localhost:8080` (https, port 8080) and accept the self-signed certificate.
 - `users`, `subscriptions` and `apiGateway` bind-mount their source and reload with nodemon.
   The frontend is a production build and Python tools have no bind mount: rebuild them.
@@ -108,7 +116,8 @@ cd Tools/video && python3 -m venv .venv && .venv/bin/pip install -r requirements
 - Keep each file's existing line endings: some files are stored with CRLF. Do not reformat
   unrelated code.
 - Never commit secrets, `.env`, `node_modules/`, generated media or `backups/`.
-- To add a tool: create `Tools/<tool>/` from a simple tool (e.g. `border`), register its queue in
+- To add a PIL filter tool: add the filter to `Tools/utils/filters.py` and create
+  `Tools/<tool>/` from a simple tool (e.g. `border`). For any tool, register its queue in
   `rabbitMQ/definitions.json`, add the service to `docker-compose.yaml`
   (`depends_on: rabbitmq: service_healthy`, `image_data` volume), then expose it in `projects`
   and in the frontend toolbar.
@@ -120,8 +129,9 @@ cd Tools/video && python3 -m venv .venv && .venv/bin/pip install -r requirements
 - Internal service-to-service TLS certificates are expired and not validated
   (`rejectUnauthorized: false`); several secrets are committed. Known issues, not patterns.
 - RabbitMQ consumers must survive broker restarts.
-- The image tools auto-acknowledge messages and swap `messageId`/`correlationId` in their error
-  replies, so their errors do not reach the user.
+- The image and AI tools auto-acknowledge messages, and `ToolMSG.send_msg` swaps
+  `messageId`/`correlationId` in error replies, so their errors do not reach the user.
+  Pass the error fields to `send_msg` by keyword: positionally they land in `type`.
 - The users service answers errors with a non-standard 701 status (including "daily limit
   reached"); `projects` maps that case to 403 before replying.
 - Image/video handling is branched in the orchestrator.

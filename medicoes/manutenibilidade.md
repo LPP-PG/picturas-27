@@ -46,6 +46,21 @@ O recorte mostra o risco que a duplicação trazia. O frontend envia as margens 
 
 Para confirmar que o comportamento se manteve, comparámos pixel a pixel os filtros antigos e os novos: nas imagens com os modos RGB, P, L e RGBA e nos fotogramas de vídeo. Os resultados são iguais em todos os filtros exceto o recorte, que mudou de propósito. Os 79 testes do `video_tool`, incluindo cinco novos para o recorte, passam.
 
+## Código repetido nas ferramentas de imagem
+
+Depois de juntar os filtros, as oito ferramentas de imagem continuavam com o mesmo código à volta do filtro: ler a mensagem do RabbitMQ, confirmar o `procedure`, abrir e guardar a imagem, calcular o tempo de processamento e responder ao `projects`. Esse código passou para `Tools/utils/image_tool.py`, como já acontecia nos vídeos com `Tools/video/worker.py`. Cada ferramenta ficou só com o seu nome e os seus dois códigos de erro. Removemos também `Tools/cut/processor.py`, um recorte que o `cut.py` importava sem nunca usar.
+
+| | Base (`0523102`) | Depois |
+|---|---:|---:|
+| Linhas das oito ferramentas e da base comum | 745 | 120 |
+| Sítios que enviam uma resposta ao `projects` | 24 | 2 |
+
+Na base, as oito ferramentas passavam os argumentos de erro fora de ordem ao `ToolMSG.send_msg`. O método lançava uma exceção em vez de responder e a ferramenta terminava até o Docker a reiniciar. Com a base comum a resposta de erro é enviada e a ferramenta continua a receber pedidos. O `ToolMSG` continua a trocar `messageId` e `correlationId` nas respostas de erro, por isso o `projects` ainda não as reconhece e o erro não chega ao utilizador. Essa troca também afeta as ferramentas de IA e ficou fora desta alteração.
+
+Os 20 testes automáticos em `Tools/tests/` cobrem as oito ferramentas com sucesso e com o procedimento errado, uma falha de processamento seguida de um pedido válido, um parâmetro em falta, um ficheiro inexistente e uma mensagem inválida. Também corremos as ferramentas antigas e as novas com as mesmas mensagens, em imagens RGB, P, L e RGBA. Nos 31 casos de sucesso as imagens e as respostas são iguais; nos casos de erro as antigas terminavam com uma exceção.
+
+Na aplicação, aplicámos a uma imagem de teste cada filtro e a cadeia saturação, binarização, rodar e recorte, e o resultado foi igual, pixel a pixel, ao filtro aplicado diretamente. A cadeia binarização seguida de borda, que falha desde a base, fez a borda responder com o erro 1201 sem reiniciar, e o pedido seguinte foi processado.
+
 ## Efeito no tempo de processamento dos vídeos
 
 A divisão em três serviços mudou a forma como um vídeo é processado. Antes, o `projects` enviava uma mensagem por vídeo com o pipeline inteiro. Agora envia uma mensagem por etapa e recebe a resposta de cada uma em `video_result_queue` antes de enviar a seguinte. Medimos se isso tornou o processamento mais lento. Juntar os filtros num ficheiro não conta para este efeito: o filtro de brilho antigo e o novo demoram o mesmo (10,2 s para 300 fotogramas 1080p, nas imagens Docker das duas versões).
@@ -80,6 +95,14 @@ O [script](./medir-manutenibilidade.ps1) lê os ficheiros da baseline no commit 
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\medicoes\medir-manutenibilidade.ps1
+```
+
+Os testes das ferramentas de imagem não precisam de Docker nem de RabbitMQ:
+
+```bash
+cd Tools
+pip install -r utils/requirements.txt pytest
+python -m pytest tests
 ```
 
 Para repetir a medição do tempo, com a versão a medir a correr em `https://localhost:8080`:
