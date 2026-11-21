@@ -2,6 +2,7 @@
 import datetime
 import json
 import shutil
+import signal
 import tempfile
 import time
 import uuid
@@ -26,6 +27,7 @@ def now():
 
 class VideoWorker:
     def __init__(self, procedure, process):
+        self._draining = False
         self.procedure = procedure
         self.process = process
         self.queue = f"{procedure}_queue"
@@ -75,6 +77,9 @@ class VideoWorker:
         }))
 
     def callback(self, ch, method, properties, body):
+        if self._draining:
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            return
         started = now()
         try:
             info = json.loads(body)
@@ -129,8 +134,20 @@ class VideoWorker:
         print(f"[{self.procedure}] msg={msg_id} stage={index} status={reply['status']}", flush=True)
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
+    def _request_drain(self, *_):
+        # The signal handler never touches Pika; the active callback finishes first.
+        self._draining = True
+
     def run(self):
+        signal.signal(signal.SIGUSR1, self._request_drain)
         self._channel.basic_consume(queue=self.queue, on_message_callback=self.callback,
                                     auto_ack=False)
         print(f"[{self.procedure}] waiting for jobs on {self.queue}", flush=True)
-        self._channel.start_consuming()
+        try:
+            while not self._draining:
+                self._connection.process_data_events(time_limit=1)
+            self._channel.stop_consuming()
+            print(f"[{self.procedure}] drained; exiting successfully", flush=True)
+        finally:
+            if self._connection.is_open:
+                self._connection.close()
