@@ -1,0 +1,85 @@
+﻿video_subtitles_tool-1  | 2026-11-16T20:15:57.480010627Z [video_subtitles] msg=request-0cd08b4b-d48a-4393-8e2d-74f9fe77e083 stage=1 status=success
+projects-1              | 2026-11-16T20:15:04.352006358Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 15.568 ms - 60[0m
+projects-1              | 2026-11-16T20:15:09.335009831Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 21.942 ms - 60[0m
+video_subtitles_tool-1  | 2026-11-16T20:16:13.897550516Z [video_subtitles] msg=request-de053676-7e65-4a05-a9b0-c2388fb4909f stage=1 status=success
+projects-1              | 2026-11-16T20:15:09.448773036Z [0mGET /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/share [32m200[0m 5.929 ms - 2[0m
+video_subtitles_tool-1  | 2026-11-16T20:16:32.691639779Z [video_subtitles] msg=request-d8e552bc-9953-441f-a326-73d4c604df37 stage=1 status=success
+video_subtitles_tool-1  | 2026-11-16T20:16:50.249082838Z [video_subtitles] msg=request-427dafb8-583e-42f5-a52c-081e2299a803 stage=1 status=success
+video_subtitles_tool-1  | 2026-11-16T20:17:10.005353971Z [video_subtitles] msg=request-9aa1e96d-7ba7-4ece-8ec5-f7bbde621f09 stage=1 status=success
+video_subtitles_tool-1  | 2026-11-16T20:17:26.107404239Z [video_subtitles] msg=request-a96f6d25-2c36-4159-9e41-cfe0b51c9664 stage=1 status=success
+video_subtitles_tool-1  | 2026-11-16T20:17:41.744419336Z [video_subtitles] msg=request-d955cbe1-f844-406c-b533-ee693680363c stage=1 status=success
+video_subtitles_tool-1  | 2026-11-16T20:17:55.256726446Z [video_subtitles] msg=request-d6f30b82-2530-454e-a4ef-079fbe3df202 stage=1 status=success
+projects-1              | 2026-11-16T20:15:09.452548946Z [GET /:user/:project headers] {
+projects-1              | 2026-11-16T20:15:09.452585721Z   hasAuth: true,
+[Linha redigida]
+projects-1              | 2026-11-16T20:15:09.452589020Z   caller: '6af33ef7701167c8b5343d8c'
+projects-1              | 2026-11-16T20:15:09.452590282Z }
+projects-1              | 2026-11-16T20:15:09.454647075Z [0mGET /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/process/url [32m200[0m 10.774 ms - 22[0m
+projects-1              | 2026-11-16T20:15:09.477265439Z [0mGET /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba [32m200[0m 30.107 ms - 4407[0m
+projects-1              | 2026-11-16T20:15:14.120630388Z [CALLER] {
+projects-1              | 2026-11-16T20:15:14.120681734Z   userParam: '6af33ef7701167c8b5343d8c',
+projects-1              | 2026-11-16T20:15:14.120687645Z   forwarded: '6af33ef7701167c8b5343d8c',
+projects-1              | 2026-11-16T20:15:14.120692425Z   hasAuth: true,
+projects-1              | 2026-11-16T20:15:14.120696044Z   caller: '6af33ef7701167c8b5343d8c'
+projects-1              | 2026-11-16T20:15:14.120699796Z }
+projects-1              | 2026-11-16T20:15:14.126240129Z [ADV DEBUG] project: 6afb6431bb492b6458f034ba adv_ops: 0 totalAdv: 0 charged: 0 newTools: 0 tools: [ 'subtitles' ]
+projects-1              | 2026-11-16T20:15:14.348957992Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 33.987 ms - 60[0m
+projects-1              | 2026-11-16T20:15:14.828838354Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/process [32m201[0m 720.638 ms - 7[0m
+projects-1              | 2026-11-16T20:15:14.852633011Z [GET /:user/:project headers] {
+projects-1              | 2026-11-16T20:15:14.852666694Z   hasAuth: true,
+[Linha redigida]
+projects-1              | 2026-11-16T20:15:14.852673525Z   caller: '6af33ef7701167c8b5343d8c'
+projects-1              | 2026-11-16T20:15:14.852676046Z }
+projects-1              | 2026-11-16T20:15:14.859904431Z [0mGET /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/process/url [32m200[0m 5.031 ms - 22[0m
+projects-1              | 2026-11-16T20:15:14.888191716Z [0mGET /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba [32m200[0m 35.901 ms - 4393[0m
+projects-1              | 2026-11-16T20:15:19.334867346Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 16.762 ms - 60[0m
+projects-1              | 2026-11-16T20:15:24.339103975Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 21.799 ms - 60[0m
+projects-1              | 2026-11-16T20:15:25.840199529Z [T-03][RABBIT] msg=request-0cd08b4b-d48a-4393-8e2d-74f9fe77e083 status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:15:29.325918937Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 17.271 ms - 60[0m
+projects-1              | 2026-11-16T20:15:34.316636843Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 16.625 ms - 60[0m
+projects-1              | 2026-11-16T20:15:37.383338914Z [T-03][RABBIT] msg=request-de053676-7e65-4a05-a9b0-c2388fb4909f status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:15:39.304987845Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 21.747 ms - 60[0m
+projects-1              | 2026-11-16T20:15:44.359896503Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 37.668 ms - 60[0m
+projects-1              | 2026-11-16T20:15:49.391562768Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 52.607 ms - 60[0m
+projects-1              | 2026-11-16T20:15:54.358970874Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 29.456 ms - 60[0m
+projects-1              | 2026-11-16T20:15:57.474732328Z [T-03][RABBIT] msg=request-d8e552bc-9953-441f-a326-73d4c604df37 status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:15:57.545823684Z [T-03][RABBIT] msg=request-0cd08b4b-d48a-4393-8e2d-74f9fe77e083 status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:15:59.344935319Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 32.781 ms - 60[0m
+projects-1              | 2026-11-16T20:16:04.333367762Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 28.696 ms - 60[0m
+projects-1              | 2026-11-16T20:16:09.319332752Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 32.007 ms - 60[0m
+projects-1              | 2026-11-16T20:16:13.898263574Z [T-03][RABBIT] msg=request-de053676-7e65-4a05-a9b0-c2388fb4909f status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:16:14.338561905Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 25.081 ms - 60[0m
+projects-1              | 2026-11-16T20:16:15.084295439Z [T-03][RABBIT] msg=request-427dafb8-583e-42f5-a52c-081e2299a803 status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:16:19.353564085Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 27.588 ms - 60[0m
+projects-1              | 2026-11-16T20:16:24.349368289Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 24.036 ms - 60[0m
+projects-1              | 2026-11-16T20:16:29.362605693Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 37.925 ms - 60[0m
+projects-1              | 2026-11-16T20:16:32.693506618Z [T-03][RABBIT] msg=request-d8e552bc-9953-441f-a326-73d4c604df37 status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:16:32.990531123Z [T-03][RABBIT] msg=request-9aa1e96d-7ba7-4ece-8ec5-f7bbde621f09 status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:16:34.334664038Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 29.824 ms - 60[0m
+projects-1              | 2026-11-16T20:16:39.311508329Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 26.650 ms - 60[0m
+projects-1              | 2026-11-16T20:16:44.348628824Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 31.014 ms - 60[0m
+projects-1              | 2026-11-16T20:16:49.368274490Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 40.875 ms - 60[0m
+projects-1              | 2026-11-16T20:16:50.250651802Z [T-03][RABBIT] msg=request-427dafb8-583e-42f5-a52c-081e2299a803 status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:16:50.853571289Z [T-03][RABBIT] msg=request-a96f6d25-2c36-4159-9e41-cfe0b51c9664 status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:16:54.645005122Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 32.051 ms - 60[0m
+projects-1              | 2026-11-16T20:16:59.345430434Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 33.759 ms - 60[0m
+projects-1              | 2026-11-16T20:17:04.336206823Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 32.867 ms - 60[0m
+projects-1              | 2026-11-16T20:17:08.011006378Z [T-03][RABBIT] msg=request-d955cbe1-f844-406c-b533-ee693680363c status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:17:09.329437896Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 42.123 ms - 60[0m
+projects-1              | 2026-11-16T20:17:10.007229457Z [T-03][RABBIT] msg=request-9aa1e96d-7ba7-4ece-8ec5-f7bbde621f09 status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:17:14.346601397Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 29.093 ms - 60[0m
+projects-1              | 2026-11-16T20:17:19.346412155Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 24.575 ms - 60[0m
+projects-1              | 2026-11-16T20:17:24.358213777Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 31.125 ms - 60[0m
+projects-1              | 2026-11-16T20:17:24.922857490Z [T-03][RABBIT] msg=request-d6f30b82-2530-454e-a4ef-079fbe3df202 status=success outType=video curPos=0 key=
+projects-1              | 2026-11-16T20:17:26.108243759Z [T-03][RABBIT] msg=request-a96f6d25-2c36-4159-9e41-cfe0b51c9664 status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:17:29.334819681Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 20.966 ms - 60[0m
+projects-1              | 2026-11-16T20:17:34.328824644Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 26.104 ms - 60[0m
+projects-1              | 2026-11-16T20:17:39.308733504Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 22.363 ms - 60[0m
+projects-1              | 2026-11-16T20:17:41.745320826Z [T-03][RABBIT] msg=request-d955cbe1-f844-406c-b533-ee693680363c status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:17:44.335561925Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 22.044 ms - 60[0m
+projects-1              | 2026-11-16T20:17:49.344026195Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 22.800 ms - 60[0m
+projects-1              | 2026-11-16T20:17:54.342136239Z [0mPOST /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m200[0m 22.527 ms - 60[0m
+projects-1              | 2026-11-16T20:17:55.257272050Z [T-03][RABBIT] msg=request-d6f30b82-2530-454e-a4ef-079fbe3df202 status=success outType=video curPos=1 key=
+projects-1              | 2026-11-16T20:17:55.384509511Z [COMMIT] project=6afb6431bb492b6458f034ba committedToken=1
+projects-1              | 2026-11-16T20:17:57.491969350Z [0mGET /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/process/url [32m200[0m 22.076 ms - 2951[0m
+projects-1              | 2026-11-16T20:17:57.580444082Z [0mDELETE /6af33ef7701167c8b5343d8c/6afb6431bb492b6458f034ba/presence [32m204[0m 21.733 ms - -[0m

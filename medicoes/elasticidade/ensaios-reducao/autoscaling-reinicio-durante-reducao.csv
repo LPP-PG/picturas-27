@@ -1,0 +1,5 @@
+timestamp,service,queue,ready,unacknowledged,consumers,replicas,desired,action,mode,error
+1795299273.5778801,video_subtitles_tool,video_subtitles_queue,0,0,1,2,2,hold,apply,
+1795299303.726055,video_subtitles_tool,video_subtitles_queue,0,0,2,2,1,drain,apply,
+1795299323.844618,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,drained,apply,
+1795299354.154516,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,hold,apply,

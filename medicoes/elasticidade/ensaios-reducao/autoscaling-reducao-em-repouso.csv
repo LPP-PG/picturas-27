@@ -1,0 +1,11 @@
+timestamp,service,queue,ready,unacknowledged,consumers,replicas,desired,action,mode,error
+1795298854.255837,video_subtitles_tool,video_subtitles_queue,0,0,1,2,2,hold,apply,
+1795298864.656362,video_subtitles_tool,video_subtitles_queue,0,0,2,2,2,hold,apply,
+1795298875.0036821,video_subtitles_tool,video_subtitles_queue,0,0,2,2,2,hold,apply,
+1795298885.356731,video_subtitles_tool,video_subtitles_queue,0,0,2,2,1,drain,apply,
+1795298895.797788,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,drained,apply,
+1795298906.375663,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,hold,apply,
+1795298916.698263,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,hold,apply,
+1795298927.031264,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,hold,apply,
+1795298937.365987,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,hold,apply,
+1795298947.7008362,video_subtitles_tool,video_subtitles_queue,0,0,1,1,1,hold,apply,
