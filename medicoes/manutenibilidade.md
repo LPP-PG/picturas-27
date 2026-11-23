@@ -27,6 +27,12 @@ Usámos uma cópia de teste para fazer uma alteração interna em cada função,
 | C2 | `f2af0a0040c8` → `6417f741c570` | `28e07c892937` → `48dbe9d2542d` |
 | C3 | `4e85d50be824` → `c7bd6bc3e980` | `c6a213322805` → `e28f6112f079` |
 
+## Ensaio complementar com a legendagem parada
+
+Na versão modularizada, parámos o serviço de legendagem com `docker compose stop video_subtitles_tool`. Num projeto com dois vídeos, aplicámos uma alteração de velocidade e uma rotação. Ambos os resultados ficaram disponíveis na interface. Com a legendagem ainda parada, aplicámos uma rotação seguida de extração de fotogramas. A interface apresentou os fotogramas com a rotação aplicada, confirmando que os serviços de edição e de extração concluíram o processamento em sequência.
+
+Num pedido que incluía legendagem, a interface permaneceu em *Processing* a 50% durante o período observado, sem apresentar erro. A espera é compatível com o processamento assíncrono, uma vez que a fila pode receber pedidos mesmo sem um *worker* disponível para os executar.
+
 ## Duplicação dos filtros PIL
 
 **Métrica.** Número de filtros PIL implementados em mais de um ficheiro, entre os oito que existem para imagens e para vídeo (brilho, contraste, saturação, rodar, redimensionar, binarização, recorte e borda). Para cada filtro, conta-se em quantos ficheiros aparece a operação PIL que o implementa, por exemplo `ImageEnhance.Brightness(` no brilho ou `img.crop(` no recorte.
