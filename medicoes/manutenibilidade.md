@@ -91,9 +91,9 @@ Os valores de cada execução estão em [resultados](./resultados/).
 
 No cenário A não há diferença que se possa atribuir à divisão: as duas rondas do `fase-2` diferem mais entre si do que da base.
 
-No cenário B, o `fase-2` foi mais lento nas duas rondas, 3,2 s e 1,9 s (10% e 6%). Para ver de onde vem, corremos cada etapa diretamente dentro da imagem Docker do seu serviço, sem RabbitMQ nem `projects`. No `fase-2`, a soma das três etapas deu 33,7 s, contra 34,2 s pela API na mesma ronda, por isso as mensagens e a coordenação entre serviços custam cerca de 0,5 s. A etapa de edição, corrida três vezes em alternância nas duas versões, demorou entre 21,4 s e 21,8 s em ambas. O resto da diferença, entre 1 e 2 s, não ficou isolado. Cada etapa volta a ler as características do vídeo com `ffprobe` e escreve o resultado numa pasta própria antes de a etapa seguinte começar, mas não medimos esses passos em separado.
+No cenário B, o `fase-2` foi mais lento nas duas rondas, 3,2 s e 1,9 s (10,2% e 6,1%). Para ver de onde vem, corremos cada etapa diretamente dentro da imagem Docker do seu serviço, sem RabbitMQ nem `projects`. No `fase-2`, a soma das três etapas deu 33,7 s, contra 34,2 s pela API na mesma ronda, por isso as mensagens e a coordenação entre serviços custam cerca de 0,5 s. A etapa de edição, corrida três vezes em alternância nas duas versões, demorou entre 21,4 s e 21,8 s em ambas. O resto da diferença, entre 1 e 2 s, não ficou isolado. Cada etapa volta a ler as características do vídeo com `ffprobe` e escreve o resultado numa pasta própria antes de a etapa seguinte começar, mas não medimos esses passos em separado.
 
-O grupo ainda não fixou um valor-alvo para este efeito.
+Após os ensaios, a equipa definiu, para cada ronda do cenário de três etapas, um alvo de aumento do tempo mediano de até 5% e um aumento máximo aceitável de 10%. O alvo ficou por atingir nas duas rondas. O limite foi excedido na primeira e respeitado na segunda.
 
 ## Reprodução
 
