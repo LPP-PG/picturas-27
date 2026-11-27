@@ -8,7 +8,7 @@ Run it against the running stack (base commit or fase-2) with the same options:
 
     python medicoes/medir-tempo-video.py --label fase-2 --reps 5
 
-Only the Python standard library is used. Results go to medicoes/resultados/.
+Only the Python standard library is used. Results go to medicoes/resultados-manutenibilidade/.
 """
 import argparse
 import csv
@@ -167,7 +167,7 @@ def main():
 
     api = Api(args.url)
     uid = register(api)
-    out_dir = os.path.join(ROOT, "medicoes", "resultados")
+    out_dir = os.path.join(ROOT, "medicoes", "resultados-manutenibilidade")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"tempo-video-{args.label}.csv")
 

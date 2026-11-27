@@ -87,7 +87,7 @@ A divisão em três serviços mudou a forma como um vídeo é processado. Antes,
 | A (1 etapa) | 8,19 s | 8,19 s | 8,50 s | 7,65 s |
 | B (3 etapas) | 31,03 s | 30,58 s | 34,20 s | 32,46 s |
 
-Os valores de cada execução estão em [resultados](./resultados/).
+Os valores de cada execução estão em [resultados](./resultados-manutenibilidade/).
 
 No cenário A não há diferença que se possa atribuir à divisão: as duas rondas do `fase-2` diferem mais entre si do que da base.
 
@@ -123,6 +123,6 @@ docker compose start
 python medicoes/medir-tempo-video.py --label fase-2 --reps 5
 ```
 
-Os comandos correm na pasta `picturas-27`. O script só usa a biblioteca padrão do Python e guarda os resultados em `medicoes/resultados/`.
+Os comandos correm na pasta `picturas-27`. O script só usa a biblioteca padrão do Python e guarda os resultados em `medicoes/resultados-manutenibilidade/`.
 
 Para repetir a verificação no Docker, arranca os três serviços numa cópia de teste com um nome de projeto Compose próprio e com as portas do RabbitMQ despublicadas. Para cada função, aplica a alteração descrita, executa `docker compose up -d --no-deps --build <serviço>` com o mesmo projeto Compose e compara os IDs da imagem e do contentor com `docker inspect` antes e depois.
